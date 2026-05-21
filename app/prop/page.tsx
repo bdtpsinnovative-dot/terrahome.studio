@@ -8,11 +8,12 @@ export const revalidate = 0
 export default async function PropCollectionsPage() {
   const supabase = await createClient()
 
+  // 1. ดึงข้อมูล Collections และ Products (เพิ่ม id มาด้วยเพื่อเอาไปเทียบกับ discount_rules)
   const { data: collections, error } = await supabase
     .from("collection_groups")
     .select(`
       *,
-      products ( sku, image_url, price )
+      products ( id, sku, image_url, price )
     `)
     .order("created_at", { ascending: false })
 
@@ -27,6 +28,48 @@ export default async function PropCollectionsPage() {
     )
   }
 
+  // 2. ดึงข้อมูลส่วนลดที่เปิดใช้งานอยู่ พร้อมกฎที่ผูกไว้
+  const { data: activeDiscounts } = await supabase
+    .from("discounts")
+    .select(`
+      id, discount_type, value, start_date, end_date,
+      discount_rules ( product_id )
+    `)
+    .eq("active", true)
+
+  // 3. Map ข้อมูลส่วนลดเข้าไปใน Products แต่ละตัว
+  const now = new Date()
+  
+  const mappedCollections = collections?.map((collection) => {
+    const mappedProducts = collection.products.map((product: any) => {
+      let applicableDiscount = null
+
+      if (activeDiscounts && activeDiscounts.length > 0) {
+        // หาส่วนลดที่ตรงกับสินค้านี้ หรือส่วนลดที่ใช้ได้กับ "ทุกสินค้า" (product_id เป็น null)
+        applicableDiscount = activeDiscounts.find(discount => {
+          // เช็คเรื่องวันที่ (ถ้ามี start_date/end_date)
+          const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+          const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+          if (!isStarted || !isNotEnded) return false
+
+          // เช็คว่าอยู่ในกฎของสินค้านี้ไหม
+          return discount.discount_rules.some((rule: any) => 
+            rule.product_id === product.id || rule.product_id === null
+          )
+        })
+      }
+
+      // แปะค่า discount_value และ discount_type เข้าไปใน object product
+      return {
+        ...product,
+        discount_value: applicableDiscount ? applicableDiscount.value : null,
+        discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+      }
+    })
+
+    return { ...collection, products: mappedProducts }
+  }) || []
+
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-[#2C2A26] font-sans selection:bg-[#C8A97E]/20">
       
@@ -38,7 +81,6 @@ export default async function PropCollectionsPage() {
         <div className="absolute left-1/2 -translate-x-1/2 font-serif text-xl lg:text-2xl tracking-widest text-[#2C2A26]">
           Terra Home Studio
         </div>
-        
       </nav>
 
       {/* Main Container */}
@@ -52,16 +94,15 @@ export default async function PropCollectionsPage() {
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#2C2A26] mb-6 tracking-wide leading-tight max-w-2xl">
             The Prop Collection
           </h1>
-         
         </div>
 
-        {/* ✅ เรียกใช้ Client Component */}
-        {(!collections || collections.length === 0) ? (
+        {/* ✅ ส่ง mappedCollections ที่มีส่วนลดแล้ว ไปให้ Client */}
+        {mappedCollections.length === 0 ? (
           <div className="text-center py-32">
             <span className="text-[#C8A97E] text-sm uppercase tracking-[0.2em] font-light">No Collections Discovered</span>
           </div>
         ) : (
-          <PropFilterClient collections={collections} />
+          <PropFilterClient collections={mappedCollections} />
         )}
 
       </div>

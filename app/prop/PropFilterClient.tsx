@@ -173,11 +173,20 @@ export default function PropFilterClient({ collections }: { collections: any[] }
                     .map((p: any) => ({
                       image_url: p.image_url,
                       price: p.price,
-                      sku: p.sku
+                      sku: p.sku,
+                      // ✅ เพิ่ม 2 บรรทัดนี้เข้าไป ส่งข้อมูลให้ลูกด้วย!
+                      discount_value: p.discount_value,
+                      discount_type: p.discount_type
                     })) || []
 
                   if (slides.length === 0 && group.cover_image_url) {
-                    slides.push({ image_url: group.cover_image_url, price: null, sku: "" })
+                    slides.push({ 
+                      image_url: group.cover_image_url, 
+                      price: null, 
+                      sku: "",
+                      discount_value: null,
+                      discount_type: null
+                    })
                   }
 
                   return (

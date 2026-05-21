@@ -8,6 +8,9 @@ interface ProductSlide {
   image_url: string
   price: number | null
   sku: string
+  // ✅ เพิ่มฟิลด์สำหรับรับค่าส่วนลด
+  discount_value?: number | null 
+  discount_type?: 'PERCENT' | 'FIXED' | null
 }
 
 export default function CollectionCard({ 
@@ -94,15 +97,55 @@ export default function CollectionCard({
           {group.description || "Explore the curated selection"}
         </p>
 
-        {displayPrice !== null && displayPrice > 0 ? (
-          <p className="text-[#2C2A26] text-[11px] sm:text-xs font-semibold tracking-widest font-mono">
-            THB {displayPrice.toLocaleString()}
-          </p>
-        ) : (
-          <p className="text-[#8C8A86] text-[9px] sm:text-[10px] tracking-widest uppercase">
-            Price upon request
-          </p>
-        )}
+        {/* ✅ Logic คำนวณและแสดงผลราคา (แบบมี/ไม่มีส่วนลด) */}
+        {(() => {
+          if (displayPrice === null || displayPrice <= 0) {
+            return (
+              <p className="text-[#8C8A86] text-[9px] sm:text-[10px] tracking-widest uppercase mt-1">
+                Price upon request
+              </p>
+            )
+          }
+
+          const originalPrice = displayPrice
+          let finalPrice = originalPrice
+          let isDiscounted = false
+          let discountLabel = ""
+
+          // เช็คว่ามีส่วนลดถูกส่งมาด้วยไหม
+          if (currentSlide.discount_value && currentSlide.discount_type) {
+            isDiscounted = true
+            if (currentSlide.discount_type === 'PERCENT') {
+              finalPrice = originalPrice - (originalPrice * (currentSlide.discount_value / 100))
+              discountLabel = `-${currentSlide.discount_value}%`
+            } else if (currentSlide.discount_type === 'FIXED') {
+              finalPrice = originalPrice - currentSlide.discount_value
+              discountLabel = `-฿${currentSlide.discount_value}`
+            }
+          }
+
+          return isDiscounted ? (
+            // แบบมีส่วนลด: โชว์ราคาเดิมขีดฆ่า + Badge สีทอง + ราคาใหม่
+            <div className="flex flex-col items-center gap-1 mt-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[#8C8A86] text-[10px] line-through font-mono opacity-60">
+                  THB {originalPrice.toLocaleString()}
+                </span>
+                <span className="text-[#C8A97E] text-[8px] sm:text-[9px] font-semibold tracking-wider border border-[#C8A97E]/40 bg-[#C8A97E]/5 px-1.5 py-0.5 rounded-sm">
+                  {discountLabel}
+                </span>
+              </div>
+              <p className="text-[#2C2A26] text-[11px] sm:text-xs font-semibold tracking-widest font-mono">
+                THB {finalPrice.toLocaleString()}
+              </p>
+            </div>
+          ) : (
+            // แบบไม่มีส่วนลด: โชว์ปกติ
+            <p className="text-[#2C2A26] text-[11px] sm:text-xs font-semibold tracking-widest font-mono mt-1">
+              THB {originalPrice.toLocaleString()}
+            </p>
+          )
+        })()}
       </div>
     </Link>
   )
