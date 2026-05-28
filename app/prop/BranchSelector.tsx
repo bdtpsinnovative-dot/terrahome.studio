@@ -26,7 +26,7 @@ export default function BranchSelector({ branches }: { branches: Branch[] }) {
   const allOption: Branch = {
     id: "all",
     branch_code: "ALL",
-    branch_name: "All Locations",
+    branch_name: "All",
   }
 
   // รวม All เข้าไปกับสาขาที่ดึงมาจาก DB
