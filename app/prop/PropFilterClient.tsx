@@ -235,7 +235,7 @@ export default function PropFilterClient({ collections, branches }: { collection
         
         {/* 🌟 ปรับขนาดฟอนต์ให้เล็กลง ลดความกว้างกล่อง และใส่ overflow-hidden ป้องกันการแทงทะลุกรอบ 100% */}
         <div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#D5D2CA]/70 bg-transparent overflow-hidden">
-          <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#8C8A86] opacity-20">
+          <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#000000] opacity-20">
             Home Decor Collections
           </span>
         </div>

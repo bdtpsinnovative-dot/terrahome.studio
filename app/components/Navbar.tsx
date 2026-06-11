@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+// 🌟 1. นำเข้า useEffect เพิ่มเข้ามาครับ
+import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -14,6 +15,18 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const isActive = (path: string) => pathname.startsWith(path);
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  // 🌟 2. เพิ่ม State ตัวจับการเลื่อนหน้าจอ
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // 🌟 3. ใช้ useEffect จับว่าผู้ใช้เลื่อนหน้าจอลงมาเกิน 20px หรือยัง
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // เช็คทันทีตอนโหลดหน้า
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   const toggleGroup = (e: React.MouseEvent, groupLabel: string) => {
     e.preventDefault();
@@ -39,11 +52,11 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     const decorativeItems: any[] = [];
     const dollItems: any[] = [];
     const wallArtItems: any[] = [];
-    const vaseItems: any[] = []; // 🌟 1. เพิ่มตะกร้าไว้รองรับกลุ่ม Vase ครับนาย
+    const vaseItems: any[] = [];
     const others: any[] = [];
 
     rawCategories.forEach(cat => {
-      const lowerCat = cat.toLowerCase(); // ทำเป็นพิมพ์เล็กก่อนเผื่อเช็คกันพลาด
+      const lowerCat = cat.toLowerCase();
 
       if (cat === "Candle Holder" || cat.startsWith("Decorative") || cat.startsWith("Decotative")) {
         let display = cat;
@@ -57,10 +70,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
       else if (cat.startsWith("Wall Art ")) {
         wallArtItems.push({ fullValue: cat, displayLabel: cat.replace("Wall Art ", "") });
       }
-      // 🌟 2. ดักจับหมวดหมู่ที่ขึ้นต้นด้วยคำว่า Vase
       else if (lowerCat.startsWith("vase")) {
         let display = cat;
-        // ตัดคำว่า Vase ด้านหน้าออกเพื่อให้เมนูย่อยดูคลีนขึ้น
         if (lowerCat.startsWith("vase ")) {
           display = cat.replace(/^Vase\s+/i, ""); 
         }
@@ -78,14 +89,12 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     if (decorativeItems.length > 0) groups.push({ label: "Decorative", isGroup: true, items: decorativeItems });
     if (dollItems.length > 0) groups.push({ label: "Doll", isGroup: true, items: dollItems });
     if (wallArtItems.length > 0) groups.push({ label: "Wall Art", isGroup: true, items: wallArtItems });
-    // 🌟 3. ดันกลุ่ม Vase เข้าไปโชว์ในเมนู
     if (vaseItems.length > 0) groups.push({ label: "Vase", isGroup: true, items: vaseItems }); 
 
     const allGroup = groups.shift();
     groups.sort((a, b) => a.label.localeCompare(b.label));
     if (allGroup) groups.unshift(allGroup);
 
-    // เติมเมนูปุ่มส่วนลดพิเศษต่อท้ายลิสต์
     groups.push({
       label: "SALE OFFERS %",
       isGroup: false,
@@ -107,13 +116,19 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const dropDownBg = "bg-[#D9D1C5]/40 border-white/20 backdrop-blur-2xl";
 
   const hamburgerLineColor = activeLightMode ? 'bg-[#3A3835]' : 'bg-white';
-  
-  const navContainerClass = view === 'about' 
-    ? 'absolute top-0 bg-transparent' 
-    : (isLightMode ? 'sticky top-0 bg-[#EBE8E1]/90 border-b border-[#D5D2CA] backdrop-blur-md' : 'absolute top-0 bg-transparent');
-  
   const logoFilter = activeLightMode ? 'brightness-0 contrast-200' : '';
-
+// 🌟 4. อัปเกรด Class ของ Navbar: ใช้สี #84492C ไล่สี Gradient เนียนๆ สไตล์ Overlay
+  const navPosition = (isLightMode && view !== 'about') ? 'sticky' : (isScrolled ? 'fixed' : 'absolute');
+  
+  const navContainerClass = `${navPosition} top-0 transition-all duration-500 ${
+    isScrolled
+      ? (activeLightMode
+          // 🟢 โทนสว่าง: ใช้สี #84492C (ความเข้ม 80%) เฟดไล่ลงมาหาใส
+          ? 'bg-gradient-to-b from-[#84492C]/80 to-transparent backdrop-blur-md' 
+          // 🟢 โทนมืด: ใช้สี #84492C (ความเข้ม 60% เพื่อไม่ให้ทึบเกินไปในจอมืด) เฟดไล่ลงมาหาใส
+          : 'bg-gradient-to-b from-[#84492C]/60 to-transparent backdrop-blur-md') 
+      : 'bg-transparent' // ตอนอยู่บนสุดให้ใสเนียนไปกับพื้นหลัง
+  }`;
   return (
     <nav className={`left-0 right-0 z-50 px-8 md:px-12 py-5 md:py-6 flex justify-between items-center w-full h-24 md:h-28 transition-all duration-300 ${navContainerClass}`}>
       
