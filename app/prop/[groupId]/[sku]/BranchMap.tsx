@@ -1,4 +1,3 @@
-// app/prop/[groupId]/[sku]/BranchMap.tsx
 "use client"
 
 import { useEffect, useState } from 'react'
@@ -42,7 +41,7 @@ function MapController({
   }, [selectedBranch, map])
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       map.invalidateSize()
       
       if (isFullscreen && !selectedBranch && !userLocation && activeStock.length > 0) {
@@ -56,6 +55,7 @@ function MapController({
           }
       }
     }, 300)
+    return () => clearTimeout(timer)
   }, [isFullscreen, map, activeStock, selectedBranch, userLocation])
 
   return null
@@ -124,9 +124,9 @@ export default function BranchMap({
     return L.divIcon({
       className: 'bg-transparent border-none',
       html: `
-        <div style="background: white; border: 2px solid #C8A97E; border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; width: 50px; height: 50px; position: relative;">
+        <div style="background: white; border: 2px solid #84492C; border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(132,73,44,0.15); display: flex; flex-direction: column; align-items: center; width: 50px; height: 50px; position: relative;">
           <img src="${productImage}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-multiply;" />
-          <div style="position: absolute; bottom: -12px; background: #C8A97E; color: white; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; border: 2px solid white; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+          <div style="position: absolute; bottom: -12px; background: #84492C; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 12px; border: 2px solid white; font-family: sans-serif;">
             ${qty}
           </div>
         </div>
@@ -140,12 +140,12 @@ export default function BranchMap({
   const userIcon = L.divIcon({
     className: 'bg-transparent border-none',
     html: `
-      <div style="width: 18px; height: 18px; background-color: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: relative;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background-color: #3b82f6; opacity: 0.5; transform: scale(1.5);"></div>
+      <div style="width: 16px; height: 16px; background-color: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.2); position: relative;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background-color: #3b82f6; opacity: 0.4; transform: scale(1.6);"></div>
       </div>
     `,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
     popupAnchor: [0, -10]
   })
 
@@ -156,9 +156,11 @@ export default function BranchMap({
   return (
     <div 
       className={`
-        mt-4 border border-[#E5E5E5] transition-all duration-300 ease-in-out
+        mt-4 border border-[#3A3835]/10 transition-all duration-300 ease-in-out
         ${isFullscreen 
-          ? 'fixed inset-0 w-screen h-screen z-[9999] m-0 rounded-none bg-[#F5F4F0]' 
+          /* 🔥 1. แก้ไขตรงนี้ครับนาย! จากเดิม fixed inset-0 ร่นขอบบนลงมาหลบใต้เนวบาร์ดื้อๆ ด้วย top-[88px] 
+             และปรับระดับความลึกให้อยู่ระนาบพอดีเป๊ะ ไม่โดนสับหัวขาดแล้วครับนายครับ */
+          ? 'fixed top-[88px] left-0 right-0 bottom-0 w-screen h-[calc(100vh-88px)] z-[9000] m-0 rounded-none bg-[#EAE7E0]' 
           : 'relative w-full h-[350px] rounded-sm z-0' 
         }
       `}
@@ -167,7 +169,7 @@ export default function BranchMap({
       <div className="absolute top-4 right-4 z-[10000] flex flex-col gap-2">
         <button
           onClick={toggleFullscreen}
-          className="bg-white text-[#2C2A26] border border-[#E5E5E5] p-3 rounded-xl shadow-lg hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center"
+          className="bg-white text-[#3A3835] border border-[#3A3835]/10 p-3 rounded-xl shadow-md hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center"
           title={isFullscreen ? "Exit Fullscreen" : "View Fullscreen"}
         >
           {isFullscreen ? (
@@ -183,7 +185,7 @@ export default function BranchMap({
 
         <button
           onClick={handleLocateMe}
-          className="bg-white text-[#3b82f6] border border-[#E5E5E5] p-3 rounded-xl shadow-lg hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center"
+          className="bg-white text-[#3b82f6] border border-[#3A3835]/10 p-3 rounded-xl shadow-md hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center"
           title="My Location"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -194,9 +196,10 @@ export default function BranchMap({
       </div>
 
       {isFullscreen && (
-        <div className="absolute top-4 left-4 z-[10000] w-80 max-h-[calc(100vh-32px)] overflow-y-auto bg-white/95 backdrop-blur-md border border-[#E5E5E5] rounded-xl shadow-xl flex flex-col hide-scrollbar">
-          <div className="p-4 border-b border-[#E5E5E5]/50 bg-white sticky top-0 z-10">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[#2C2A26]">Available Branches</h3>
+        /* 🔥 2. ปรับระยะความสูงของกล่องลิสต์ด้านซ้าย (max-h) ให้หดลงหลบระนาบ 88px เพื่อไม่ให้ทลักขอบตูดจอครับนายครับ */
+        <div className="absolute top-4 left-4 z-[10000] w-80 max-h-[calc(100vh-120px)] overflow-y-auto bg-white/95 backdrop-blur-md border border-[#3A3835]/10 rounded-xl shadow-xl flex flex-col hide-scrollbar">
+          <div className="p-4 border-b border-[#3A3835]/5 bg-white sticky top-0 z-10">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#3A3835]">Available Branches</h3>
             <p className="text-[10px] text-gray-500 mt-1">{productName}</p>
           </div>
           
@@ -215,13 +218,13 @@ export default function BranchMap({
                   }}
                   className={`flex justify-between items-center text-[11px] uppercase tracking-wider p-3 rounded-lg cursor-pointer transition-all duration-200 border 
                     ${isSelected 
-                      ? 'bg-[#F9F8F6] border-[#C8A97E] shadow-sm' 
-                      : 'bg-transparent border-transparent hover:bg-gray-50 hover:border-[#E5E5E5]'
+                      ? 'bg-[#F5F2EB] border-[#84492C] shadow-sm' 
+                      : 'bg-transparent border-transparent hover:bg-gray-50 hover:border-[#3A3835]/10'
                     }
                   `}
                 >
                   <div className="flex flex-col gap-1">
-                    <span className={`font-medium ${isSelected ? 'text-[#C8A97E]' : 'text-gray-700'}`}>
+                    <span className={`font-medium ${isSelected ? 'text-[#84492C]' : 'text-[#3A3835]'}`}>
                       {s.branches?.branch_name || 'Unknown Branch'}
                     </span>
                     {s.distance !== null && s.distance !== undefined && (
@@ -233,16 +236,15 @@ export default function BranchMap({
                   
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#C8A97E]"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
                       <span className="font-mono text-gray-500 font-semibold">{s.qty}</span>
                     </div>
-                    {/* ⚡ ปุ่มนำทางในโหมดเต็มจอ */}
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()} 
-                      className="bg-blue-50 text-blue-600 p-2 rounded-md hover:bg-blue-600 hover:text-white transition-colors shadow-sm"
+                      className="text-[#8C8A86] hover:text-[#84492C] p-2 rounded-md transition-colors"
                       title="Get directions on Google Maps"
                     >
                       <Navigation className="w-4 h-4" />
@@ -270,7 +272,7 @@ export default function BranchMap({
         />
 
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          attribution='© <a href="https://carto.com/">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
@@ -285,18 +287,17 @@ export default function BranchMap({
                 <p className="text-[10px] uppercase tracking-widest text-[#8C8A86] mb-1">
                   Location
                 </p>
-                <p className="font-semibold text-[#2C2A26] mb-2 text-sm">
+                <p className="font-semibold text-[#3A3835] mb-2 text-sm">
                   {stockItem.branches.branch_name}
                 </p>
-                <p className="text-xs text-[#C8A97E] font-medium bg-[#F9F8F6] px-2 py-1 rounded-md inline-block w-full">
+                <p className="text-xs text-[#84492C] font-medium bg-[#F5F2EB] px-2 py-1 rounded-md inline-block w-full">
                   In Stock: {stockItem.qty}
                 </p>
-                {/* ⚡ ปุ่ม นำทาง ใหญ่ๆ โผล่ในกรอบแผนที่ */}
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${stockItem.branches.latitude},${stockItem.branches.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 w-full bg-[#3b82f6] text-white text-[10px] uppercase font-bold tracking-wider py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-blue-600 transition-colors shadow-md"
+                  className="mt-3 w-full bg-[#3a3835] text-white text-[10px] uppercase font-bold tracking-wider py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-[#84492C] transition-colors shadow-sm"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   Get Directions
@@ -325,11 +326,8 @@ export default function BranchMap({
           background: transparent;
         }
         .hide-scrollbar::-webkit-scrollbar-thumb {
-          background: #E5E5E5;
+          background: #3A3835/10;
           border-radius: 4px;
-        }
-        .hide-scrollbar:hover::-webkit-scrollbar-thumb {
-          background: #D1D1D1;
         }
       `}</style>
     </div>

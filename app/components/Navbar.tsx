@@ -1,32 +1,49 @@
 'use client';
 
-// 🌟 1. นำเข้า useEffect เพิ่มเข้ามาครับ
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   
-  const currentCategory = searchParams.get('category');
-  const view = searchParams.get('view'); 
+  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
+  const currentCategory = searchParams.get('category');
+  
   const isActive = (path: string) => pathname.startsWith(path);
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-  // 🌟 2. เพิ่ม State ตัวจับการเลื่อนหน้าจอ
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // 🌟 3. ใช้ useEffect จับว่าผู้ใช้เลื่อนหน้าจอลงมาเกิน 20px หรือยัง
+  useEffect(() => {
+    setIsLoading(false);
+  }, [pathname, searchParams]);
+
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const triggerHeight = pathname.startsWith('/prop') ? window.innerHeight * 0.45 : 20;
+      setIsScrolled(window.scrollY > triggerHeight);
     };
+    
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // เช็คทันทีตอนโหลดหน้า
+    handleScroll(); 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [pathname]);
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    const currentHref = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+    if (currentHref === href) return;
+
+    e.preventDefault();
+    setIsLoading(true); 
+    startTransition(() => {
+      router.push(href);
+    });
+  };
   
   const toggleGroup = (e: React.MouseEvent, groupLabel: string) => {
     e.preventDefault();
@@ -105,176 +122,209 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     return groups;
   }, [collections]);
 
-  const isAboutPage = view === 'about';
-  const activeLightMode = isLightMode || isAboutPage;
+  const darkBannerPages = ['/', '/prop']; 
+  const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop'));
 
-  const textColor = isAboutPage ? 'text-black' : (activeLightMode ? 'text-[#3A3835]' : 'text-white');
-  const textHoverColor = isAboutPage ? 'hover:text-black' : (activeLightMode ? 'hover:text-[#3A3835]' : 'hover:text-white');
-  const textMutedColor = isAboutPage ? 'text-black/70' : (activeLightMode ? 'text-[#8C8A86]' : 'text-white/80');
-  const borderColor = isAboutPage ? 'border-black' : (activeLightMode ? 'border-[#3A3835]' : 'border-white');
-  
-  const dropDownBg = "bg-[#D9D1C5]/40 border-white/20 backdrop-blur-2xl";
+  const activeLightMode = !isDarkBannerPage || isLightMode;
 
-  const hamburgerLineColor = activeLightMode ? 'bg-[#3A3835]' : 'bg-white';
-  const logoFilter = activeLightMode ? 'brightness-0 contrast-200' : '';
-// 🌟 4. อัปเกรด Class ของ Navbar: ใช้สี #84492C ไล่สี Gradient เนียนๆ สไตล์ Overlay
-  const navPosition = (isLightMode && view !== 'about') ? 'sticky' : (isScrolled ? 'fixed' : 'absolute');
+  // สีเมนูหลักของ Navbar ยังคงเปลี่ยนสีดำ/ขาว ตามฉากหลังเหมือนเดิมครับ
+  const textColor = (isScrolled || activeLightMode) ? 'text-[#3A3835]' : 'text-white';
+  const textHoverColor = (isScrolled || activeLightMode) ? 'hover:text-[#84492C]' : 'hover:text-white';
+  const textMutedColor = (isScrolled || activeLightMode) ? 'text-[#8C8A86]' : 'text-white/80';
+  const borderColor = (isScrolled || activeLightMode) ? 'border-[#3A3835]' : 'border-white';
   
-  const navContainerClass = `${navPosition} top-0 transition-all duration-500 ${
+  const hamburgerLineColor = (isScrolled || activeLightMode) ? 'bg-[#3A3835]' : 'bg-white';
+  const logoFilter = (isScrolled || activeLightMode) ? 'brightness-0 contrast-200' : '';
+
+  // 🔥 1. แก้บั๊กจอดำ: บังคับให้ Dropdown กลายเป็น "กระจกส้มอิฐอ่อนๆ สไตล์ Luxury" ตลอดเวลา 100% ไม่ว่าฉากหลังจะมืดหรือสว่าง!
+  const dropDownBg = "bg-[#F4EBE6]/40 backdrop-blur-2xl border border-[#84492C]/20 shadow-[0_20px_50px_rgba(132,73,44,0.15)]";
+  const innerTitleColor = 'text-[#3A3835] border-[#3A3835]/15';
+  const innerTextColor = 'text-[#6B645E]';
+  const innerActiveTextColor = 'text-[#3A3835]';
+  const innerTextHoverColor = 'hover:text-[#84492C]';
+  const innerDotBg = 'bg-[#3A3835]';
+  const innerPlusColor = 'text-[#8C8A86]';
+  const innerSubBorderColor = 'border-[#3A3835]/10';
+
+  // 🔥 2. แก้บั๊กไม่วิ่งตามจอ: ล็อกเป็น `fixed` แบบตายตัวเลยครับ Navbar จะเกาะจอวิ่งตามเมาส์ตั้งแต่วินาทีแรกแน่นอน!
+  const navContainerClass = `fixed top-0 transition-all duration-500 ${
     isScrolled
       ? (activeLightMode
-          // 🟢 โทนสว่าง: ใช้สี #84492C (ความเข้ม 80%) เฟดไล่ลงมาหาใส
-          ? 'bg-gradient-to-b from-[#84492C]/80 to-transparent backdrop-blur-md' 
-          // 🟢 โทนมืด: ใช้สี #84492C (ความเข้ม 60% เพื่อไม่ให้ทึบเกินไปในจอมืด) เฟดไล่ลงมาหาใส
-          : 'bg-gradient-to-b from-[#84492C]/60 to-transparent backdrop-blur-md') 
-      : 'bg-transparent' // ตอนอยู่บนสุดให้ใสเนียนไปกับพื้นหลัง
+          ? 'bg-[#EBE8E1]/85 border-b border-[#84492C]/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.03)]' 
+          : 'bg-white/10 border-b border-white/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)]') 
+      : 'bg-transparent' 
   }`;
-  return (
-    <nav className={`left-0 right-0 z-50 px-8 md:px-12 py-5 md:py-6 flex justify-between items-center w-full h-24 md:h-28 transition-all duration-300 ${navContainerClass}`}>
-      
-      <div className={`hidden md:flex items-center space-x-8 lg:space-x-12 text-[11px] tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
-        <Link 
-          href="/about" 
-          className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
-        >
-          About
-        </Link>
 
-        <div className="relative group h-full flex items-center">
+  return (
+    <>
+      {isPending && (
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[9999] cursor-wait" />
+      )}
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-[#121212]/80 backdrop-blur-md flex flex-col items-center justify-center z-[99999] cursor-wait animate-fade-in">
+          <div className="w-14 h-14 border-4 border-white/10 border-t-[#C8A97E] rounded-full animate-spin mb-4"></div>
+          <h2 className="text-[#C8A97E] text-xs uppercase tracking-[0.3em] font-light animate-pulse">
+            Loading...
+          </h2>
+        </div>
+      )}
+
+      <nav className={`left-0 right-0 z-50 px-8 md:px-12 py-5 md:py-6 flex justify-between items-center w-full h-32 md:h-36 transition-all duration-300 ${navContainerClass}`}>
+        
+        <div className={`hidden md:flex items-center space-x-8 lg:space-x-12 text-[11px] tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
           <Link 
-            href="/prop" 
-            className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}
+            href="/about" 
+            onClick={(e) => handleNavClick(e, '/about')} 
+            className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
           >
-            HOME DECOR
+            About
           </Link>
 
-          <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-            <div className={`${dropDownBg} w-[280px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border text-left rounded-sm`}>
-              
-              <div className="text-[#3A3835] dark:text-white/90 text-[10px] uppercase font-semibold tracking-[0.3em] mb-5 border-b border-black/10 dark:border-white/10 pb-4">
-                Categories
-              </div>
+          <div className="relative group h-full flex items-center">
+            <Link 
+              href="/prop" 
+              onClick={(e) => handleNavClick(e, '/prop')} 
+              className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}
+            >
+              HOME DECOR
+            </Link>
 
-              <div className="flex flex-col gap-4">
-                {structuredCategories.map((group, idx) => {
-                  if (group.isSpecial) {
-                    const item = group.items[0];
-                    const isItemActive = currentCategory === item.fullValue;
+            <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+              <div className={`${dropDownBg} w-[290px] p-8 text-left rounded-sm transition-colors duration-300`}>
+                
+                <div className={`${innerTitleColor} text-[10.5px] uppercase font-bold tracking-[0.25em] mb-6 border-b pb-4`}>
+                  Categories
+                </div>
+
+                <div className="flex flex-col gap-5">
+                  {structuredCategories.map((group, idx) => {
+                    
+                    if (group.isSpecial) {
+                      const item = group.items[0];
+                      return (
+                        <Link
+                          key={item.fullValue}
+                          href={`/prop?category=${encodeURIComponent(item.fullValue)}`}
+                          onClick={(e) => handleNavClick(e, `/prop?category=${encodeURIComponent(item.fullValue)}`)} 
+                          className={`w-full mt-2 pt-5 border-t ${innerTitleColor} flex items-center group/item`}
+                        >
+                          <span className={`text-[10px] uppercase tracking-[0.2em] font-bold flex items-center gap-2 transition-colors duration-300 text-[#C25B4E] hover:text-[#9e463a]`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                              <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5z" clipRule="evenodd" />
+                            </svg>
+                            {group.label}
+                          </span>
+                        </Link>
+                      )
+                    }
+
+                    if (!group.isGroup) {
+                      const item = group.items[0];
+                      const isItemActive = (item.fullValue === 'All' && !currentCategory) || (currentCategory === item.fullValue);
+                      const targetUrl = `/prop${item.fullValue !== 'All' ? `?category=${encodeURIComponent(item.fullValue)}` : ''}`;
+
+                      return (
+                        <Link 
+                          key={item.fullValue} 
+                          href={targetUrl}
+                          onClick={(e) => handleNavClick(e, targetUrl)} 
+                          className="relative flex items-center w-full pl-5 group/item"
+                        >
+                          <span className={`absolute left-0 w-1.5 h-1.5 rounded-full ${innerDotBg} transition-all duration-300 ${isItemActive ? 'opacity-100 scale-100' : 'opacity-0 scale-50 group-hover/item:opacity-50 group-hover/item:scale-100'}`} />
+                          
+                          <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isItemActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
+                            {item.displayLabel}
+                          </span>
+                        </Link>
+                      );
+                    }
+
+                    const isExpanded = expandedGroups.includes(group.label);
+                    const isGroupActive = group.items.some(item => currentCategory === item.fullValue);
+
                     return (
-                      <Link
-                        key={item.fullValue}
-                        href={`/prop?category=${encodeURIComponent(item.fullValue)}`}
-                        className="w-full mt-2 pt-3 border-t border-black/5 dark:border-white/5 flex items-center group/item"
-                      >
-                        <span className={`text-[10px] uppercase tracking-[0.2em] font-bold flex items-center gap-1.5 transition-colors duration-300 ${isItemActive ? 'text-[#DC2626]' : 'text-[#c24b38] hover:text-[#DC2626]'}`}>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                            <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5zM6 7a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                          </svg>
-                          {group.label}
-                        </span>
-                      </Link>
-                    )
-                  }
-
-                  if (!group.isGroup) {
-                    const item = group.items[0];
-                    const isItemActive = (item.fullValue === 'All' && !currentCategory) || (currentCategory === item.fullValue);
-
-                    return (
-                      <Link 
-                        key={item.fullValue} 
-                        href={`/prop${item.fullValue !== 'All' ? `?category=${encodeURIComponent(item.fullValue)}` : ''}`}
-                        className="relative flex items-center w-full pl-4 group/item"
-                      >
-                        <span className={`absolute left-0 w-1.5 h-1.5 rounded-full bg-[#3A3835] dark:bg-white transition-all duration-300 ${isItemActive ? 'opacity-100 scale-100' : 'opacity-0 scale-50 group-hover/item:opacity-50 group-hover/item:scale-100'}`} />
+                      <div key={group.label} className="w-full flex flex-col pl-5 relative">
+                        <button 
+                          onClick={(e) => toggleGroup(e, group.label)} 
+                          className="flex items-center justify-between w-full text-left group/btn"
+                        >
+                          <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isGroupActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
+                            {group.label}
+                          </span>
+                          <span className={`${innerPlusColor} text-[12px] font-light transition-transform duration-300`}>
+                            {isExpanded ? '−' : '+'}
+                          </span>
+                        </button>
                         
-                        <span className={`text-[10.5px] uppercase tracking-[0.2em] transition-colors duration-300 ${isItemActive ? 'text-black dark:text-white font-bold' : 'text-[#4A3E3D] dark:text-white/80 hover:text-black dark:hover:text-white'}`}>
-                          {item.displayLabel}
-                        </span>
-                      </Link>
-                    );
-                  }
-
-                  const isExpanded = expandedGroups.includes(group.label);
-                  const isGroupActive = group.items.some(item => currentCategory === item.fullValue);
-
-                  return (
-                    <div key={group.label} className="w-full flex flex-col pl-4 relative">
-                      <button 
-                        onClick={(e) => toggleGroup(e, group.label)} 
-                        className="flex items-center justify-between w-full text-left group/btn"
-                      >
-                        <span className={`text-[10.5px] uppercase tracking-[0.2em] transition-colors duration-300 ${isGroupActive ? 'text-black dark:text-white font-bold' : 'text-[#4A3E3D] dark:text-white/80 hover:text-black dark:hover:text-white'}`}>
-                          {group.label}
-                        </span>
-                        <span className="text-[#4A3E3D] dark:text-white/60 text-[12px] font-light transition-transform duration-300">
-                          {isExpanded ? '−' : '+'}
-                        </span>
-                      </button>
-                      
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[300px] mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="flex flex-col gap-3 pl-3 ml-0.5 border-l border-black/10 dark:border-white/10">
-                          {group.items.map(item => {
-                            const isSubActive = currentCategory === item.fullValue;
-                            return (
-                              <Link 
-                                key={item.fullValue} 
-                                href={`/prop?category=${encodeURIComponent(item.fullValue)}`}
-                                className={`text-[10px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? 'text-black dark:text-white font-bold' : 'text-[#4A3E3D]/80 dark:text-white/70 hover:text-black dark:hover:text-white'}`}
-                              >
-                                {item.displayLabel}
-                              </Link>
-                            );
-                          })}
+                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[300px] mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+                          <div className={`flex flex-col gap-4 pl-3 ml-0.5 border-l ${innerSubBorderColor}`}>
+                            {group.items.map(item => {
+                              const isSubActive = currentCategory === item.fullValue;
+                              const subTargetUrl = `/prop?category=${encodeURIComponent(item.fullValue)}`;
+                              return (
+                                <Link 
+                                  key={item.fullValue} 
+                                  href={subTargetUrl}
+                                  onClick={(e) => handleNavClick(e, subTargetUrl)} 
+                                  className={`text-[9.5px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}
+                                >
+                                  {item.displayLabel}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
+              </div>
             </div>
           </div>
+
+          <Link 
+            href="/journal" 
+            onClick={(e) => handleNavClick(e, '/journal')} 
+            className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
+          >
+            Art & Gallery
+          </Link>
+          <Link 
+            href="/contact" 
+            onClick={(e) => handleNavClick(e, '/contact')} 
+            className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
+          >
+            Contact
+          </Link>
         </div>
 
-        <Link 
-          href="/journal" 
-          className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
-        >
-          Art & Gallery
-        </Link>
-        <Link 
-          href="/contact" 
-          className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}
-        >
-          Contact
-        </Link>
-      </div>
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center flex items-center justify-center select-none">
+          <Link href="/" onClick={(e) => handleNavClick(e, '/')} className="block transition-transform duration-300 hover:scale-105">
+            <img 
+              src="/logo.png" 
+              alt="Terra Home Studio Logo" 
+              className={`w-auto h-10 sm:h-11 md:h-14 lg:h-15 object-contain ${logoFilter}`}
+            />
+          </Link>
+        </div>
 
-      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center flex items-center justify-center select-none">
-        <Link href="/" className="block transition-transform duration-300 hover:scale-105">
-          <img 
-            src="/logo.png" 
-            alt="Terra Home Studio Logo" 
-            className={`w-auto h-10 sm:h-11 md:h-14 lg:h-15 object-contain ${logoFilter}`}
-          />
-        </Link>
-      </div>
+        <div className={`flex items-center space-x-6 lg:space-x-8 ${textColor}`}>
+          <button className={`hover:opacity-60 transition duration-300 p-1 flex items-center justify-center`} aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-5 md:h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M16.5 10.5a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+            </svg>
+          </button>
+          
+          <button className="hover:opacity-60 transition duration-300 flex flex-col justify-center space-y-[5px] group h-5 p-1" aria-label="Menu">
+            <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
+            <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
+            <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
+          </button>
+        </div>
 
-      <div className={`flex items-center space-x-6 lg:space-x-8 ${textColor}`}>
-        <button className={`hover:opacity-60 transition duration-300 p-1 flex items-center justify-center`} aria-label="Search">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-5 md:h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M16.5 10.5a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
-          </svg>
-        </button>
-        
-        <button className="hover:opacity-60 transition duration-300 flex flex-col justify-center space-y-[5px] group h-5 p-1" aria-label="Menu">
-          <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
-          <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
-          <span className={`w-[22px] md:w-[25px] h-[1px] ${hamburgerLineColor} block transition-all duration-300 group-hover:opacity-60`}></span>
-        </button>
-      </div>
-
-    </nav>
+      </nav>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import Navbar from "../components/Navbar"
-import PropBanner from "./PropBanner" // 🌟 นำเข้าแบนเนอร์สไลด์ตัวใหม่
+import PropBanner from "./PropBanner" 
 
 export const revalidate = 0
 
@@ -63,14 +63,12 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     collection.products && collection.products.length > 0
   ) || []
 
-  // 🌟 1. กวาดรูปภาพปกทั้งหมดที่มีในฐานข้อมูล มารวมเป็นก้อนเดียวเพื่อทำสไลด์เฟดหน้า ALL
-const allBannerImages = Array.from(new Set(
-  activeCollections
-    .map(c => c.image_url)
-    .filter((url): url is string => !!url && url !== "")
-));
+  const allBannerImages = Array.from(new Set(
+    activeCollections
+      .map(c => c.image_url)
+      .filter((url): url is string => !!url && url !== "")
+  ));
 
-  // 🌟 2. ลอจิกหาว่ามีรูปเฉพาะหมวดหมู่ที่กดเลือกไหม
   let activeBannerImage = null;
   if (categoryParam && categoryParam !== "All" && categoryParam !== "SPECIAL_DISCOUNT") {
     const matchedGroup = activeCollections.find(c => c.product_sup === categoryParam && c.image_url);
@@ -99,26 +97,30 @@ const allBannerImages = Array.from(new Set(
     return { ...collection, products: mappedProducts }
   })
 
-  // เช็กว่าในระบบเรามีรูปแบนเนอร์พร้อมแสดงผลไหม (ไม่ว่าจะรูปเดี่ยวหรือรูปกองรวมทำสไลด์)
   const hasBanner = activeBannerImage || allBannerImages.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 relative">
+    <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       
-      {/* 🌟 3. เรียกใช้งานคอมโพเนนต์สไลด์แบนเนอร์ตัวใหม่ พาสข้อมูลข้ามฝั่งไปจัดการ */}
-      <PropBanner 
-        allImages={allBannerImages} 
-        activeImage={activeBannerImage}
-        categoryName={categoryParam || "All"}
-      />
-
-      {/* 🌟 4. ล็อกป้ายให้แนบบาเป็นสีโปร่งใสเสมอตราบใดที่มีแบนเนอร์รองรับอยู่ด้านหลัง */}
+      {/* 1. จัดตำแหน่ง Navbar */}
       <div className="relative z-50">
         <Navbar collections={collections} isLightMode={!hasBanner} />
       </div>
 
-      {/* 🌟 5. ดันระยะเว้นด้านบนลงมารับความสูงแบนเนอร์ตัวใหม่ (30vh สำหรับโมบาย, 40vh สำหรับจอคอม) */}
-      <div className={`relative z-10 max-w-[1600px] mx-auto lg:py-16 ${hasBanner ? 'pt-[30vh] lg:pt-[40vh]' : 'py-8 pt-32'}`}>
+      {/* 2. 🔥 แก้ไขตรงนี้ครับนาย! หดความสูงกล่องหุ้มลงมาเหลือ h-[45vh] lg:h-[55vh] ให้เท่ากับขนาดแบนเนอร์จริงแล้วครับ */}
+      {hasBanner && (
+        <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
+          <PropBanner 
+            allImages={allBannerImages} 
+            activeImage={activeBannerImage}
+            categoryName={categoryParam || "All"}
+          />
+        </div>
+      )}
+
+      {/* 3. โซนเนื้อหาสินค้าด้านล่าง */}
+      {/* 🔥 ปรับเป็น pt-0 เพื่อให้เส้น Grid วิ่งจ่อขึ้นไปจูบขอบตูดแบนเนอร์พอดีเป๊ะ เส้นจะต่อกันคมชัดครบทุกพิกเซลครับนาย */}
+      <div className="relative z-30 max-w-[1600px] mx-auto w-full px-4 lg:py-16 pt-0 pb-24">
         {mappedCollections.length === 0 ? (
           <div className="text-center py-32">
             <span className="text-[#8C8A86] text-[10px] uppercase tracking-[0.2em] font-medium">
