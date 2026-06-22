@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation" // 🌟 1. นำเข้า useRouter เพิ่มเข้ามาจัดการระบบกดย้อนกลับครับนาย
+import { useRouter } from "next/navigation" 
 import dynamic from "next/dynamic"
 import { ArrowLeft, CheckCircle2, MapPin, Navigation } from "lucide-react"
+// ⚡ 1. นำเข้า Supabase Client
+import { createClient } from '@/src/supabase/client'
 
 const BranchMap = dynamic(() => import('./BranchMap'), { 
   ssr: false, 
@@ -36,7 +38,9 @@ export default function ProductDetailClient({
   currentGroupId: string
   initialSku: string
 }) {
-  const router = useRouter() // 🌟 2. เรียกใช้งาน Router หลักในคอมโพเนนต์
+  const router = useRouter()
+  const supabase = createClient() // ⚡ เรียกใช้ Supabase
+  
   const [activeProduct, setActiveProduct] = useState(() => {
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
   })
@@ -47,11 +51,16 @@ export default function ProductDetailClient({
   
   const [selectedBranch, setSelectedBranch] = useState<{ lat: number; lng: number; timestamp: number } | null>(null)
 
+  // ⚡ 2. State สำหรับปุ่ม Add to Cart
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [addedSuccess, setAddedSuccess] = useState(false)
+
   const handleSelectProduct = (product: any) => {
     setActiveProduct(product)
     setShowStock(false)
     const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(product.sku)}`
-    window.history.pushState(null, "", newPath)
+    
+    window.history.replaceState(null, "", newPath)
   }
 
   const handleGetLocation = () => {
@@ -72,6 +81,72 @@ export default function ProductDetailClient({
       },
       { enableHighAccuracy: true }
     )
+  }
+
+  // คำนวณสต็อกรวมทั้งหมดของสินค้าชิ้นที่เปิดดูอยู่
+  const totalStock = activeProduct.stock?.reduce((sum: number, s: any) => sum + Number(s.qty), 0) || 0
+  const outOfStock = totalStock <= 0
+
+  // ⚡ 3. ฟังก์ชันเพิ่มสินค้าลงตะกร้า
+  const handleAddToCart = async () => {
+    try {
+      setIsAddingToCart(true)
+
+      // เช็คว่าล็อกอินหรือยัง
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้านะครับ")
+        router.push('/login')
+        return
+      }
+
+      // ตรวจสอบว่าในตะกร้ามีสินค้านี้อยู่แล้วหรือเปล่า
+      const { data: existingItem, error: fetchError } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('product_id', activeProduct.id)
+        .maybeSingle()
+
+      if (existingItem) {
+        // ถ้ามีแล้ว เช็คว่าถ้าบวกเพิ่มอีก 1 จะเกินสต็อกไหม
+        if (existingItem.quantity >= totalStock) {
+          alert(`ขออภัยครับ สินค้านี้มีสต็อกคงเหลือ ${totalStock} ชิ้น (คุณเพิ่มลงตะกร้าเต็มจำนวนแล้ว)`)
+          setIsAddingToCart(false)
+          return
+        }
+
+        // อัปเดตจำนวน +1
+        const { error: updateError } = await supabase
+          .from('cart_items')
+          .update({ quantity: existingItem.quantity + 1 })
+          .eq('id', existingItem.id)
+          
+        if (updateError) throw updateError
+      } else {
+        // ถ้ายังไม่มีในตะกร้า ให้สร้างแถวใหม่ (insert)
+        const { error: insertError } = await supabase
+          .from('cart_items')
+          .insert({
+            user_id: session.user.id,
+            product_id: activeProduct.id,
+            quantity: 1
+          })
+          
+        if (insertError) throw insertError
+      }
+
+      // โชว์แอนิเมชันติ๊กถูก 2 วินาที
+      setAddedSuccess(true)
+      setTimeout(() => setAddedSuccess(false), 2000)
+
+    } catch (error: any) {
+      console.error("Error adding to cart:", error)
+      alert("เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า โปรดลองอีกครั้งครับ")
+    } finally {
+      setIsAddingToCart(false)
+    }
   }
 
   const specs = activeProduct.specs || {}
@@ -96,10 +171,8 @@ export default function ProductDetailClient({
   return (
     <div className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       
-      {/* Navbar ทึบแสงมิดชิด บล็อกตัวเก่าด้านหลังเรียบร้อย */}
       <nav className="w-full py-6 px-8 lg:px-12 flex items-center justify-between sticky top-0 bg-[#EAE7E0] z-[10000]">
         
-        {/* 🔥 3. ปรับเปลี่ยนจากปุ่มลิงก์ถาวร เป็นปุ่มกด Button ที่สั่งย้อนกลับประวัติจริง (router.back) เรียบร้อยครับนาย! */}
         <button 
           onClick={() => router.back()} 
           className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] uppercase text-[#8C8A86] hover:text-[#3A3835] flex items-center gap-2 transition-colors group cursor-pointer"
@@ -119,7 +192,6 @@ export default function ProductDetailClient({
 
       <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-4 lg:py-8">
         
-        {/* โซนรูปภาพหลักฝั่งซ้าย (Seamless เนียนตา) */}
         <div className="lg:col-span-5 p-6 lg:p-10 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
             {activeProduct.image_url ? (
@@ -137,7 +209,6 @@ export default function ProductDetailClient({
           </div>
         </div>
 
-        {/* โซนข้อมูลสินค้าฝั่งขวา */}
         <div className="lg:col-span-7 p-6 lg:p-10 xl:p-16 flex flex-col gap-10">
           
           <div>
@@ -315,9 +386,34 @@ export default function ProductDetailClient({
             </div>
           </div>
 
+          {/* ⚡ 4. เปลี่ยนปุ่ม CONTACT เป็น ADD TO CART พร้อม Logic เช็คสถานะ */}
           <div className="pt-2 max-w-lg mt-auto">
-            <button className="w-full bg-[#4A4744] text-white py-4 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#3A3835] transition-all duration-300 shadow-sm active:scale-[0.99] rounded-[2px]">
-              CONTACT TO PURCHASE
+            <button 
+              onClick={handleAddToCart}
+              disabled={isAddingToCart || outOfStock}
+              className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
+                outOfStock 
+                  ? 'bg-[#EAE7E0] border border-[#3A3835]/10 text-[#8C8A86] cursor-not-allowed'
+                  : addedSuccess 
+                    ? 'bg-[#84492C] text-white' 
+                    : 'bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]'
+              }`}
+            >
+              {isAddingToCart ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ADDING...
+                </>
+              ) : outOfStock ? (
+                'OUT OF STOCK'
+              ) : addedSuccess ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  ADDED TO CART
+                </>
+              ) : (
+                'ADD TO CART'
+              )}
             </button>
           </div>
           

@@ -152,7 +152,7 @@ export default function PropFilterClient({ collections, branches }: { collection
   };
 
   const getDisplayTitle = () => {
-    if (activeFilter === "All") return "LIVING ROOM"
+    if (activeFilter === "All") return "Home Decor"
     if (activeFilter === "SPECIAL_DISCOUNT") return "SPECIAL OFFERS"
     return activeFilter.replace(/^(Decorative|Doll|Wall Art|Decotative)\s+/i, '').toUpperCase()
   };
@@ -234,11 +234,11 @@ export default function PropFilterClient({ collections, branches }: { collection
       <div className="flex flex-row items-start w-full px-0 relative">
         
         {/* 🌟 ปรับขนาดฟอนต์ให้เล็กลง ลดความกว้างกล่อง และใส่ overflow-hidden ป้องกันการแทงทะลุกรอบ 100% */}
-        <div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#D5D2CA]/70 bg-transparent overflow-hidden">
-          <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#000000] opacity-20">
-            Home Decor Collections
-          </span>
-        </div>
+<div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
+  <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#84492C] opacity-20">
+    Home Decor Collections
+  </span>
+</div>
 
         <div className="flex-1 w-full flex flex-col relative z-10 px-4 md:pl-6 md:pr-6">
           

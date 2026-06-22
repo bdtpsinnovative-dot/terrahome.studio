@@ -17,6 +17,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   const branchId = resolvedParams.branch as string | undefined
   const categoryParam = resolvedParams.category as string | undefined
 
+  // 1. ดึงข้อมูลสาขาทั้งหมด
   const { data: branches } = await supabase
     .from("branches")
     .select("id, branch_code, branch_name, latitude, longitude")
@@ -24,6 +25,31 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     .not("longitude", "is", null)
     .order("branch_name", { ascending: true })
 
+  // 🌟 [ไม้ตายแก้บั๊กแบนเนอร์หาย!] ดึงข้อมูลเฉพาะรูปแบนเนอร์แยกต่างหาก 
+  // เพื่อให้มั่นใจว่ารูปจะไม่โดนตัดทิ้ง แม้สินค้านั้นจะไม่มีสต็อกในสาขาที่เลือกก็ตาม!
+  const { data: bannerGroups } = await supabase
+    .from("collection_groups")
+    .select("product_sup, image_url");
+
+  let activeBannerImage = null;
+  let allBannerImages: string[] = [];
+
+  if (bannerGroups) {
+    if (categoryParam && categoryParam !== "All" && categoryParam !== "SPECIAL_DISCOUNT") {
+      // ถ้าเลือกหมวดหมู่ ให้ค้นหารูปแบนเนอร์จากหมวดหมู่นั้นตรงๆ (ไม่ต้องแคร์สต็อก)
+      const matchedGroup = bannerGroups.find(c => c.product_sup === categoryParam && c.image_url);
+      if (matchedGroup) {
+        activeBannerImage = matchedGroup.image_url;
+      }
+    } else {
+      // ถ้าเลือก All ให้ดึงรูปทั้งหมดมาเล่นสไลด์โชว์
+      allBannerImages = Array.from(new Set(
+        bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
+      ));
+    }
+  }
+
+  // 2. ดึงข้อมูลสินค้าและกรองตามสาขา (เฉพาะส่วนเนื้อหาสินค้าด้านล่าง)
   const productSelectStr = branchId && branchId !== "all"
     ? `id, sku, name, image_url, price, stock!inner ( branch_id, qty )`
     : `id, sku, name, image_url, price`
@@ -36,7 +62,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   if (branchId && branchId !== "all") {
     collectionQuery = collectionQuery
       .eq("products.stock.branch_id", branchId)
-      .gt("products.stock.qty", 0)
+      .gt("products.stock.qty", 0) // กรองเฉพาะสาขาที่มีสต็อกมากกว่า 0
   }
 
   const { data: collections, error } = await collectionQuery
@@ -59,23 +85,10 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   const now = new Date()
   
+  // กรอง Collection ที่มีสินค้าอยู่จริงๆ เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
   const activeCollections = collections?.filter(collection => 
     collection.products && collection.products.length > 0
   ) || []
-
-  const allBannerImages = Array.from(new Set(
-    activeCollections
-      .map(c => c.image_url)
-      .filter((url): url is string => !!url && url !== "")
-  ));
-
-  let activeBannerImage = null;
-  if (categoryParam && categoryParam !== "All" && categoryParam !== "SPECIAL_DISCOUNT") {
-    const matchedGroup = activeCollections.find(c => c.product_sup === categoryParam && c.image_url);
-    if (matchedGroup) {
-      activeBannerImage = matchedGroup.image_url;
-    }
-  }
 
   const mappedCollections = activeCollections.map((collection) => {
     const mappedProducts = collection.products.map((product: any) => {
@@ -97,17 +110,18 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     return { ...collection, products: mappedProducts }
   })
 
+  // เช็คว่ามีรูปแบนเนอร์ที่จะแสดงไหม? (ใช้ข้อมูลจาก bannerGroups ที่ดึงแยกมา)
   const hasBanner = activeBannerImage || allBannerImages.length > 0;
 
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       
-      {/* 1. จัดตำแหน่ง Navbar */}
+      {/* 1. จัดตำแหน่ง Navbar (ส่ง bannerGroups เข้าไปแทน เพื่อให้เมนู Dropdown อยู่ครบถ้วนเสมอ!) */}
       <div className="relative z-50">
-        <Navbar collections={collections} isLightMode={!hasBanner} />
+        <Navbar collections={bannerGroups || []} isLightMode={!hasBanner} />
       </div>
 
-      {/* 2. 🔥 แก้ไขตรงนี้ครับนาย! หดความสูงกล่องหุ้มลงมาเหลือ h-[45vh] lg:h-[55vh] ให้เท่ากับขนาดแบนเนอร์จริงแล้วครับ */}
+      {/* 2. ตัวแบนเนอร์ด้านบน */}
       {hasBanner && (
         <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
           <PropBanner 
@@ -119,17 +133,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       )}
 
       {/* 3. โซนเนื้อหาสินค้าด้านล่าง */}
-      {/* 🔥 ปรับเป็น pt-0 เพื่อให้เส้น Grid วิ่งจ่อขึ้นไปจูบขอบตูดแบนเนอร์พอดีเป๊ะ เส้นจะต่อกันคมชัดครบทุกพิกเซลครับนาย */}
       <div className="relative z-30 max-w-[1600px] mx-auto w-full px-4 lg:py-16 pt-0 pb-24">
-        {mappedCollections.length === 0 ? (
-          <div className="text-center py-32">
-            <span className="text-[#8C8A86] text-[10px] uppercase tracking-[0.2em] font-medium">
-              No Collections Discovered
-            </span>
-          </div>
-        ) : (
-          <PropFilterClient collections={mappedCollections} branches={branches || []} />
-        )}
+        <PropFilterClient collections={mappedCollections} branches={branches || []} />
       </div>
     </div>
   )

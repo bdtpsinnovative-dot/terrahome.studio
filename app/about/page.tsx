@@ -141,7 +141,7 @@ export default function AboutPage() {
           className={`reveal-anim grid gap-8 lg:grid-cols-2 lg:items-start ${isVisible(1) ? 'is-visible' : ''}`}
         >
           <div className="order-2 lg:order-1 pt-2 lg:pr-12">
-            <h2 className="text-[#84492C] text-xl lg:text-2xl font-serif font-bold uppercase tracking-[0.15em] mb-4">
+            <h2 className="text-[#84492C] text-xl lg:text-2xl font-bold uppercase tracking-[0.15em] mb-4">
               ABOUT US
             </h2>
             <p className="text-[#2c2722] font-sans font-medium text-lg lg:text-xl leading-relaxed">

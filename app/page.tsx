@@ -135,6 +135,10 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
             key={idx}
             src={slide.src}
             alt={`Terra Home Hero ${idx + 1}`}
+            // 🌟 เพิ่ม 2 บรรทัดนี้ครับ
+            fetchPriority={idx === 0 ? "high" : "auto"} 
+            loading={idx === 0 ? "eager" : "lazy"}
+            // ---------------------
             className={`absolute inset-0 w-full h-full object-cover filter transition-opacity duration-1000 ease-in-out ${
               idx === currentIndex ? "opacity-100" : "opacity-0"
             }`}
@@ -225,10 +229,11 @@ export function BrandIntroduction() {
       {/* ฝั่งซ้าย: รูปห้อง */}
       <div className="relative w-full h-[35vh] md:h-full overflow-hidden">
         <img 
-          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780388580146-928.webp?auto=format&fit=crop&w=1400&q=80" 
-          alt="Interior Setup" 
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ease-out ${isVisible ? 'scale-100 opacity-100' : 'scale-110 opacity-0'}`}
-        />
+  src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780388580146-928.webp?auto=format&fit=crop&w=1400&q=80" 
+  alt="Interior Setup" 
+  loading="lazy" // 🌟 เติมตรงนี้
+  className="..."
+/>
         <div className="absolute inset-0 bg-[#4A3E3D]/5"></div>
       </div>
 
@@ -440,11 +445,12 @@ export function DecorativeObjects() {
             `}
           >
             <img 
-              src={item.img} 
-              alt={item.title} 
-              draggable="false"
-              className="w-full max-h-[85%] object-contain filter drop-shadow-2xl pointer-events-none" 
-            />
+  src={item.img} 
+  alt={item.title} 
+  draggable="false"
+  loading="lazy" // 🌟 เติมตรงนี้
+  className="..." 
+/>
           </div>
         ))}
       </div>
