@@ -12,9 +12,11 @@ export default function PropFilterClient({ collections, branches }: { collection
 
   const initialCategory = searchParams.get('category') || "All"
   const initialPage = Number(searchParams.get('page')) || 1
+  const initialSearch = searchParams.get('search') || "" // 🌟 1. ดึงค่าค้นหาเริ่มต้นจาก URL
 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
   const [currentPage, setCurrentPage] = useState(initialPage)
+  const [searchQuery, setSearchQuery] = useState(initialSearch) // 🌟 2. เพิ่ม State สำหรับเก็บบล็อกคำค้นหา
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -33,17 +35,24 @@ export default function PropFilterClient({ collections, branches }: { collection
   useEffect(() => {
     const urlCategory = searchParams.get('category') || "All"
     const urlPage = Number(searchParams.get('page')) || 1
+    const urlSearch = searchParams.get('search') || "" // 🌟 3. คอยดักฟังเผื่อมีการล้าง URL หรือเปลี่ยนค่าจากภายนอก
     setActiveFilter(urlCategory)
     setCurrentPage(urlPage)
+    setSearchQuery(urlSearch)
   }, [searchParams])
 
-  const updateURL = (newFilter: string, newPage: number) => {
+  // 🌟 4. อัปเดตฟังก์ชันเพื่อรองรับพารามิเตอร์การค้นหาบนแถบที่อยู่ URL
+  const updateURL = (newFilter: string, newPage: number, newSearch: string) => {
     const params = new URLSearchParams(searchParams.toString())
+    
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
     else params.delete('category')
     
     if (newPage > 1) params.set('page', newPage.toString())
     else params.delete('page')
+
+    if (newSearch) params.set('search', newSearch)
+    else params.delete('search')
 
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
@@ -51,8 +60,15 @@ export default function PropFilterClient({ collections, branches }: { collection
   const handleFilterChange = (filterValue: string) => {
     setActiveFilter(filterValue)
     setCurrentPage(1) 
-    updateURL(filterValue, 1) 
+    updateURL(filterValue, 1, searchQuery) // 🌟 ส่งค่าค้นหาปัจจุบันไปด้วย
     setIsSidebarOpen(false) 
+  }
+
+  // 🌟 5. สร้างฟังก์ชันการจัดการเมื่อผู้ใช้พิมพ์ค้นหา
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    setCurrentPage(1) // รีเซ็ตหน้ากลับไปที่ 1 เสมอเวลาคนค้นหาใหม่
+    updateURL(activeFilter, 1, val)
   }
 
   const toggleGroup = (groupLabel: string) => {
@@ -62,15 +78,33 @@ export default function PropFilterClient({ collections, branches }: { collection
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
     setCurrentPage(page);
-    updateURL(activeFilter, page);
+    updateURL(activeFilter, page, searchQuery); // 🌟 ส่งค่าค้นหาปัจจุบันไปด้วย
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filteredCollections = activeFilter === "All" 
-    ? collections 
-    : activeFilter === "SPECIAL_DISCOUNT"
-      ? collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
-      : collections.filter(group => group.product_sup === activeFilter)
+  // 🌟 6. เจาะระบบกรองข้อมูลตัวเก่ง: เอาทั้งหมวดหมู่ และคำค้นหามามัดรวมกัน
+  const filteredCollections = useMemo(() => {
+    // กรองตามหมวดหมู่ก่อน
+    let result = activeFilter === "All" 
+      ? collections 
+      : activeFilter === "SPECIAL_DISCOUNT"
+        ? collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
+        : collections.filter(group => group.product_sup === activeFilter)
+
+    // ถ้ามีการพิมพ์คำค้นหา ให้ทำการสแกนทะลวงเข้าไปกรองต่อทันที
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase().trim()
+      result = result.filter(group => {
+        const matchGroupName = group.name?.toLowerCase().includes(query)
+        const matchProducts = group.products?.some((p: any) => 
+          p.name?.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query)
+        )
+        return matchGroupName || matchProducts
+      })
+    }
+
+    return result
+  }, [activeFilter, collections, searchQuery])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -233,20 +267,20 @@ export default function PropFilterClient({ collections, branches }: { collection
 
       <div className="flex flex-row items-start w-full px-0 relative">
         
-        {/* 🌟 ปรับขนาดฟอนต์ให้เล็กลง ลดความกว้างกล่อง และใส่ overflow-hidden ป้องกันการแทงทะลุกรอบ 100% */}
-<div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
-  <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#84492C] opacity-20">
-    Home Decor Collections
-  </span>
-</div>
+        <div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
+          <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#84492C] opacity-20">
+            Home Decor Collections
+          </span>
+        </div>
 
         <div className="flex-1 w-full flex flex-col relative z-10 px-4 md:pl-6 md:pr-6">
           
-          <div className="flex justify-between items-end pb-5 mb-0 pt-6">
-            <div className="flex flex-col gap-1">
+          {/* 🌟 7. ส่วนหัวแบบปรับสไตล์ใหม่: ย้ายหัวข้อ และนำ Search Bar มาจัดวางให้สวยงาม คลีนๆ เข้ากับธีมหน้าเว็บ */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end pb-5 mb-0 pt-6 gap-4 border-b border-[#D5D2CA]/30">
+            <div className="flex flex-col gap-1.5 w-full sm:w-auto">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="md:hidden flex items-center gap-1.5 mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8C8A86] border border-[#D5D2CA] px-2.5 py-1 rounded-sm bg-white/50 active:bg-[#EBE8E1]"
+                className="md:hidden flex items-center justify-center gap-1.5 mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8C8A86] border border-[#D5D2CA] px-2.5 py-1.5 rounded-sm bg-white/50 active:bg-[#EBE8E1] w-full"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
@@ -258,14 +292,39 @@ export default function PropFilterClient({ collections, branches }: { collection
               </h2>
             </div>
             
-            <div className="pb-1">
-              {branches && branches.length > 0 && (
-                <BranchSelector branches={branches} isLightPage={true} />
-              )}
+            {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่มล้างค่าคำค้นหา ✕ */}
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+              <div className="relative w-full sm:w-64 group">
+                <input
+                  type="text"
+                  placeholder="SEARCH PROPS, SKU..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="w-full bg-white/60 backdrop-blur-sm pl-3 pr-8 py-1.5 border border-[#D5D2CA] text-[11px] font-mono tracking-wider text-[#3A3835] uppercase placeholder-[#8C8A86]/50 outline-none focus:border-[#3A3835] focus:bg-white transition-all duration-300 rounded-sm"
+                />
+                {searchQuery ? (
+                  <button 
+                    onClick={() => handleSearchChange("")} 
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8A86] hover:text-[#3A3835] text-[11px] transition-colors"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8C8A86]/60 pointer-events-none group-hover:text-[#3A3835] transition-colors">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" />
+                  </svg>
+                )}
+              </div>
+
+              <div className="pb-0.5">
+                {branches && branches.length > 0 && (
+                  <BranchSelector branches={branches} isLightPage={true} />
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="w-full border-t border-[#D5D2CA]/70">
+          <div className="w-full border-t border-[#D5D2CA]/70 mt-0">
             {filteredCollections.length === 0 ? (
               <div className="text-center py-24">
                 <span className="text-[#8C8A86] text-[10px] uppercase tracking-[0.3em] font-light">No Collections Discovered</span>
