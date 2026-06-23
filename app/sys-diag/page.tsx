@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { Scanner } from '@yudiel/react-qr-scanner'; 
 
 // 1. ตั้งค่า Supabase 
 const supabase = createClient(
@@ -14,7 +15,7 @@ export default function SysDiagPage() {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isScannerOpen, setIsScannerOpen] = useState(false); // ควบคุมการเปิด/ปิด Popup กล้อง
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // 2. ฟังก์ชันค้นหาสินค้า พร้อมดึงสต็อกและชื่อสาขา
   const searchProduct = async (codeToSearch: string) => {
@@ -23,10 +24,9 @@ export default function SysDiagPage() {
     setLoading(true);
     setError(null);
     setProductData(null);
-    setIsScannerOpen(false); // ปิดหน้ากล้องอัตโนมัติเมื่อเริ่มค้นหา
+    setIsScannerOpen(false); // สแกนติดปุ๊บ ปิดกล้องทันที
 
     try {
-      // 🌟 แก้ไขการ Query: ดึงข้อมูลสินค้าพ่วงสต็อกและชื่อสาขา
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -45,7 +45,7 @@ export default function SysDiagPage() {
         setError("ไม่พบข้อมูลสินค้า บาร์โค้ด: " + codeToSearch);
       } else {
         setProductData(data);
-        setInputValue(""); // เคลียร์ช่องค้นหาเพื่อเตรียมยิงชิ้นต่อไป
+        setInputValue(""); 
       }
     } catch (err) {
       console.error(err);
@@ -60,15 +60,17 @@ export default function SysDiagPage() {
     searchProduct(inputValue);
   };
 
-  // จำลองการสแกนผ่านกล้อง
-  const handleSimulateScan = () => {
-    searchProduct("SAMPLE-BARCODE"); // สมมติว่ากล้องอ่านค่านี้ได้
+  // ฟังก์ชันรับค่าจากกล้อง
+  const handleRealScan = (detectedCodes: any[]) => {
+    if (detectedCodes && detectedCodes.length > 0) {
+      const code = detectedCodes[0].rawValue; 
+      searchProduct(code);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center pt-10 px-4 font-sans pb-20">
       
-      {/* 🌟 CSS Hack: ซ่อน Navbar และสร้าง Animation ต่างๆ (รวมไฟวิ่ง) */}
       <style dangerouslySetInnerHTML={{ __html: `
         nav, header, .navbar { display: none !important; }
         
@@ -80,11 +82,8 @@ export default function SysDiagPage() {
           animation: fade-in 0.4s ease-out forwards;
         }
 
-        /* Animation สำหรับไฟวิ่ง */
         @keyframes border-beam {
-          100% {
-            offset-distance: 100%;
-          }
+          100% { offset-distance: 100%; }
         }
       `}} />
 
@@ -93,14 +92,12 @@ export default function SysDiagPage() {
         onSubmit={handleManualSubmit} 
         className="w-full max-w-2xl bg-white border border-gray-200 rounded-2xl p-2 flex items-center shadow-lg sticky top-6 z-30"
       >
-        {/* ไอคอนบาร์โค้ดด้านซ้าย */}
         <div className="pl-3 pr-2 text-gray-400">
           <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h2m-2 4h2m-2 4h2m-2 4h2m4-12h2m-2 4h2m-2 4h2m-2 4h2m4-12h2m-2 4h2m-2 4h2m-2 4h2M4 4v16m16-16v16" />
           </svg>
         </div>
         
-        {/* ช่องพิมพ์ */}
         <input 
           type="text" 
           value={inputValue}
@@ -110,7 +107,6 @@ export default function SysDiagPage() {
           autoFocus
         />
 
-        {/* ปุ่มเปิดกล้องด้านขวา */}
         <button 
           type="button"
           onClick={() => setIsScannerOpen(true)}
@@ -127,28 +123,21 @@ export default function SysDiagPage() {
       {loading && <p className="mt-6 text-blue-600 font-medium animate-pulse">กำลังค้นหาข้อมูลสินค้า...</p>}
       {error && <div className="mt-6 p-4 bg-red-50 text-red-700 font-bold rounded-2xl border border-red-200 animate-fade-in">{error}</div>}
 
-      {/* --- 🌟 โซนที่ 2: แสดงผลลัพธ์ (พร้อมไฟวิ่งและข้อมูลสต็อก) --- */}
+      {/* --- โซนที่ 2: แสดงผลลัพธ์ --- */}
       {productData && !loading && (
         <div className="w-full max-w-2xl mt-8 animate-fade-in relative p-[2px] overflow-hidden rounded-3xl">
           
-          {/* 🌟 ส่วนประกอบของไฟวิ่งสีน้ำเงิน */}
           <div className="absolute inset-0 z-0">
             <div style={{
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)', // สีน้ำเงิน
-              borderRadius: '1.5rem',
-              offsetPath: 'rect(0% 100% 100% 0% round 1.5rem)',
-              animation: 'border-beam 3s infinite linear',
-              visibility: 'visible',
+              position: 'absolute', width: '100%', height: '100%',
+              background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+              borderRadius: '1.5rem', offsetPath: 'rect(0% 100% 100% 0% round 1.5rem)',
+              animation: 'border-beam 3s infinite linear', visibility: 'visible',
             }} />
           </div>
 
-          {/* เนื้อหา Card หลัก (ต้องอยู่เหนือไฟวิ่ง) */}
           <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
             
-            {/* รูปสินค้า */}
             <div className="w-48 h-48 flex-shrink-0 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-inner flex items-center justify-center">
               {productData.image_url ? (
                 <img src={productData.image_url} alt={productData.name} className="w-full h-full object-cover" />
@@ -160,7 +149,6 @@ export default function SysDiagPage() {
               )}
             </div>
 
-            {/* ข้อมูลสินค้าและสต็อก */}
             <div className="flex-1 w-full text-center md:text-left">
               <p className="text-gray-400 text-xs font-mono mb-1 tracking-widest uppercase">BARCODE: {productData.barcode}</p>
               <h2 className="text-[#1B253A] text-3xl font-extrabold mb-2 leading-tight">{productData.name}</h2>
@@ -171,14 +159,12 @@ export default function SysDiagPage() {
                   ฿ {productData.price ? productData.price.toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
                 </p>
                 
-                {/* 🌟 แสดงสต็อกรวมทุกสาขา */}
                 <div className="bg-gray-100 px-4 py-2 rounded-full text-sm font-bold text-gray-700 inline-flex items-center gap-2">
                     <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
                     สต็อกรวม: {productData.stock ? productData.stock.reduce((sum: number, s: any) => sum + (s.qty || 0), 0).toLocaleString() : 0} ชิ้น
                 </div>
               </div>
 
-              {/* 🌟 ตารางแสดงสต็อกแยกตามสาขา */}
               <div className="w-full bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
                   <div className="px-5 py-3 border-b border-gray-100 bg-gray-100/50">
                       <h4 className="text-[#1B253A] font-bold text-sm tracking-wide uppercase flex items-center gap-2">
@@ -201,7 +187,6 @@ export default function SysDiagPage() {
                     )}
                   </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -212,7 +197,6 @@ export default function SysDiagPage() {
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl">
             
-            {/* Header Popup */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div className="flex items-center gap-2.5 text-[#1B253A] font-bold text-lg">
                 <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -223,42 +207,35 @@ export default function SysDiagPage() {
               </button>
             </div>
 
-            {/* พื้นที่กล้อง (พื้นดำ + กรอบสีฟ้า + เส้นสแกนวิ่ง) */}
+            {/* พื้นที่แสดงกล้อง */}
             <div className="w-full h-[400px] bg-black relative flex items-center justify-center overflow-hidden">
+              <Scanner 
+                onScan={handleRealScan} 
+                formats={['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']}
+                components={{
+                    // 🌟 ลบบรรทัด audio: false ออกไปแล้วครับนาย Build ผ่านแน่นอนครับ
+                    finder: false, 
+                }}
+                styles={{
+                    container: { width: '100%', height: '100%' },
+                }}
+              />
               
-              {/* กรอบเล็งบาร์โค้ดสีฟ้า */}
-              <div className="w-3/4 h-32 border-2 border-blue-500 rounded-lg relative z-10 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                 <div className="w-3/4 h-32 border-2 border-blue-500 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+              </div>
               
-              {/* เส้นสแกนแนวนอนวิ่งขึ้นลง */}
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                width: '100%',
-                height: '2px',
-                background: '#3b82f6',
-                boxShadow: '0 0 10px 2px rgba(59,130,246,0.7)',
-                zIndex: 10,
-                animation: 'scan-line 2.5s ease-in-out infinite'
+              <div className="pointer-events-none" style={{
+                position: 'absolute', left: 0, width: '100%', height: '2px', background: '#3b82f6',
+                boxShadow: '0 0 10px 2px rgba(59,130,246,0.7)', zIndex: 10, animation: 'scan-line 2.5s ease-in-out infinite'
               }}></div>
               <style dangerouslySetInnerHTML={{ __html: `
                 @keyframes scan-line {
-                  0% { top: 20%; }
-                  50% { top: 80%; }
-                  100% { top: 20%; }
+                  0% { top: 20%; } 50% { top: 80%; } 100% { top: 20%; }
                 }
               `}} />
-
-              {/* ปุ่มซ่อนไว้จำลองการสแกน (กดที่พื้นดำเพื่อเทสได้เลย) */}
-              <button 
-                onClick={handleSimulateScan}
-                className="absolute inset-0 w-full h-full z-20 opacity-0 cursor-pointer"
-                title="คลิกเพื่อจำลองว่าสแกนติดแล้ว"
-              ></button>
-              
-              <p className="absolute bottom-4 text-gray-600 text-xs font-mono tracking-widest z-0">..|| ACTIVE SCANNING ||..</p>
             </div>
 
-            {/* Footer Popup */}
             <div className="p-5 text-center bg-gray-50 text-[#1B253A] font-semibold border-t border-gray-100">
               หันกล้องไปที่บาร์โค้ดของสินค้าให้ตรงกรอบ
             </div>
