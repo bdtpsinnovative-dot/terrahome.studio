@@ -2,7 +2,8 @@ import Link from "next/link"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import Navbar from "../components/Navbar"
-import PropBanner from "./PropBanner" 
+import PropBanner from "./PropBanner"
+import Footer from "../components/Footer"
 
 export const revalidate = 0
 
@@ -84,9 +85,9 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     .eq("active", true)
 
   const now = new Date()
-  
+
   // กรอง Collection ที่มีสินค้าอยู่จริงๆ เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
-  const activeCollections = collections?.filter(collection => 
+  const activeCollections = collections?.filter(collection =>
     collection.products && collection.products.length > 0
   ) || []
 
@@ -115,7 +116,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-      
+
       {/* 1. จัดตำแหน่ง Navbar (ส่ง bannerGroups เข้าไปแทน เพื่อให้เมนู Dropdown อยู่ครบถ้วนเสมอ!) */}
       <div className="relative z-50">
         <Navbar collections={bannerGroups || []} isLightMode={!hasBanner} />
@@ -124,8 +125,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       {/* 2. ตัวแบนเนอร์ด้านบน */}
       {hasBanner && (
         <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
-          <PropBanner 
-            allImages={allBannerImages} 
+          <PropBanner
+            allImages={allBannerImages}
             activeImage={activeBannerImage}
             categoryName={categoryParam || "All"}
           />
@@ -136,6 +137,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       <div className="relative z-30 max-w-[1600px] mx-auto w-full px-4 lg:py-16 pt-0 pb-24">
         <PropFilterClient collections={mappedCollections} branches={branches || []} />
       </div>
+      <Footer />
     </div>
+
   )
 }

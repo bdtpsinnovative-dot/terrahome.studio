@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Footer from '../components/Footer';
 // import Footer from '../components/Footer'; // อย่าลืม uncomment ตาม path จริงนะครับ
 
 const designers = [
@@ -93,14 +94,14 @@ export default function AboutPage() {
 
       {/* ================= 1. HERO SECTION (100vh Fullscreen) ================= */}
       <section className="relative w-full h-screen bg-[#FAF8F5]">
-        
+
         {/* Parallax Background */}
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <img
-            src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904145195-374.webp?auto=format&fit=crop&w=1800&q=120"    
+            src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904145195-374.webp?auto=format&fit=crop&w=1800&q=120"
             alt="Minimal architecture exterior"
             className="w-full h-full object-cover object-center transform scale-105"
-            style={{ 
+            style={{
               transform: `translateY(${scrollY * 0.2}px) scale(1.05)`,
               transition: 'transform 0.1s ease-out'
             }}
@@ -110,34 +111,34 @@ export default function AboutPage() {
         </div>
 
         {/* Sculptural Vase at Bottom-Right */}
-<div className="absolute w-full h-full max-w-[1300px] mx-auto left-0 right-0 pointer-events-none">
-  <div 
-    className={`absolute right-[5%] lg:right-[10%] z-20 w-[55vw] sm:w-[320px] lg:w-[420px] pointer-events-auto
+        <div className="absolute w-full h-full max-w-[1300px] mx-auto left-0 right-0 pointer-events-none">
+          <div
+            className={`absolute right-[5%] lg:right-[10%] z-20 w-[55vw] sm:w-[320px] lg:w-[420px] pointer-events-auto
       transition-all duration-[1200ms] ease-[cubic-bezier(0.25,1,0.5,1)]
-      ${hasScrolledDown 
-        ? '-bottom-50 lg:-bottom-99 translate-y-0' // 🌟 จุดที่ 1: เพิ่มค่าติดลบให้มากขึ้น (จากเดิม -bottom-40 กับ -bottom-64) เพื่อกดรูปให้ต่ำลงมา
-        : 'opacity-0 bottom-[-200px] translate-y-24 pointer-events-none'
-      }
+      ${hasScrolledDown
+                ? '-bottom-50 lg:-bottom-99 translate-y-0' // 🌟 จุดที่ 1: เพิ่มค่าติดลบให้มากขึ้น (จากเดิม -bottom-40 กับ -bottom-64) เพื่อกดรูปให้ต่ำลงมา
+                : 'opacity-0 bottom-[-200px] translate-y-24 pointer-events-none'
+              }
     `}
-    style={hasScrolledDown ? { 
-      transform: `translateY(${-scrollY * 0.04}px)` // 🌟 จุดที่ 2: ลดตัวคูณ Parallax ลง (จากเดิม 0.08 ให้เหลือ 0.04 หรือ 0.03) รูปจะได้ไม่ลอยพุ่งขึ้นมาเร็วเกินไปครับ
-    } : undefined}
-  >
-    <img
-      src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904603569-581.webp?auto=format&fit=crop&w=800&q=80"
-      alt="Sculptural still life"
-      className="w-full object-cover aspect-square shadow-[0_30px_60px_rgba(0,0,0,0.15)] rounded-sm"
-    />
-  </div>
-</div>
+            style={hasScrolledDown ? {
+              transform: `translateY(${-scrollY * 0.04}px)` // 🌟 จุดที่ 2: ลดตัวคูณ Parallax ลง (จากเดิม 0.08 ให้เหลือ 0.04 หรือ 0.03) รูปจะได้ไม่ลอยพุ่งขึ้นมาเร็วเกินไปครับ
+            } : undefined}
+          >
+            <img
+              src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904603569-581.webp?auto=format&fit=crop&w=800&q=80"
+              alt="Sculptural still life"
+              className="w-full object-cover aspect-square shadow-[0_30px_60px_rgba(0,0,0,0.15)] rounded-sm"
+            />
+          </div>
+        </div>
       </section>
 
       {/* ================= MAIN CONTENT AREA ================= */}
       <main className="mx-auto max-w-[1200px] px-6 pt-40 lg:pt-56 pb-24 sm:px-12 flex flex-col gap-32 relative z-10">
-        
+
         {/* === 1. ABOUT US INTRO === */}
-        <section 
-          data-reveal="1" 
+        <section
+          data-reveal="1"
           className={`reveal-anim grid gap-8 lg:grid-cols-2 lg:items-start ${isVisible(1) ? 'is-visible' : ''}`}
         >
           <div className="order-2 lg:order-1 pt-2 lg:pr-12">
@@ -151,8 +152,8 @@ export default function AboutPage() {
         </section>
 
         {/* === 2. FOUNDED STORY === */}
-        <section 
-          data-reveal="2" 
+        <section
+          data-reveal="2"
           className={`reveal-anim grid gap-12 lg:grid-cols-2 lg:items-center ${isVisible(2) ? 'is-visible' : ''}`}
         >
           <div className="flex justify-start overflow-hidden">
@@ -170,8 +171,8 @@ export default function AboutPage() {
         </section>
 
         {/* === 3. DESIGNERS SECTION === */}
-        <section 
-          data-reveal="3" 
+        <section
+          data-reveal="3"
           className={`flex flex-col w-full`}
         >
           {/* Section Header (Reveal independently) */}
@@ -183,12 +184,12 @@ export default function AboutPage() {
               Every piece is thoughtfully designed and meticulously crafted to bring warmth, beauty, and meaning to everyday living.
             </p>
           </div>
-          
+
           {/* Designers Grid with Staggered Animation */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8 w-full">
             {designers.map((designer, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`flex flex-col items-center group cursor-pointer reveal-anim ${isVisible(3) ? 'is-visible' : ''}`}
                 style={{ transitionDelay: `${index * 150}ms` }} // หน่วงเวลาให้โผล่มาทีละคน
               >
@@ -209,8 +210,8 @@ export default function AboutPage() {
         </section>
 
         {/* === 4. PHILOSOPHY SECTION === */}
-        <section 
-          data-reveal="4" 
+        <section
+          data-reveal="4"
           className={`reveal-anim grid gap-12 lg:grid-cols-2 lg:items-start ${isVisible(4) ? 'is-visible' : ''}`}
         >
           <div className="flex justify-start overflow-hidden order-1 lg:order-1">
@@ -236,6 +237,7 @@ export default function AboutPage() {
       </main>
 
       {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
