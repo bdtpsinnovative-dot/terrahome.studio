@@ -3,13 +3,13 @@
 import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { createClient } from '@/src/supabase/client'; 
+import { createClient } from '@/src/supabase/client';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,7 +20,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
@@ -43,9 +43,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const handleSignOut = async () => {
     setIsLoading(true);
     await supabase.auth.signOut();
-    setIsProfileOpen(false); 
-    setIsMobileMenuOpen(false); 
-    router.refresh(); 
+    setIsProfileOpen(false);
+    setIsMobileMenuOpen(false);
+    router.refresh();
     setIsLoading(false);
   };
 
@@ -58,9 +58,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
       const triggerHeight = pathname.startsWith('/prop') ? window.innerHeight * 0.45 : 20;
       setIsScrolled(window.scrollY > triggerHeight);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); 
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
@@ -85,21 +85,21 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   }, [isMobileMenuOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    setIsMobileMenuOpen(false); 
+    setIsMobileMenuOpen(false);
     const currentHref = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
     if (currentHref === href) return;
 
     e.preventDefault();
-    setIsLoading(true); 
+    setIsLoading(true);
     startTransition(() => {
       router.push(href);
     });
   };
-  
+
   const toggleGroup = (e: React.MouseEvent, groupLabel: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setExpandedGroups(prev => 
+    setExpandedGroups(prev =>
       prev.includes(groupLabel) ? prev.filter(g => g !== groupLabel) : [...prev, groupLabel]
     );
   };
@@ -125,7 +125,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     rawCategories.forEach(cat => {
       const lowerCat = cat.toLowerCase();
 
-      if (cat === "Candle Holder" || cat.startsWith("Decorative") || cat.startsWith("Decotative")) {
+      if ((cat.startsWith("Decorative") || cat.startsWith("Decotative")) && !cat.toLowerCase().includes("candle holder")) {
         let display = cat;
         if (cat.startsWith("Decorative ")) display = cat.replace("Decorative ", "");
         else if (cat.startsWith("Decotative ")) display = cat.replace("Decotative ", "");
@@ -140,7 +140,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
       else if (lowerCat.startsWith("vase")) {
         let display = cat;
         if (lowerCat.startsWith("vase ")) {
-          display = cat.replace(/^Vase\s+/i, ""); 
+          display = cat.replace(/^Vase\s+/i, "");
         }
         vaseItems.push({ fullValue: cat, displayLabel: display });
       }
@@ -156,7 +156,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     if (decorativeItems.length > 0) groups.push({ label: "Decorative", isGroup: true, items: decorativeItems });
     if (dollItems.length > 0) groups.push({ label: "Doll", isGroup: true, items: dollItems });
     if (wallArtItems.length > 0) groups.push({ label: "Wall Art", isGroup: true, items: wallArtItems });
-    if (vaseItems.length > 0) groups.push({ label: "Vase", isGroup: true, items: vaseItems }); 
+    if (vaseItems.length > 0) groups.push({ label: "Vase", isGroup: true, items: vaseItems });
 
     const allGroup = groups.shift();
     groups.sort((a, b) => a.label.localeCompare(b.label));
@@ -177,30 +177,30 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   const activeLightMode = !isDarkBannerPage || isLightMode;
 
-  const textColor = isScrolled 
-    ? 'text-[#84492C]' 
+  const textColor = isScrolled
+    ? 'text-[#84492C]'
     : (activeLightMode ? 'text-[#3A3835]' : 'text-white');
 
-  const textHoverColor = isScrolled 
-    ? 'hover:text-[#3A3835]' 
+  const textHoverColor = isScrolled
+    ? 'hover:text-[#3A3835]'
     : (activeLightMode ? 'hover:text-[#84492C]' : 'hover:text-white');
 
-  const textMutedColor = isScrolled 
-    ? 'text-[#84492C]/70' 
+  const textMutedColor = isScrolled
+    ? 'text-[#84492C]/70'
     : (activeLightMode ? 'text-[#8C8A86]' : 'text-white/80');
 
-  const borderColor = isScrolled 
-    ? 'border-[#84492C]' 
+  const borderColor = isScrolled
+    ? 'border-[#84492C]'
     : (activeLightMode ? 'border-[#3A3835]' : 'border-white');
-  
-  const hamburgerLineColor = isScrolled 
-    ? 'bg-[#84492C]' 
+
+  const hamburgerLineColor = isScrolled
+    ? 'bg-[#84492C]'
     : (activeLightMode ? 'bg-[#3A3835]' : 'bg-white');
-  
-  const logoPath = '/logo.png'; 
-  
-  const logoFilter = (isScrolled || isMobileMenuOpen) 
-    ? '' 
+
+  const logoPath = '/logo.png';
+
+  const logoFilter = (isScrolled || isMobileMenuOpen)
+    ? ''
     : (activeLightMode ? 'brightness-0 contrast-200' : '');
 
   const dropDownBg = "bg-[#F4EBE6]/60 backdrop-blur-2xl border border-[#84492C]/10 shadow-[0_20px_50px_rgba(132,73,44,0.1)]";
@@ -212,21 +212,20 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const innerPlusColor = 'text-[#8C8A86]';
   const innerSubBorderColor = 'border-[#3A3835]/10';
 
-  const navContainerClass = `fixed top-0 transition-all duration-500 ${
-    isScrolled || isMobileMenuOpen
-      ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]' 
-      : 'bg-transparent' 
-  }`;
+  const navContainerClass = `fixed top-0 transition-all duration-500 ${isScrolled || isMobileMenuOpen
+      ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
+      : 'bg-transparent'
+    }`;
 
   const createCategoryUrl = (categoryValue: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (categoryValue === 'All') {
-      params.delete('category'); 
+      params.delete('category');
     } else {
       params.set('category', categoryValue);
     }
-    params.delete('page'); 
-    
+    params.delete('page');
+
     const query = params.toString();
     return `/prop${query ? `?${query}` : ''}`;
   };
@@ -248,72 +247,165 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
         </div>
       )}
 
-   {/* 🌟 หน้าต่าง Mobile Overlay Menu (ปรับโฉมใหม่ให้พรีเมียมเข้ากับ Navbar) */}
-      <div 
-        className={`fixed inset-0 z-[40] bg-[#F4EBE6]/90 backdrop-blur-xl flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] lg:hidden ${
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-        }`}
+      {/* ─── Mobile Overlay Menu — Reference Match ─────────────────────── */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @keyframes mobileMenuReveal {
+          from { opacity: 0; transform: translateX(-18px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .mob-nav-item {
+          opacity: 0;
+          animation: mobileMenuReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .mob-nav-item:nth-child(1) { animation-delay: 0.08s; }
+        .mob-nav-item:nth-child(2) { animation-delay: 0.16s; }
+        .mob-nav-item:nth-child(3) { animation-delay: 0.24s; }
+        .mob-nav-item:nth-child(4) { animation-delay: 0.32s; }
+        .mob-util-item {
+          opacity: 0;
+          animation: mobileMenuReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .mob-util-item:nth-child(1) { animation-delay: 0.42s; }
+        .mob-util-item:nth-child(2) { animation-delay: 0.50s; }
+        .mob-util-item:nth-child(3) { animation-delay: 0.58s; }
+        .mob-nav-row { transition: color 0.25s ease; }
+        .mob-nav-row:hover .mob-nav-label { color: #B8834A; }
+        .mob-nav-row:hover .mob-nav-num   { color: #B8834A; }
+        .mob-nav-row:hover .mob-nav-icon  { color: #B8834A; }
+      `}} />
+
+      <div
+        className={`fixed inset-0 z-[40] lg:hidden transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+          }`}
       >
-        {/* กรอบด้านในสไตล์ Wabi-sabi / Gallery */}
-        <div className={`w-[85%] h-[85%] border border-[#84492C]/15 flex flex-col items-center justify-center relative transition-all duration-[800ms] delay-100 ${
-          isMobileMenuOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}>
-          
-          <div className="flex flex-col items-center space-y-8 md:space-y-10 text-[22px] md:text-3xl tracking-[0.25em] text-[#3A3835] uppercase font-light w-full">
-            <Link href="/about" onClick={(e) => handleNavClick(e, '/about')} className="hover:text-[#84492C] hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-              About
+        {/* ─── BACKDROP (Full Screen Dim) ─── */}
+        <button
+          className="absolute inset-0 w-full h-full bg-black/40 backdrop-blur-sm cursor-default"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Close menu"
+          tabIndex={-1}
+        />
+
+        {/* ─── LEFT PANEL (Drawer) ─── */}
+        <div
+          className={`relative flex flex-col w-[85%] sm:w-[60%] max-w-[400px] h-full bg-[#EFE9E1] shadow-2xl transition-transform duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          style={{ transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }}
+        >
+          {/* ── Header: Logo + Close ── */}
+          <div className="flex items-start justify-between px-6 pt-7 pb-2">
+            {/* Logo text */}
+            <Link href="/" title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="flex flex-col leading-none select-none">
+              <span className="font-serif text-[#3A3835] text-[22px] tracking-[0.12em] font-medium">TERRA</span>
+              <span className="text-[7.5px] uppercase tracking-[0.28em] text-[#8C8A86] font-light -mt-0.5">HOME STUDIO</span>
             </Link>
-            <Link href={homeDecorMainUrl} onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className="hover:text-[#84492C] hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-              Home Decor
-            </Link>
-            <Link href="/journal" onClick={(e) => handleNavClick(e, '/journal')} className="hover:text-[#84492C] hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-              Art & Gallery
-            </Link>
-            <Link href="/contact" onClick={(e) => handleNavClick(e, '/contact')} className="hover:text-[#84492C] hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-              Contact
-            </Link>
-            
-            {/* โซน User / Login */}
-            <div className="mt-8 pt-8 flex flex-col items-center space-y-6 border-t border-[#84492C]/20 w-[60%]">
-              {user ? (
-                <>
-                  <Link href="/cart" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-[16px] lowercase italic font-serif text-[#8C8A86] hover:text-[#84492C] transition-colors">
-                    cart
-                  </Link>
-                  <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-[16px] lowercase italic font-serif text-[#8C8A86] hover:text-[#84492C] transition-colors">
-                    profile
-                  </Link>
-                  <button onClick={handleSignOut} className="flex items-center gap-3 text-[16px] lowercase italic font-serif text-[#b85b5b] hover:text-red-700 transition-colors mt-2">
-                    sign out
-                  </button>
-                </>
-              ) : (
-                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-[15px] lowercase italic font-serif text-[#8C8A86] hover:text-[#84492C] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" />
-                  </svg>
-                  login / register
-                </Link>
-              )}
-            </div>
+
+            {/* × Close */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              aria-label="Close menu"
+              className="text-[#3A3835] hover:text-[#B8834A] transition-colors duration-300 p-1 -mr-1 -mt-0.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
+          {/* ── Nav Links & Utilities (Vertically Centered) ── */}
+          {isMobileMenuOpen && (
+            <div className="flex-grow flex flex-col justify-center pb-16">
+              <nav className="flex flex-col px-5">
+              {[
+                { num: '01', label: 'HOME DECOR', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop') },
+                { num: '02', label: 'ART & GALLERY', href: '/journal', url: '/journal', active: isActive('/journal') },
+                { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
+                { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
+              ].map(({ num, label, href, url, active }) => (
+                <div key={num} className="mob-nav-item">
+                  <Link
+                    href={href}
+                    title={label}
+                    onClick={(e) => handleNavClick(e, url)}
+                    className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
+                  >
+                    <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
+                      {num}
+                    </span>
+                    <span
+                      className={`mob-nav-label font-serif leading-tight transition-colors ${active ? 'text-[#B8834A] font-semibold' : 'text-[#3A3835] font-normal group-hover:text-[#B8834A]'}`}
+                      style={{ fontSize: 'clamp(26px, 6vw, 34px)' }}
+                    >
+                      {label}
+                    </span>
+                  </Link>
+                </div>
+              ))}
+              </nav>
+              
+              {/* ── Utility Section: cart / profile / sign out ── */}
+              <div className="absolute bottom-8 left-0 right-0 px-8">
+                <div className="flex items-center justify-between border-t border-[#C4B5A5]/40 pt-5">
+                {user ? (
+                  <>
+                    <Link href="/cart" title="Shopping Cart" onClick={() => setIsMobileMenuOpen(false)}
+                      className="mob-util-item flex flex-col items-center gap-2 group"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
+                      </svg>
+                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">cart</span>
+                    </Link>
+
+                    <Link href="/profile" title="My Profile" onClick={() => setIsMobileMenuOpen(false)}
+                      className="mob-util-item flex flex-col items-center gap-2 group"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                      </svg>
+                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">profile</span>
+                    </Link>
+
+                    <button onClick={handleSignOut}
+                      className="mob-util-item flex flex-col items-center gap-2 group"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#C0614A] flex-shrink-0 group-hover:text-red-600 transition-colors">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                      </svg>
+                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#C0614A] group-hover:text-red-600 transition-colors">sign out</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link href="/login" title="Login or Register" onClick={() => setIsMobileMenuOpen(false)}
+                    className="mob-util-item flex items-center justify-center gap-3 w-full group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" />
+                    </svg>
+                    <span className="font-sans uppercase text-[10px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">Login / Register</span>
+                  </Link>
+                )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 🛠️ ปรับ Flex Layout ใหม่ ถ่วงน้ำหนักซ้าย-ขวา ป้องกันการชนกัน 100% */}
       <nav className={`left-0 right-0 z-50 px-6 md:px-8 xl:px-12 py-3 md:py-4 flex justify-between items-center w-full h-20 md:h-24 transition-all duration-300 ${navContainerClass}`}>
-        
+
         {/* ---------------- 1. ฝั่งซ้าย (basis-0 min-w-0 คือเคล็ดลับกันจอแตก) ---------------- */}
-       <div className="hidden lg:flex flex-1 basis-0 min-w-0 items-center justify-start">
-  {/* 🌟 เติม whitespace-nowrap เข้าไปที่บรรทัดด้านล่างนี้ครับ */}
-  <div className={`hidden lg:flex items-center space-x-4 lg:space-x-5 xl:space-x-10 whitespace-nowrap text-[9.5px] xl:text-[11px] tracking-[0.15em] xl:tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
-            <Link href="/about" onClick={(e) => handleNavClick(e, '/about')} className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+        <div className="hidden lg:flex flex-1 basis-0 min-w-0 items-center justify-start">
+          {/* 🌟 เติม whitespace-nowrap เข้าไปที่บรรทัดด้านล่างนี้ครับ */}
+          <div className={`hidden lg:flex items-center space-x-4 lg:space-x-5 xl:space-x-10 whitespace-nowrap text-[9.5px] xl:text-[11px] tracking-[0.15em] xl:tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
+            <Link href="/about" title="About Us" onClick={(e) => handleNavClick(e, '/about')} className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               About
             </Link>
 
             <div className="relative group h-full flex items-center">
-              <Link href={homeDecorMainUrl} onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href={homeDecorMainUrl} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 HOME DECOR
               </Link>
               <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
@@ -325,9 +417,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                     {structuredCategories.map((group, idx) => {
                       if (group.isSpecial) {
                         const item = group.items[0];
-                        const targetUrl = createCategoryUrl(item.fullValue); 
+                        const targetUrl = createCategoryUrl(item.fullValue);
                         return (
-                          <Link key={item.fullValue} href={targetUrl} onClick={(e) => handleNavClick(e, targetUrl)} className={`w-full mt-2 pt-5 border-t ${innerTitleColor} flex items-center group/item`}>
+                          <Link key={item.fullValue} href={targetUrl} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className={`w-full mt-2 pt-5 border-t ${innerTitleColor} flex items-center group/item`}>
                             <span className="text-[10px] uppercase tracking-[0.2em] font-bold flex items-center gap-2 transition-colors duration-300 text-[#C25B4E] hover:text-[#9e463a]">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                                 <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5z" clipRule="evenodd" />
@@ -340,9 +432,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                       if (!group.isGroup) {
                         const item = group.items[0];
                         const isItemActive = (item.fullValue === 'All' && !currentCategory) || (currentCategory === item.fullValue);
-                        const targetUrl = createCategoryUrl(item.fullValue); 
+                        const targetUrl = createCategoryUrl(item.fullValue);
                         return (
-                          <Link key={item.fullValue} href={targetUrl} onClick={(e) => handleNavClick(e, targetUrl)} className="relative flex items-center w-full pl-5 group/item">
+                          <Link key={item.fullValue} href={targetUrl} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className="relative flex items-center w-full pl-5 group/item">
                             <span className={`absolute left-0 w-1.5 h-1.5 rounded-full ${innerDotBg} transition-all duration-300 ${isItemActive ? 'opacity-100 scale-100' : 'opacity-0 scale-50 group-hover/item:opacity-50 group-hover/item:scale-100'}`} />
                             <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isItemActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
                               {item.displayLabel}
@@ -366,9 +458,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                             <div className={`flex flex-col gap-4 pl-3 ml-0.5 border-l ${innerSubBorderColor}`}>
                               {group.items.map(item => {
                                 const isSubActive = currentCategory === item.fullValue;
-                                const subTargetUrl = createCategoryUrl(item.fullValue); 
+                                const subTargetUrl = createCategoryUrl(item.fullValue);
                                 return (
-                                  <Link key={item.fullValue} href={subTargetUrl} onClick={(e) => handleNavClick(e, subTargetUrl)} className={`text-[9.5px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
+                                  <Link key={item.fullValue} href={subTargetUrl} title={item.displayLabel} onClick={(e) => handleNavClick(e, subTargetUrl)} className={`text-[9.5px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
                                     {item.displayLabel}
                                   </Link>
                                 );
@@ -383,10 +475,10 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
               </div>
             </div>
 
-            <Link href="/journal" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+            <Link href="/journal" title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Art & Gallery
             </Link>
-            <Link href="/contact" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+            <Link href="/contact" title="Contact Us" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Contact
             </Link>
           </div>
@@ -394,10 +486,11 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
         {/* ---------------- 2. ตรงกลาง (โลโก้) ---------------- */}
         <div className="flex-shrink-0 flex items-center justify-center select-none z-10 px-2 lg:px-4">
-          <Link href="/" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="block transition-transform duration-300 hover:scale-105">
-            <img 
-              src={logoPath} 
-              alt="Terra Home Studio Logo" 
+          <Link href="/" title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="block transition-transform duration-300 hover:scale-105">
+            <img
+              src={logoPath}
+              alt="Terra Home Studio Logo"
+              title="Terra Home Studio Logo"
               className={`w-auto h-7 sm:h-8 md:h-10 lg:h-11 object-contain transition-all duration-500 ${logoFilter}`}
             />
           </Link>
@@ -405,27 +498,28 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
         {/* ---------------- 3. ฝั่งขวา ---------------- */}
         <div className={`flex-1 basis-0 min-w-0 flex items-center justify-end ${isMobileMenuOpen ? 'text-[#3A3835]' : textColor}`}>
-          
+
           {/* 🌟 โซนจอคอม (Desktop) จะซ่อนปุ่ม 3 ขีด โชว์แค่ User/Cart */}
           <div className="hidden lg:flex items-center space-x-4 lg:space-x-6">
             {user ? (
               <>
-                <Link href="/cart" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center relative" aria-label="Cart">
+                <Link href="/cart" title="Shopping Cart" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center relative" aria-label="Cart">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-[20px] md:h-[20px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                   </svg>
                   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#84492C] rounded-full"></span>
                 </Link>
-                
+
                 <div className="relative profile-dropdown-container">
-                  <button 
-                    onClick={() => setIsProfileOpen(!isProfileOpen)} 
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className={`hover:opacity-80 transition duration-300 flex items-center justify-center pl-1 rounded-full ${isProfileOpen ? 'ring-2 ring-[#84492C]/30' : ''}`}
                   >
                     {user.user_metadata?.avatar_url ? (
-                      <img 
-                        src={user.user_metadata.avatar_url} 
-                        alt="Profile" 
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        alt="Profile"
+                        title="Profile"
                         className={`w-6 h-6 md:w-7 md:h-7 rounded-full object-cover border ${borderColor}`}
                       />
                     ) : (
@@ -443,9 +537,10 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                         <p className="text-[9px] uppercase tracking-wider text-[#6B645E] truncate">Signed in as</p>
                         <p className="text-[11px] font-medium text-[#3A3835] truncate mt-0.5">{user.email}</p>
                       </div>
-                      
-                      <Link 
-                        href="/profile" 
+
+                      <Link
+                        href="/profile"
+                        title="My Profile"
                         onClick={() => setIsProfileOpen(false)}
                         className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-[#3A3835] hover:bg-white/40 transition-colors flex items-center gap-2"
                       >
@@ -455,7 +550,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                         My Profile
                       </Link>
 
-                      <button 
+                      <button
                         onClick={handleSignOut}
                         className="w-full text-left px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-red-700/80 hover:text-red-700 hover:bg-red-50/50 transition-colors flex items-center gap-2"
                       >
@@ -469,18 +564,18 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                 </div>
               </>
             ) : (
-              <Link href="/login" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center" aria-label="Login">
+              <Link href="/login" title="Login" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center" aria-label="Login">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-[20px] md:h-[20px]">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
               </Link>
             )}
-          </div> 
+          </div>
 
           {/* เติม <button ตรงนี้ครับ */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]" 
+            className="lg:hidden hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]"
             aria-label="Menu"
           >
             <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] rotate-45 translate-y-[7.5px]' : hamburgerLineColor}`}></span>
@@ -492,5 +587,5 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
       </nav>
     </>
-  ); 
+  );
 }

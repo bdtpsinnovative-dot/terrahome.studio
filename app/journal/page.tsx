@@ -85,6 +85,7 @@ export default function JournalPage() {
                 <img
                   src={post.image}
                   alt={post.title}
+                  title={post.title}
                   className="object-cover w-full h-full transform scale-100 group-hover:scale-105 transition-transform duration-700 ease-out grayscale-[20%] group-hover:grayscale-0"
                   loading="lazy"
                 />

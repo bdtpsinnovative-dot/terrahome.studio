@@ -198,6 +198,7 @@ export default function ProductDetailClient({
               <img 
                 src={activeProduct.image_url} 
                 alt={activeProduct.name} 
+                title={activeProduct.name} 
                 key={activeProduct.id}
                 className="w-full h-full absolute inset-0 object-contain p-10 lg:p-16 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
               />
@@ -299,6 +300,7 @@ export default function ProductDetailClient({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()} 
+                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
                             className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
                           >
                             <Navigation className="w-3.5 h-3.5" />
@@ -366,6 +368,7 @@ export default function ProductDetailClient({
                           src={item.image_url} 
                           className={`w-full h-full object-contain p-4 mix-blend-multiply transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`} 
                           alt={item.name} 
+                          title={item.name} 
                         />
                       ) : (
                         <span className="text-[8px] text-[#8C8A86] uppercase tracking-[0.2em]">No Img</span>

@@ -134,7 +134,8 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
           <img
             key={idx}
             src={slide.src}
-            alt={`Terra Home Hero ${idx + 1}`}
+            alt={slide.title ? `Terra Home Studio - ${slide.title}` : `Terra Home Studio Hero Image ${idx + 1}`}
+            title={slide.title ? `Terra Home Studio - ${slide.title}` : `Terra Home Studio Hero Image ${idx + 1}`}
             // 🌟 เพิ่ม 2 บรรทัดนี้ครับ
             fetchPriority={idx === 0 ? "high" : "auto"} 
             loading={idx === 0 ? "eager" : "lazy"}
@@ -224,13 +225,16 @@ export function BrandIntroduction() {
         @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(35px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-smooth-reveal { animation: smoothReveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-150 { animation-delay: 0.15s; } .delay-300 { animation-delay: 0.3s; } .delay-450 { animation-delay: 0.45s; } .delay-600 { animation-delay: 0.6s; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
       {/* ฝั่งซ้าย: รูปห้อง */}
       <div className="relative w-full h-[35vh] md:h-full overflow-hidden">
         <img 
   src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780388580146-928.webp?auto=format&fit=crop&w=1400&q=80" 
-  alt="Interior Setup" 
+  alt="Terra Home Studio Interior Setup - Minimalist Decor" 
+  title="Terra Home Studio Interior Setup - Minimalist Decor" 
   loading="lazy" // 🌟 เติมตรงนี้
   className="..."
 />
@@ -255,16 +259,28 @@ export function BrandIntroduction() {
           <div className={`w-full flex justify-center items-center flex-grow md:flex-initial max-h-[30vh] md:max-h-[48vh] overflow-hidden ${isVisible ? 'animate-smooth-reveal delay-450' : 'opacity-0'}`}>
             <img 
               src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780382081197-601.webp?auto=format&fit=crop&w=800&q=80" 
-              alt="Ceramic Vases" 
+              alt="Terra Home Studio Ceramic Vases - Calm Living Collection" 
+              title="Terra Home Studio Ceramic Vases - Calm Living Collection" 
               className="max-h-full object-contain drop-shadow-[0_12px_30px_rgba(0,0,0,0.07)] hover:scale-102 transition-transform duration-700 ease-out cursor-pointer"
             />
           </div>
           
           {/* ส่วนเนื้อความบรรยายด้านล่าง */}
-          <div className={`w-full flex justify-center ${isVisible ? 'animate-smooth-reveal delay-600' : 'opacity-0'}`}>
-            <p className="text-[10px] sm:text-xs md:text-[12px] lg:text-[13.5px] text-[#3D3130] leading-relaxed font-normal text-left font-serif w-full mx-auto opacity-95">
-              Every ceramic piece is thoughtfully crafted to bring quiet warmth, subtle character, and a sense of calm into your space. A home is not defined by how much it holds, but by how it makes you feel. With TERRA Home Studio, let every detail speak softly, creating harmony in your home.
-            </p>
+          <div className={`w-full flex justify-center max-h-[25vh] md:max-h-[30vh] overflow-y-auto no-scrollbar pb-4 pr-2 ${isVisible ? 'animate-smooth-reveal delay-600' : 'opacity-0'}`}>
+            <div className="space-y-4 text-[10px] sm:text-xs md:text-[12px] lg:text-[13.5px] text-[#3D3130] leading-relaxed font-normal text-left font-serif w-full mx-auto opacity-95">
+              <p>
+                Every ceramic piece is thoughtfully crafted to bring quiet warmth, subtle character, and a sense of calm into your space. A home is not defined by how much it holds, but by how it makes you feel. With TERRA Home Studio, let every detail speak softly, creating harmony in your home.
+              </p>
+              <p>
+                Our philosophy is deeply rooted in the belief that the objects we surround ourselves with should carry meaning, intention, and a connection to the earth. In a world that often feels rushed and overwhelming, we seek to create a sanctuary of stillness. Our minimalist designs draw inspiration from the natural world, echoing the organic shapes, earthy textures, and grounding colors of nature. We embrace the wabi-sabi aesthetic, finding absolute perfection in the subtle imperfections and unique characteristics of handcrafted art.
+              </p>
+              <p>
+                The journey of each Terra Home Studio piece begins with carefully selected, sustainable materials. Our master artisans pour their passion and lifelong expertise into every creation, employing traditional pottery techniques beautifully blended with modern sensibilities. From the initial molding of the raw clay to the final meticulous glazing process, every single step is an exercise in mindfulness and an unwavering dedication to exceptional quality. The result is a carefully curated collection of timeless vessels, elegant tableware, and sculptural decorative objects that transcend mere functionality to become striking artistic elements within your living space.
+              </p>
+              <p>
+                Beyond pure aesthetics, our ultimate mission is to foster a much deeper, more authentic connection between you and your personal environment. We sincerely hope that our creations encourage you to slow down, deeply appreciate the present moment, and gently cultivate a space that truly reflects your inner tranquility. Thank you for inviting Terra Home Studio into your home and allowing us to be a meaningful part of your daily rituals and moments of calm.
+              </p>
+            </div>
           </div>
 
         </div>
@@ -282,6 +298,7 @@ export function DecorativeObjects() {
 
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
+  const isResettingRef = useRef(false); // ← guard ป้องกัน re-entrant scroll reset
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
 
@@ -324,6 +341,7 @@ export function DecorativeObjects() {
     el.scrollLeft = setWidth; 
 
     const handleScroll = () => {
+      if (isResettingRef.current) return; // ← skip ถ้ากำลัง reset อยู่
       const { itemWidth, setWidth: freshSetWidth } = getMetrics();
       if (freshSetWidth === 0) return;
 
@@ -332,12 +350,16 @@ export function DecorativeObjects() {
       const finalIndex = ((rawIndex % baseItems.length) + baseItems.length) % baseItems.length;
       setActiveIndex(finalIndex);
 
-      if (currentScroll < freshSetWidth * 0.4) {
+      if (currentScroll < freshSetWidth * 0.5) {
+        isResettingRef.current = true;
         el.scrollLeft += freshSetWidth;
         if (isDraggingRef.current) scrollLeftRef.current += freshSetWidth;
-      } else if (currentScroll > freshSetWidth * 2.1) {
+        requestAnimationFrame(() => { isResettingRef.current = false; });
+      } else if (currentScroll > freshSetWidth * 2.0) {
+        isResettingRef.current = true;
         el.scrollLeft -= freshSetWidth;
         if (isDraggingRef.current) scrollLeftRef.current -= freshSetWidth;
+        requestAnimationFrame(() => { isResettingRef.current = false; });
       }
     };
 
@@ -406,7 +428,8 @@ export function DecorativeObjects() {
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780564092756-454.webp" 
-          alt="Interior Stone" 
+          alt="Terra Home Studio Interior Stone - Decorative Objects" 
+          title="Terra Home Studio Interior Stone - Decorative Objects" 
           className={`w-full h-full object-cover transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`} 
         />
       </div>
@@ -424,7 +447,7 @@ export function DecorativeObjects() {
               <h3 className="text-sm sm:text-lg md:text-2xl font-serif tracking-[0.15em] text-[#3D3130] uppercase mb-1.5 font-medium">
                 {baseItems[activeIndex].title}
               </h3>
-              <a href={baseItems[activeIndex].link} className="pointer-events-auto text-[8px] md:text-[10px] uppercase tracking-widest text-[#3D3130] border-b border-[#3D3130] pb-0.5 hover:text-[#A47E6C] transition-colors">
+              <a href={baseItems[activeIndex].link} title={`Shop ${baseItems[activeIndex].title}`} className="pointer-events-auto text-[8px] md:text-[10px] uppercase tracking-widest text-[#3D3130] border-b border-[#3D3130] pb-0.5 hover:text-[#A47E6C] transition-colors">
                 Shop Now
               </a>
             </div>
@@ -446,7 +469,8 @@ export function DecorativeObjects() {
           >
             <img 
   src={item.img} 
-  alt={item.title} 
+  alt={`Terra Home Studio - ${item.title}`} 
+  title={`Terra Home Studio - ${item.title}`} 
   draggable="false"
   loading="lazy" // 🌟 เติมตรงนี้
   className="..." 
@@ -507,7 +531,7 @@ export function VesselsTableware() {
         {/* ใช้ Grid ให้เต็มพื้นที่ที่เหลือ (flex-grow) โดยไม่ล้นจอ */}
         <div className="w-full flex-grow min-h-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-200' : 'opacity-0'}`}>
-            <img src={items[0].img} alt={items[0].title} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
+            <img src={items[0].img} alt={`Terra Home Studio - ${items[0].title}`} title={`Terra Home Studio - ${items[0].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
           
           <div className={`w-full h-full bg-[#C1B4A6] flex flex-col justify-center items-center text-center p-6 sm:p-4 ${isVisible ? 'animate-float-up delay-300' : 'opacity-0'}`}>
@@ -520,19 +544,19 @@ export function VesselsTableware() {
           </div>
           
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-450' : 'opacity-0'}`}>
-            <img src={items[1].img} alt={items[1].title} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
+            <img src={items[1].img} alt={`Terra Home Studio - ${items[1].title}`} title={`Terra Home Studio - ${items[1].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
           
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-500' : 'opacity-0'}`}>
-            <img src={items[2].img} alt={items[2].title} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
+            <img src={items[2].img} alt={`Terra Home Studio - ${items[2].title}`} title={`Terra Home Studio - ${items[2].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
           
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-600' : 'opacity-0'}`}>
-            <img src={items[3].img} alt={items[3].title} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
+            <img src={items[3].img} alt={`Terra Home Studio - ${items[3].title}`} title={`Terra Home Studio - ${items[3].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
           
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-700' : 'opacity-0'}`}>
-            <img src={items[4].img} alt={items[4].title} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
+            <img src={items[4].img} alt={`Terra Home Studio - ${items[4].title}`} title={`Terra Home Studio - ${items[4].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
         </div>
       </div>
@@ -571,6 +595,7 @@ export function BathDiffuserVessel() {
         <img 
           src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780563503635-651.webp?auto=format&fit=crop&w=1800&q=80" 
           alt="Bath & Diffuser Banner" 
+          title="Bath & Diffuser Banner" 
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
         />
         
@@ -600,7 +625,8 @@ export function BathDiffuserVessel() {
               >
                 <img 
                   src={item.img} 
-                  alt={`Vessel Item ${item.id}`} 
+                  alt={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`} 
+                  title={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`} 
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out cursor-pointer select-none"
                 />
               </div>

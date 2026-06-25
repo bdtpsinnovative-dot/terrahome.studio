@@ -31,6 +31,7 @@ export default function PropBanner({ allImages, activeImage, categoryName }: Pro
         <motion.img 
           src={activeImage} 
           alt={`${categoryName} Banner`} 
+          title={`${categoryName} Banner`}
           className="w-full h-full object-cover object-[center_75%]" 
           initial={{ scale: 1.05, opacity: 0 }} 
           animate={{ scale: 1, opacity: 1 }}    
@@ -53,6 +54,7 @@ export default function PropBanner({ allImages, activeImage, categoryName }: Pro
             key={`${src}-${idx}`} 
             src={src}
             alt={`Terra Banner Slide ${idx}`}
+            title={`Terra Banner Slide ${idx}`}
             // 🔥 ปรับตำแหน่งโฟกัสกล้องลงมา 75% เหมือนกันครับ
             className="absolute inset-0 w-full h-full object-cover object-[center_75%]"
             initial={{ opacity: 0, scale: 1.05 }}

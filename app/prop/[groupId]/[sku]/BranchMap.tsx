@@ -125,7 +125,7 @@ export default function BranchMap({
       className: 'bg-transparent border-none',
       html: `
         <div style="background: white; border: 2px solid #84492C; border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(132,73,44,0.15); display: flex; flex-direction: column; align-items: center; width: 50px; height: 50px; position: relative;">
-          <img src="${productImage}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-multiply;" />
+          <img src="${productImage}" alt="Branch Map Pin" title="Branch Map" style="width: 100%; height: 100%; object-fit: contain; mix-blend-multiply;" />
           <div style="position: absolute; bottom: -12px; background: #84492C; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 12px; border: 2px solid white; font-family: sans-serif;">
             ${qty}
           </div>
@@ -272,7 +272,7 @@ export default function BranchMap({
         />
 
         <TileLayer
-          attribution='© <a href="https://carto.com/">CARTO</a>'
+          attribution='© <a href="https://carto.com/" title="CARTO maps service">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
@@ -297,6 +297,7 @@ export default function BranchMap({
                   href={`https://www.google.com/maps/dir/?api=1&destination=${stockItem.branches.latitude},${stockItem.branches.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={`Get directions to ${stockItem.branches.branch_name} branch on Google Maps`}
                   className="mt-3 w-full bg-[#3a3835] text-white text-[10px] uppercase font-bold tracking-wider py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-[#84492C] transition-colors shadow-sm"
                 >
                   <Navigation className="w-3.5 h-3.5" />

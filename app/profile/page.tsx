@@ -137,7 +137,7 @@ export default function ProfilePage() {
 
       // อัปโหลดขึ้น Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('profiles')
         .upload(fileName, croppedWebpBlob, {
           contentType: 'image/webp',
           upsert: true // อัปโหลดทับไฟล์เดิมถ้ามีชื่อซ้ำ
@@ -145,14 +145,14 @@ export default function ProfilePage() {
 
       if (uploadError) throw uploadError;
 
-      // ดึง URL มาแสดงผล
+      // ดึง Full Public URL มาเก็บ
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('profiles')
         .getPublicUrl(fileName);
 
       setProfile({ ...profile, avatar_url: publicUrl });
 
-      // อัปเดตตาราง
+      // อัปเดตตาราง — บันทึก full URL ตรงๆ
       await supabase.from('customers').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', userAuth.id);
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
 
@@ -220,7 +220,7 @@ export default function ProfilePage() {
 
                   <label htmlFor="avatar-upload" className="cursor-pointer block relative rounded-full overflow-hidden w-24 h-24 border-2 border-[#EAE7E0]">
                     {profile.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={profile.avatar_url} alt="Profile" title="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-[#F4F1EB] flex items-center justify-center text-[#8C8A86]">
                         <User className="w-10 h-10 opacity-50" />

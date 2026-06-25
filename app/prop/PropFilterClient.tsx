@@ -21,7 +21,7 @@ export default function PropFilterClient({ collections, branches }: { collection
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const initialExpandedGroups = useMemo(() => {
-    if (initialCategory.startsWith("Decorative ") || initialCategory === "Candle Holder") return ["DECORATIVE"]
+    if ((initialCategory.startsWith("Decorative ") || initialCategory.startsWith("Decotative ")) && !initialCategory.toLowerCase().includes("candle holder")) return ["DECORATIVE"]
     if (initialCategory.startsWith("Doll ")) return ["DOLL"]
     if (initialCategory.startsWith("Wall Art ")) return ["WALL ART"]
     return []
@@ -121,7 +121,7 @@ export default function PropFilterClient({ collections, branches }: { collection
     const independentItems: any[] = []
 
     rawCategories.forEach(cat => {
-      if (cat === "Candle Holder" || cat.startsWith("Decorative") || cat.startsWith("Decotative")) {
+      if ((cat.startsWith("Decorative") || cat.startsWith("Decotative")) && !cat.toLowerCase().includes("candle holder")) {
         decorativeItems.push({ fullValue: cat, displayLabel: cat.toUpperCase() })
       } 
       else if (cat.startsWith("Doll ")) {
@@ -192,21 +192,22 @@ export default function PropFilterClient({ collections, branches }: { collection
   };
 
   const renderSidebarContent = () => (
-    <div className="flex flex-col gap-4 items-start w-full text-left pb-10 pl-6 pr-4">
+    <div className="flex flex-col w-full text-left pb-12 pt-2 px-6">
       {structuredCategories.map((menuItem, idx) => {
         if (menuItem.isSpecial) {
           const isActive = activeFilter === menuItem.fullValue
           return (
-            <div key={menuItem.fullValue} className="w-full mt-2 pt-4 border-t border-[#D5D2CA]/40">
+            <div key={menuItem.fullValue} className="w-full py-1 mt-6 border-t border-[#C4B5A5]/30 pt-6">
               <button 
                 onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.fullValue); }} 
-                className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[10px] uppercase tracking-[0.2em] font-bold border rounded-md transition-all duration-300 shadow-sm
-                  ${isActive ? 'bg-[#DC2626] border-[#DC2626] text-white' : 'bg-transparent border-[#DC2626] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'}`}
+                className={`w-full flex items-center justify-between text-left group transition-all duration-300`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#84492C]/80 font-medium group-hover:text-[#84492C]'}`}>
+                  {menuItem.label}
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#84492C]/60 group-hover:text-[#84492C]'}`}>
                   <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5zM6 7a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                 </svg>
-                {menuItem.label}
               </button>
             </div>
           )
@@ -215,9 +216,10 @@ export default function PropFilterClient({ collections, branches }: { collection
         if (!menuItem.isGroup) {
           const isActive = activeFilter === menuItem.fullValue
           return (
-            <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group flex items-center transition-all duration-300 relative justify-start">
-              {isActive && menuItem.label === "ALL" && <span className="absolute -left-3 w-1 h-1 rounded-full bg-[#3A3835]" />}
-              <span className={`text-[10px] uppercase tracking-[0.25em] text-left ${isActive ? 'text-[#3A3835] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>{menuItem.label}</span>
+            <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group py-3 transition-all duration-300">
+              <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
+                {menuItem.label}
+              </span>
             </button>
           )
         }
@@ -226,18 +228,23 @@ export default function PropFilterClient({ collections, branches }: { collection
         const hasActiveChild = menuItem.items.some((child: any) => activeFilter === child.fullValue)
         return (
           <div key={menuItem.label} className="w-full flex flex-col items-start text-left">
-            <button onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className="flex items-center justify-between w-full text-left group py-0.5">
-              <span className={`text-[10px] uppercase tracking-[0.25em] text-left ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>{menuItem.label}</span>
-              <span className="text-[#8C8A86] text-[10px] font-extralight tracking-widest pl-2 opacity-60">{isExpanded ? '—' : '+'}</span>
+            <button onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className="flex items-center justify-between w-full text-left group py-3">
+              <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
+                {menuItem.label}
+              </span>
+              <span className={`text-[12px] font-light transition-transform duration-300 ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
+                {isExpanded ? '−' : '+'}
+              </span>
             </button>
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${isExpanded ? 'max-h-[500px] mt-3 mb-2 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <div className="flex flex-col gap-3 pl-8 ml-0.5 border-l border-[#D5D2CA]/40 items-start text-left">
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="flex flex-col pl-4 pb-2 pt-1 items-start text-left">
                 {menuItem.items.map((childItem: any) => {
                   const isChildActive = activeFilter === childItem.fullValue
                   return (
-                    <button key={childItem.fullValue} onClick={(e) => { e.preventDefault(); handleFilterChange(childItem.fullValue); }} className="text-left w-full group flex items-center relative justify-start">
-                      {isChildActive && <span className="absolute -left-3 w-1 h-1 rounded-full bg-[#3A3835]" />}
-                      <span className={`text-[9.5px] uppercase tracking-[0.2em] text-left ${isChildActive ? 'text-[#3A3835] font-semibold' : 'text-[#8C8A86]/70 font-light hover:text-[#3A3835]'}`}>{childItem.displayLabel}</span>
+                    <button key={childItem.fullValue} onClick={(e) => { e.preventDefault(); handleFilterChange(childItem.fullValue); }} className="text-left w-full group py-2.5 transition-colors duration-300">
+                      <span className={`text-[10px] uppercase tracking-[0.2em] ${isChildActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86]/80 font-light group-hover:text-[#3A3835]'}`}>
+                        {childItem.displayLabel}
+                      </span>
                     </button>
                   )
                 })}
@@ -252,14 +259,18 @@ export default function PropFilterClient({ collections, branches }: { collection
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
       
-      <div className={`fixed inset-0 z-[100] md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-        <div className={`absolute left-0 top-0 bottom-0 w-64 bg-[#EBE8E1] pt-24 border-r border-[#D5D2CA] transition-transform duration-300 ease-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="px-6 mb-6 flex justify-between items-center">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-[#3A3835]">Filters</span>
-            <button onClick={() => setIsSidebarOpen(false)} className="text-xs uppercase tracking-widest text-[#8C8A86]">Close</button>
+      <div className={`fixed inset-0 z-[100] md:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+        <div className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] pt-12 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="px-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-6">
+            <span className="text-[11px] uppercase tracking-[0.3em] font-medium text-[#3A3835]">Filters</span>
+            <button onClick={() => setIsSidebarOpen(false)} className="text-[#3A3835] hover:text-[#B8834A] transition-colors p-1 -mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="flex-1 overflow-y-auto no-scrollbar px-2">
             {renderSidebarContent()}
           </div>
         </div>
@@ -280,16 +291,16 @@ export default function PropFilterClient({ collections, branches }: { collection
             <div className="flex flex-col gap-1.5 w-full sm:w-auto">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="md:hidden flex items-center justify-center gap-1.5 mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8C8A86] border border-[#D5D2CA] px-2.5 py-1.5 rounded-sm bg-white/50 active:bg-[#EBE8E1] w-full"
+                className="md:hidden flex items-center justify-center gap-2 mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#3A3835] border border-[#C4B5A5]/80 px-4 py-2.5 bg-white/50 backdrop-blur-sm active:bg-[#EFE9E1] transition-all duration-300 w-full"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                 </svg>
                 Filter Menu
               </button>
-              <h2 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal">
+              <h1 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal">
                 {getDisplayTitle()}
-              </h2>
+              </h1>
             </div>
             
             {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่มล้างค่าคำค้นหา ✕ */}

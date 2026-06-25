@@ -187,6 +187,7 @@ export default function CartPage() {
             <p className="text-[12px] text-[#8C8A86] mb-8">Looks like you haven't added anything to your cart yet.</p>
             <Link 
               href="/prop" 
+              title="Browse our props collections"
               className="bg-[#3A3835] text-white px-10 py-4 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#84492C] transition-colors shadow-sm rounded-[2px]"
             >
               DISCOVER COLLECTIONS
@@ -207,12 +208,14 @@ export default function CartPage() {
                     
                     <Link 
                       href={`/prop/${item.products.collection_group_id}/${item.products.sku}`}
+                      title={`View details of ${item.products.name}`}
                       className="w-full sm:w-[120px] aspect-square bg-[#F4F1EB] rounded-[2px] overflow-hidden flex-shrink-0 group relative"
                     >
                       {item.products.image_url ? (
                         <img 
                           src={item.products.image_url} 
                           alt={item.products.name} 
+                          title={item.products.name} 
                           className="w-full h-full object-contain p-2 mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
@@ -236,6 +239,7 @@ export default function CartPage() {
                           </p>
                           <Link 
                             href={`/prop/${item.products.collection_group_id}/${item.products.sku}`}
+                            title={`View details of ${item.products.name}`}
                             className="font-serif text-lg uppercase tracking-wider text-[#3A3835] hover:text-[#84492C] transition-colors line-clamp-2"
                           >
                             {item.products.name}

@@ -1,4 +1,4 @@
-﻿// app/about/page.tsx
+// app/about/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -100,6 +100,7 @@ export default function AboutPage() {
           <img
             src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904145195-374.webp?auto=format&fit=crop&w=1800&q=120"
             alt="Minimal architecture exterior"
+            title="Minimal architecture exterior"
             className="w-full h-full object-cover object-center transform scale-105"
             style={{
               transform: `translateY(${scrollY * 0.2}px) scale(1.05)`,
@@ -127,6 +128,7 @@ export default function AboutPage() {
             <img
               src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904603569-581.webp?auto=format&fit=crop&w=800&q=80"
               alt="Sculptural still life"
+              title="Sculptural still life"
               className="w-full object-cover aspect-square shadow-[0_30px_60px_rgba(0,0,0,0.15)] rounded-sm"
             />
           </div>
@@ -142,9 +144,9 @@ export default function AboutPage() {
           className={`reveal-anim grid gap-8 lg:grid-cols-2 lg:items-start ${isVisible(1) ? 'is-visible' : ''}`}
         >
           <div className="order-2 lg:order-1 pt-2 lg:pr-12">
-            <h2 className="text-[#84492C] text-xl lg:text-2xl font-bold uppercase tracking-[0.15em] mb-4">
+            <h1 className="text-[#84492C] text-xl lg:text-2xl font-bold uppercase tracking-[0.15em] mb-4">
               ABOUT US
-            </h2>
+            </h1>
             <p className="text-[#2c2722] font-sans font-medium text-lg lg:text-xl leading-relaxed">
               At TERRA Home Studio, we believe that a thoughtfully designed home has the power to inspire everyday living.
             </p>
@@ -160,6 +162,7 @@ export default function AboutPage() {
             <img
               src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904646719-860.webp?auto=format&fit=crop&w=1000&q=80"
               alt="Glass decorative object"
+              title="Glass decorative object"
               className="w-full max-w-[450px] object-cover aspect-square image-reveal shadow-lg"
             />
           </div>
@@ -198,6 +201,7 @@ export default function AboutPage() {
                   <img
                     src={designer.image}
                     alt={designer.name}
+                    title={designer.name}
                     className="w-full h-full object-cover transition-transform duration-[1500ms] ease-out group-hover:scale-110"
                   />
                 </div>
@@ -218,6 +222,7 @@ export default function AboutPage() {
             <img
               src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780904773560-757.webp?auto=format&fit=crop&w=1200&q=80"
               alt="Collection of vases and decor"
+              title="Collection of vases and decor"
               className="w-full max-w-[450px] object-cover aspect-[4/5] image-reveal shadow-lg"
             />
           </div>

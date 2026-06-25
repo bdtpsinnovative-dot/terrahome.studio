@@ -22,17 +22,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq("sku", currentSku)
     .single()
 
-  const title = products ? `${products.name} | COLLECTION SHOWROOM` : "COLLECTION SHOWROOM"
-  const description = `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่ายในสต็อกปัจจุบัน`
+  const title = products ? `${products.name} | Terra Home Studio` : "Product Details | Terra Home Studio"
+  const description = products 
+    ? `Discover minimalist home decor ${products.name} from the ${currentGroupId} collection. เช็คสินค้าและสาขาที่จำหน่าย ณ Terra Home Studio` 
+    : `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่ายในสต็อกปัจจุบัน`
 
   return {
     title: title,
     description: description,
+    alternates: {
+      canonical: `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
+    },
     openGraph: {
       title: title,
       description: description,
-      url: `https://yourdomain.com/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
-      siteName: 'COLLECTION SHOWROOM',
+      url: `https://terrahome-studio.vercel.app/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
+      siteName: 'Terra Home Studio',
       images: products?.image_url ? [{ url: products.image_url }] : [],
       type: 'article',
     },

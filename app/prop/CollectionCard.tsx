@@ -39,6 +39,7 @@ export default function CollectionCard({
   return (
     <Link 
       href={targetHref} 
+      title={`View details of ${group.name || group.id}`}
       className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
     >
       {/* กล่องใส่รูปสินค้า ละลายพื้นหลังขาวเนียนๆ เข้ากับหน้าเว็บ */}
@@ -49,6 +50,7 @@ export default function CollectionCard({
               key={idx}
               src={slide.image_url || ""} 
               alt={group.name || group.id} 
+              title={group.name || group.id} 
               className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
                 ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
               `}

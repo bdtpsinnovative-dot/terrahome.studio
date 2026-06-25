@@ -7,6 +7,14 @@ import Footer from "../components/Footer"
 
 export const revalidate = 0
 
+export const metadata = {
+  title: 'Curated Home Decor Collections | Terra Home Studio (ของแต่งบ้าน)',
+  description: 'Explore our premium collections of decorative objects, ceramic vases, wall art, and handmade dolls at Terra Home Studio. คอลเล็กชันของแต่งบ้านสไตล์มินิมอล',
+  alternates: {
+    canonical: '/prop',
+  },
+}
+
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }

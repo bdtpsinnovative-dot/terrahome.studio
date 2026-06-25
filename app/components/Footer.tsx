@@ -32,7 +32,7 @@ export default function Footer() {
         // จับหมวดหมู่ย่อยมัดรวมกลุ่มหลัก ถ้าไม่เข้าพวกก็ปล่อยแยกเดี่ยว
         rawCategories.forEach(cat => {
           const lower = cat.toLowerCase();
-          const key = (cat === "Candle Holder" || lower.startsWith("decorative") || lower.startsWith("decotative")) ? "Decorative"
+          const key = (lower.startsWith("decorative") || lower.startsWith("decotative")) ? "Decorative"
             : lower.startsWith("doll ") ? "Doll"
               : lower.startsWith("vase") ? "Vase"
                 : lower.startsWith("wall art ") ? "Wall Art" : cat;
@@ -71,7 +71,7 @@ export default function Footer() {
             {/* Col 1: Logo & Description */}
             <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 pt-4 lg:pt-5 lg:-ml-4 xl:-ml-6">
               <div className="mb-6 flex flex-col items-start w-full">
-                <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/logo.png" alt="logo" className="w-[150px]" /></h2>
+                <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/logo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
               </div>
               <p className="text-xs leading-relaxed text-[#4A4238] font-normal max-w-[240px] mb-8">
                 Thoughtful home decor and objects that bring warmth, balance, and quiet living into everyday spaces.
@@ -122,7 +122,7 @@ export default function Footer() {
                   </div>
 
                   <div className="flex flex-col space-y-4">
-                    <a href="tel:+6625871234" className="flex items-center gap-3.5 group/link w-fit">
+                    <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" className="flex items-center gap-3.5 group/link w-fit">
                       <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                         <Phone />
                       </div>
@@ -131,7 +131,7 @@ export default function Footer() {
                       </p>
                     </a>
 
-                    <a href="mailto:info@tpsgardenfurniture.com" className="flex items-center gap-3.5 group/link w-fit">
+                    <a href="mailto:info@tpsgardenfurniture.com" title="Send email to Terra Home Studio" className="flex items-center gap-3.5 group/link w-fit">
                       <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                         <Mail />
                       </div>
@@ -140,7 +140,7 @@ export default function Footer() {
                       </p>
                     </a>
 
-                    <a href="https://www.tpsgardenfurniture.com" target="_blank" rel="noreferrer" className="flex items-center gap-3.5 group/link w-fit">
+                    <a href="https://www.tpsgardenfurniture.com" target="_blank" rel="noreferrer" title="Visit TPS Garden Furniture website" className="flex items-center gap-3.5 group/link w-fit">
                       <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                         <Globe />
                       </div>
@@ -184,7 +184,7 @@ export default function Footer() {
                     if (isStandalone) {
                       const href = group.label.toLowerCase() === "all" ? "/prop" : `/prop?category=${encodeURIComponent(group.label)}`;
                       return (
-                        <Link key={group.label} href={href} className="text-xs text-[#5A524A] font-normal uppercase tracking-wide hover:text-[#2A251F] transition block w-fit">
+                        <Link key={group.label} href={href} title={group.label} className="text-xs text-[#5A524A] font-normal uppercase tracking-wide hover:text-[#2A251F] transition block w-fit">
                           {group.label}
                         </Link>
                       );
@@ -203,7 +203,7 @@ export default function Footer() {
 
                             return (
                               <li key={item}>
-                                <Link href={`/prop?category=${encodeURIComponent(item)}`} className="text-[10.5px] text-[#766E65] hover:text-[#2A251F] transition cursor-pointer block w-fit">
+                                <Link href={`/prop?category=${encodeURIComponent(item)}`} title={display} className="text-[10.5px] text-[#766E65] hover:text-[#2A251F] transition cursor-pointer block w-fit">
                                   {display}
                                 </Link>
                               </li>
@@ -300,6 +300,7 @@ export default function Footer() {
         <img
           src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780392557796-349.webp"
           alt="TERRA Home Banner"
+          title="TERRA Home Banner"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/5 flex items-center justify-center p-6 text-center">
