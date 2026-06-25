@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us | Terra Home Studio - Minimalist Home Decor & Objects',
-  description: 'Our philosophy and the story behind Terra Home Studio. Discover our commitment to calm living and mindful design.',
+  title: 'About Us | Terra Home Studio - Minimalist Home Decor & Objects (เกี่ยวกับเรา)',
+  description: 'Our philosophy and story behind Terra Home Studio. ทำความรู้จักกับแบรนด์ของแต่งบ้านเซรามิกดีไซน์มินิมอล เพื่อบ้านที่อบอุ่นและสงบเงียบ',
   alternates: {
     canonical: '/about',
   },

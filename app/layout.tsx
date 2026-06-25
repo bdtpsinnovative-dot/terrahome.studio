@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Suspense } from "react"; // 1. นำเข้า Suspense เพิ่มเข้ามาครับนาย
+import Script from "next/script";
 
 // Cache Navbar category data for 1 hour; product categories rarely change.
 export const revalidate = 3600;
@@ -104,7 +105,28 @@ export default async function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preload" href="/LINESeedSans_W_Rg.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/OPTIMA.TTF" as="font" type="font/ttf" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-full flex flex-col">
+        {/* Google Analytics Setup */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
         {/* JSON-LD Schema for Organization */}
         <script
           type="application/ld+json"
