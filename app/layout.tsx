@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   title: "Terra Home Studio | ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล",
   description: "Discover premium ceramic vessels from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอลเพื่อบ้านคุณ",
   icons: {
-    icon: '/logo.png',
+    icon: '/favicon-square.png',
   },
   openGraph: {
     title: "Terra Home Studio | Crafted for Calm Living",
