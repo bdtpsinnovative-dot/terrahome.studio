@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://terrahome-studio.vercel.app'),
   title: "Terra Home Studio | ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล",
   description: "Discover premium ceramic vessels & tableware from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอล ยกระดับความอบอุ่นให้บ้านของคุณ",
+  icons: {
+    icon: '/logo.png',
+  },
   openGraph: {
     title: "Terra Home Studio | Crafted for Calm Living",
     description: "Discover thoughtfully designed ceramic vessels, tableware, and decorative objects. ค้นพบของตกแต่งบ้านเซรามิก แจกัน และภาชนะบนโต๊ะอาหารดีไซน์มินิมอล",

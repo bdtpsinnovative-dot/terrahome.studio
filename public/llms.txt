@@ -1,0 +1,16 @@
+# Terra Home Studio
+
+> Thoughtfully designed ceramic vessels, tableware, and minimalist home decor objects crafted for calm living.
+
+This website serves as the online catalog, inventory manager, and branch store locator for Terra Home Studio's premium handcrafted ceramic products.
+
+## Core Navigation
+
+- [Collections](/prop) - Curated minimalist home decor collections, ceramic vases, and objects.
+- [About Us](/about) - Our design philosophy, simplification commitment, and background story.
+- [Journal & Design Insights](/journal) - Articles on styling guides, minimalist decor design, and database systems.
+- [Contact Studio](/contact) - Address, telephone, email, and showroom location maps in Thailand.
+
+## Dynamic Features & API
+- Access the barcode scanner utility at `/sys-diag` to search individual items inside our Supabase inventory catalog.
+- Stock availability and pricing are tracked across multiple Bangkok-Nonthaburi branches in Thailand.

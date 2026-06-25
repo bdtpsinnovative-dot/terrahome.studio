@@ -42,11 +42,7 @@ const heroSlides = [
 export default function HomePage() {
   return (
     <div className="bg-[#F9F6F0] text-[#4A3E3D] min-h-screen font-sans antialiased selection:bg-[#E5D3C3] flex flex-col">   
-      <Suspense fallback={
-        <div className="min-h-screen bg-[#F9F6F0] flex items-center justify-center font-serif text-[#4A3E3D]">
-          Loading...
-        </div>
-      }>
+      <Suspense fallback={<HeroFallback />}>
         <HomeContent />
       </Suspense>
 
@@ -60,6 +56,37 @@ export default function HomePage() {
         }
       `}} />
     </div>
+  );
+}
+
+function HeroFallback() {
+  return (
+    <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-[#2F2420]">
+      <div className="absolute inset-0 z-0">
+        <img
+          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478880815-990.webp"
+          alt="Terra Home Studio - Crafted for Calm Living."
+          title="Terra Home Studio - Crafted for Calm Living."
+          className="absolute inset-0 w-full h-full object-cover filter opacity-100"
+          fetchPriority="high"
+          loading="eager"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-[#2F2420]/50 pointer-events-none z-10"></div>
+      </div>
+
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4 mt-[-3vh]">
+        <h1 className="text-white text-3xl sm:text-5xl md:text-6xl lg:text-[4.5rem] tracking-wide mb-4 sm:mb-5 font-serif font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] px-2">
+          Crafted for Calm Living.
+        </h1>
+        <p className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-3xl font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
+          Thoughtfully designed to bring warmth and harmony into your home.
+        </p>
+        <div className="mt-8 flex gap-6 z-30 pointer-events-auto">
+          <a href="/prop" title="Discover Collections" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Discover Collections</a>
+          <a href="/about" title="Our Story" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Our Story</a>
+        </div>
+      </div>
+    </section>
   );
 }
 

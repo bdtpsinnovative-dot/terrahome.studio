@@ -1,0 +1,23 @@
+# Terra Home Studio (Full Specification)
+
+This is the comprehensive text specification of Terra Home Studio, optimized for Large Language Models (LLMs) and search crawlers.
+
+## Brand Philosophy
+At Terra Home Studio, we believe beauty is found in simplicity. Our products are thoughtfully designed to bring warmth, calm, and harmony into modern home interiors. We focus on natural tones, organic textures, and premium craftsmanship.
+
+## Main Product Collections
+We offer a curated catalog of minimalist home decor objects, ceramic vessels, and tableware:
+- **Art Objects & Sculptures:** Handcrafted decorative shapes and organic objects.
+- **Vases & Vessels:** Handmade ceramic vases, glass vases, and stoneware vessels.
+- **Tableware & Kitchenware:** Minimalist plates, cups, bowls, and trays.
+- **Bath & Diffusers:** Decorative bathroom sets, diffuser vessels, and candle holders.
+- **Wall Art:** 3D digital prints and handmade wall installations.
+- **Dolls:** Mindful animal, plant, human, and abstract character dolls.
+
+## Branches & Showrooms (Thailand)
+We operate multiple physical branches in the Bangkok and Nonthaburi areas where visitors can check live stock or purchase products:
+- **TPS Garden Furniture (HQ Showroom):** Located at 351/7-8 Soi Bangkok-Nonthaburi 13, Bang Sue District, Bangkok 10800.
+- Live stock database searches and directions mapping are available on the product details pages at `/prop/[groupId]/[sku]`.
+
+## Inventory System Diagnostics
+We provide a barcode scanner utility at `/sys-diag` for warehouse staff and distributors to query real-time stock availability, prices, and branch details by scanning barcodes or inputting EAN/SKU values.

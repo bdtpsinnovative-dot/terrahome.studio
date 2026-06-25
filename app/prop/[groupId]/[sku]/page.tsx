@@ -77,11 +77,36 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     )
   }
 
+  // Generate dynamic Product Schema for search engine/LLM crawler analysis
+  const activeProduct = groupProducts.find(p => p.sku === currentSku);
+  const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": activeProduct?.name || "Product Details",
+    "image": activeProduct?.image_url || "",
+    "description": `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่าย ณ Terra Home Studio`,
+    "sku": currentSku,
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "THB",
+      "price": activeProduct?.price || 0,
+      "availability": totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "url": `https://terrahome-studio.vercel.app/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`
+    }
+  };
+
   return (
-    <ProductDetailClient 
-      groupProducts={groupProducts}
-      currentGroupId={currentGroupId}
-      initialSku={currentSku}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <ProductDetailClient 
+        groupProducts={groupProducts}
+        currentGroupId={currentGroupId}
+        initialSku={currentSku}
+      />
+    </>
   )
 }
