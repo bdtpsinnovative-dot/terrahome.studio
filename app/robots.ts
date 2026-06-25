@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: '/sys-diag',
     },
     sitemap: 'https://terrahome-studio.vercel.app/sitemap.xml',
   };

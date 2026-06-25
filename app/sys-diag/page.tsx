@@ -88,6 +88,11 @@ export default function SysDiagPage() {
       `}} />
 
       {/* --- โซนที่ 1: ช่องค้นหามินิมอล --- */}
+      <div className="mb-8 text-center animate-fade-in">
+        <h1 className="text-xl font-extrabold text-[#1B253A] tracking-wider uppercase">System Diagnostics Scanner</h1>
+        <p className="text-xs text-gray-500 mt-1.5 font-medium">Barcode search & product catalog database check</p>
+      </div>
+
       <form 
         onSubmit={handleManualSubmit} 
         className="w-full max-w-2xl bg-white border border-gray-200 rounded-2xl p-2 flex items-center shadow-lg sticky top-6 z-30"
