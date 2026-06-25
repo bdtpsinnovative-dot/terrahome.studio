@@ -78,9 +78,9 @@ function HeroFallback() {
         <h1 className="text-white text-3xl sm:text-5xl md:text-6xl lg:text-[4.5rem] tracking-wide mb-4 sm:mb-5 font-serif font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] px-2">
           Crafted for Calm Living.
         </h1>
-        <p className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-3xl font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
+        <h2 className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-3xl font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
           Thoughtfully designed to bring warmth and harmony into your home.
-        </p>
+        </h2>
         <div className="mt-8 flex gap-6 z-30 pointer-events-auto">
           <a href="/prop" title="Discover Collections" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Discover Collections</a>
           <a href="/about" title="Our Story" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Our Story</a>
@@ -182,14 +182,14 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
           {currentIndex === 0 ? "Crafted for Calm Living." : heroSlides[currentIndex].title}
         </h1>
         {currentIndex === 0 ? (
-          <p className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-3xl font-normal leading-relaxed animate-fade-in-up delay-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
+          <h2 className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-3xl font-normal leading-relaxed animate-fade-in-up delay-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
             Thoughtfully designed to bring warmth<br className="hidden sm:block" />and harmony into your home.
-          </p>
+          </h2>
         ) : (
           heroSlides[currentIndex].subtitle && (
-            <p className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-2xl font-normal leading-relaxed animate-fade-in-up delay-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
+            <h2 className="text-white text-xs sm:text-base md:text-lg lg:text-[1.35rem] tracking-wide max-w-2xl font-normal leading-relaxed animate-fade-in-up delay-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] font-sans px-4">
               {heroSlides[currentIndex].subtitle}
-            </p>
+            </h2>
           )
         )}
 

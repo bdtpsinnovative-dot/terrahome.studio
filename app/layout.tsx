@@ -1,5 +1,5 @@
 // app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://terrahome-studio.vercel.app'),
   title: "Terra Home Studio | ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล",
-  description: "Discover premium ceramic vessels & tableware from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอล ยกระดับความอบอุ่นให้บ้านของคุณ",
+  description: "Discover premium ceramic vessels from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอลเพื่อบ้านคุณ",
   icons: {
     icon: '/logo.png',
   },
@@ -55,6 +55,12 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 type NavbarCollectionGroup = {
   product_sup: string | null;
   products: { id: string | number }[] | null;
@@ -63,10 +69,15 @@ type NavbarCollectionGroup = {
 const getCollectionsData = unstable_cache(
   async (): Promise<NavbarCollectionGroup[]> => {
     try {
-      const supabase = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn("Supabase credentials missing. Skipping cache collections fetch.");
+        return [];
+      }
+
+      const supabase = createSupabaseClient(supabaseUrl, supabaseKey);
 
       const { data, error } = await supabase
         .from("collection_groups")
@@ -118,9 +129,9 @@ export default async function RootLayout({
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
-            <Script id="google-analytics" strategy="afterInteractive">
+            <Script id="google-analytics" strategy="lazyOnload">
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
