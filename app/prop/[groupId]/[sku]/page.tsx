@@ -2,6 +2,7 @@
 import { Metadata } from 'next'
 import { createClient } from "../../../../src/supabase/server" // ⚡ ดึงโค้ด Supabase ของนายกลับมา
 import ProductDetailClient from './ProductDetailClient'
+import { redirect } from 'next/navigation'
 
 type Props = {
   params: Promise<{ groupId: string; sku: string }> // ⚡ ปรับเป็น Promise ตามมาตรฐาน Next.js ใหม่
@@ -52,7 +53,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
 
   const supabase = await createClient()
 
-  const { data: groupProducts, error } = await supabase
+  const { data: rawGroupProducts, error } = await supabase
     .from("products")
     .select(`
       *,
@@ -69,16 +70,23 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     .eq("collection_group_id", currentGroupId)
     .order("sku", { ascending: true })
 
+  const groupProducts = (rawGroupProducts || []).filter(p => p.status === 'active' || !p.status)
+
   if (error || !groupProducts || groupProducts.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white text-slate-500">
-        <p className="text-lg mb-4">ไม่พบข้อมูลสินค้ากลุ่มนี้ในระบบ</p>
+        <p className="text-lg mb-4">ไม่พบข้อมูลสินค้ากลุ่มนี้ในระบบ หรือสินค้าถูกปิดการขายชั่วคราว</p>
       </div>
     )
   }
 
   // Generate dynamic Product Schema for search engine/LLM crawler analysis
   const activeProduct = groupProducts.find(p => p.sku === currentSku);
+
+  // If the specific requested SKU is not active or not found, redirect to the first available product in this group
+  if (!activeProduct && groupProducts.length > 0) {
+    redirect(`/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(groupProducts[0].sku)}`)
+  }
   const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
   const productSchema = {
     "@context": "https://schema.org/",

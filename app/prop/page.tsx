@@ -60,8 +60,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   // 2. ดึงข้อมูลสินค้าและกรองตามสาขา (เฉพาะส่วนเนื้อหาสินค้าด้านล่าง)
   const productSelectStr = branchId && branchId !== "all"
-    ? `id, sku, name, image_url, price, stock!inner ( branch_id, qty )`
-    : `id, sku, name, image_url, price`
+    ? `id, sku, name, image_url, price, status, stock!inner ( branch_id, qty )`
+    : `id, sku, name, image_url, price, status`
 
   let collectionQuery = supabase
     .from("collection_groups")
@@ -94,8 +94,13 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   const now = new Date()
 
-  // กรอง Collection ที่มีสินค้าอยู่จริงๆ เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
-  const activeCollections = collections?.filter(collection =>
+  // กรอง Collection ที่มีสินค้าอยู่จริงๆ และดึงเฉพาะสินค้าที่ Active เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
+  const activeCollections = collections?.map(collection => {
+    return {
+      ...collection,
+      products: collection.products?.filter((p: any) => p.status === 'active' || !p.status) || []
+    }
+  }).filter(collection =>
     collection.products && collection.products.length > 0
   ) || []
 
