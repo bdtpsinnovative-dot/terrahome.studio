@@ -34,11 +34,12 @@ export default function LoginPage() {
 
         if (authData.user) {
           const { error: dbError } = await supabase
-            .from('customers')
+            .from('profiles')
             .upsert({
-              id: authData.user.id,
+              user_id: authData.user.id,
               email: email,
               full_name: fullName,
+              role: 'customer',
             });
 
           if (dbError) {

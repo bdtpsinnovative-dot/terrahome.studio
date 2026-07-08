@@ -82,9 +82,9 @@ export default function ProfilePage() {
       setUserAuth(session.user);
 
       const { data, error } = await supabase
-        .from('customers')
+        .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('user_id', session.user.id)
         .single();
 
       if (data && !error) {
@@ -95,8 +95,8 @@ export default function ProfilePage() {
           avatar_url: data.avatar_url || session.user.user_metadata?.avatar_url || '',
         });
         setMemberships({
-          is_wood_member: data.is_wood_member || false,
-          is_decor_member: data.is_decor_member || false,
+          is_wood_member: data.member_tags?.includes('wood') || false,
+          is_decor_member: data.member_tags?.includes('decor') || false,
         });
       }
       setLoading(false);
@@ -153,7 +153,7 @@ export default function ProfilePage() {
       setProfile({ ...profile, avatar_url: publicUrl });
 
       // อัปเดตตาราง — บันทึก full URL ตรงๆ
-      await supabase.from('customers').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', userAuth.id);
+      await supabase.from('profiles').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('user_id', userAuth.id);
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
 
       setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
@@ -174,13 +174,13 @@ export default function ProfilePage() {
     if (!userAuth) return;
 
     const { error } = await supabase
-      .from('customers')
+      .from('profiles')
       .update({
         full_name: profile.full_name,
         phone: profile.phone,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', userAuth.id);
+      .eq('user_id', userAuth.id);
 
     if (error) {
       setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
