@@ -8,7 +8,7 @@ import type { Metadata } from "next"
 
 export const revalidate = 3600 // cache 1 ชั่วโมง แทน 0 ช่วยลด TTFB
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
 
 export const metadata: Metadata = {
   title: 'คอลเล็กชันของตกแต่งบ้าน | Terra Home Studio - เซรามิก แจกัน Decorative Objects',

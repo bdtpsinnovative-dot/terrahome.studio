@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com';
 
 // Use a stable date for static pages to avoid Google treating every deploy as a full re-crawl
 const STATIC_UPDATED = new Date('2026-07-10');

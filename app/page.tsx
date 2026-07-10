@@ -15,8 +15,8 @@ const heroSlides = [
   {
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478898478-829.webp",
     title: "Decorative Objects",
-    subtitle: "", 
-    buttons: [ 
+    subtitle: "",
+    buttons: [
       { label: "Shop Collection", target: "decorative" },
       { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
     ]
@@ -25,7 +25,7 @@ const heroSlides = [
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478913463-688.webp",
     title: "Vessels & Tableware",
     subtitle: "",
-    buttons: [ 
+    buttons: [
       { label: "Discover More", target: "vessels" },
       { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
     ]
@@ -34,7 +34,7 @@ const heroSlides = [
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478931773-588.webp",
     title: "BATH & DIFFUSER VESSEL",
     subtitle: "",
-    buttons: [ 
+    buttons: [
       { label: "Explore Range", target: "bath" },
       { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
     ]
@@ -43,12 +43,13 @@ const heroSlides = [
 
 export default function HomePage() {
   return (
-    <div className="bg-[#F9F6F0] text-[#4A3E3D] min-h-screen font-sans antialiased selection:bg-[#E5D3C3] flex flex-col">   
+    <div className="bg-[#F9F6F0] text-[#4A3E3D] min-h-screen font-sans antialiased selection:bg-[#E5D3C3] flex flex-col">
       <Suspense fallback={<HeroFallback />}>
         <HomeContent />
       </Suspense>
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes simpleFadeIn {
           from { opacity: 0; transform: translateY(15px); }
           to { opacity: 1; transform: translateY(0); }
@@ -109,13 +110,13 @@ function HomeContent() {
       if ('scrollRestoration' in history) {
         history.scrollRestoration = 'manual';
       }
-      window.scrollTo(0, 0); 
+      window.scrollTo(0, 0);
     }
   }, [activeTab]);
 
   return (
     <main className="flex-grow overflow-hidden relative">
-      
+
       {/* หน้าแรก: ล็อคให้โชว์แค่ HeroSection เท่านั้น เลื่อนลงไม่ได้แน่นอน */}
       {activeTab === 0 && (
         <div className="animate-fade-in w-full h-screen overflow-hidden">
@@ -152,7 +153,8 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
 
   return (
     <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-[#2F2420]">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         .delay-200 { animation-delay: 0.15s; } .delay-400 { animation-delay: 0.35s; } .delay-600 { animation-delay: 0.55s; }
@@ -166,15 +168,14 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
             alt={slide.title ? `Terra Home Studio - ${slide.title}` : `Terra Home Studio Hero Image ${idx + 1}`}
             title={slide.title ? `Terra Home Studio - ${slide.title}` : `Terra Home Studio Hero Image ${idx + 1}`}
             // 🌟 เพิ่ม 2 บรรทัดนี้ครับ
-            fetchPriority={idx === 0 ? "high" : "auto"} 
+            fetchPriority={idx === 0 ? "high" : "auto"}
             loading={idx === 0 ? "eager" : "lazy"}
             // ---------------------
-            className={`absolute inset-0 w-full h-full object-cover filter transition-opacity duration-1000 ease-in-out ${
-              idx === currentIndex ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute inset-0 w-full h-full object-cover filter transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? "opacity-100" : "opacity-0"
+              }`}
           />
         ))}
-        
+
         {/* 🌟 เปลี่ยนตรงนี้ครับ: เอา bg-black/25 ออก แล้วใส่กราเดี้ยนไล่เฉดสีจากมืดด้านบน ลงไปนวลๆ ด้านล่างแทน */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-[#2F2420]/50 pointer-events-none z-10"></div>
       </div>
@@ -199,8 +200,8 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
         {currentIndex !== 0 && (
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 animate-fade-in-up delay-600 pointer-events-auto mt-6">
             {heroSlides[currentIndex].buttons.map((btn, i) => (
-              <button 
-                key={i} 
+              <button
+                key={i}
                 onClick={() => {
                   if (onNavigate && btn.target) {
                     onNavigate(btn.target);
@@ -226,10 +227,10 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
 
       <div className="absolute bottom-8 sm:bottom-12 z-20 flex gap-2.5">
         {heroSlides.map((_, idx) => (
-          <button 
-            key={idx} 
-            onClick={() => setCurrentIndex(idx)} 
-            className={`transition-all duration-500 rounded-full h-1.5 ${idx === currentIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"}`} 
+          <button
+            key={idx}
+            onClick={() => setCurrentIndex(idx)}
+            className={`transition-all duration-500 rounded-full h-1.5 ${idx === currentIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"}`}
           />
         ))}
       </div>
@@ -250,7 +251,8 @@ export function BrandIntroduction() {
 
   return (
     <section ref={sectionRef} className="w-full h-screen max-h-screen flex flex-col md:grid md:grid-cols-2 bg-[#DFD6CE] overflow-hidden relative">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(35px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-smooth-reveal { animation: smoothReveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-150 { animation-delay: 0.15s; } .delay-300 { animation-delay: 0.3s; } .delay-450 { animation-delay: 0.45s; } .delay-600 { animation-delay: 0.6s; }
@@ -260,20 +262,20 @@ export function BrandIntroduction() {
 
       {/* ฝั่งซ้าย: รูปห้อง */}
       <div className="relative w-full h-[35vh] md:h-full overflow-hidden">
-        <img 
-  src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780388580146-928.webp?auto=format&fit=crop&w=1400&q=80" 
-  alt="Terra Home Studio Interior Setup - Minimalist Decor" 
-  title="Terra Home Studio Interior Setup - Minimalist Decor" 
-  loading="lazy" // 🌟 เติมตรงนี้
-  className="..."
-/>
+        <img
+          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780388580146-928.webp?auto=format&fit=crop&w=1400&q=80"
+          alt="Terra Home Studio Interior Setup - Minimalist Decor"
+          title="Terra Home Studio Interior Setup - Minimalist Decor"
+          loading="lazy" // 🌟 เติมตรงนี้
+          className="..."
+        />
         <div className="absolute inset-0 bg-[#4A3E3D]/5"></div>
       </div>
 
       {/* ฝั่งขวา: คอนเทนต์บรรยาย */}
       <div className="relative w-full h-[65vh] md:h-full flex flex-col justify-between md:justify-center items-center px-6 sm:px-12 lg:px-16 text-center bg-[#DFD6CE] pt-24 md:pt-28 pb-10 overflow-hidden">
         <div className="w-full max-w-[540px] h-full md:h-auto flex flex-col items-center justify-center gap-6 md:gap-8 my-auto">
-          
+
           {/* ส่วนหัวข้อ */}
           <div className="space-y-1.5 md:space-y-2 w-full flex flex-col items-center">
             <h3 className={`text-xs sm:text-sm md:text-base lg:text-[1.15rem] tracking-[0.05em] font-serif text-[#3D3130] font-bold ${isVisible ? 'animate-smooth-reveal delay-150' : 'opacity-0'}`}>
@@ -283,17 +285,17 @@ export function BrandIntroduction() {
               We believe beauty is found in simplicity.
             </h2>
           </div>
-          
+
           {/* ส่วนรูปแจกันตรงกลาง: 🌟 ปรับเพิ่มความสูงจาก 38vh เป็น 48vh เพื่อให้รูปใหญ่ขึ้นอย่างเห็นได้ชัดและสมดุลกับพื้นที่ */}
           <div className={`w-full flex justify-center items-center flex-grow md:flex-initial max-h-[30vh] md:max-h-[48vh] overflow-hidden ${isVisible ? 'animate-smooth-reveal delay-450' : 'opacity-0'}`}>
-            <img 
-              src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780382081197-601.webp?auto=format&fit=crop&w=800&q=80" 
-              alt="Terra Home Studio Ceramic Vases - Calm Living Collection" 
-              title="Terra Home Studio Ceramic Vases - Calm Living Collection" 
+            <img
+              src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780382081197-601.webp?auto=format&fit=crop&w=800&q=80"
+              alt="Terra Home Studio Ceramic Vases - Calm Living Collection"
+              title="Terra Home Studio Ceramic Vases - Calm Living Collection"
               className="max-h-full object-contain drop-shadow-[0_12px_30px_rgba(0,0,0,0.07)] hover:scale-102 transition-transform duration-700 ease-out cursor-pointer"
             />
           </div>
-          
+
           {/* ส่วนเนื้อความบรรยายด้านล่าง */}
           <div className={`w-full flex justify-center max-h-[25vh] md:max-h-[30vh] overflow-y-auto no-scrollbar pb-4 pr-2 ${isVisible ? 'animate-smooth-reveal delay-600' : 'opacity-0'}`}>
             <div className="space-y-4 text-[10px] sm:text-xs md:text-[12px] lg:text-[13.5px] text-[#3D3130] leading-relaxed font-normal text-left font-serif w-full mx-auto opacity-95">
@@ -367,7 +369,7 @@ export function DecorativeObjects() {
     if (!el) return;
 
     const { setWidth } = getMetrics();
-    el.scrollLeft = setWidth; 
+    el.scrollLeft = setWidth;
 
     const handleScroll = () => {
       if (isResettingRef.current) return; // ← skip ถ้ากำลัง reset อยู่
@@ -424,14 +426,14 @@ export function DecorativeObjects() {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     setIsDragging(false);
-    
+
     const el = scrollRef.current;
     if (!el) return;
 
     el.releasePointerCapture(e.pointerId);
     el.style.scrollSnapType = 'x proximity';
     el.style.scrollBehavior = 'smooth';
-    
+
     const { itemWidth } = getMetrics();
     const target = Math.round(el.scrollLeft / itemWidth) * itemWidth;
     el.scrollTo({ left: target, behavior: 'smooth' });
@@ -447,7 +449,8 @@ export function DecorativeObjects() {
       className={`relative w-full h-screen flex flex-col justify-center overflow-hidden bg-[#F9F8F6] ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       style={{ touchAction: 'pan-y' }}
     >
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -455,11 +458,11 @@ export function DecorativeObjects() {
       `}} />
 
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <img 
-          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780564092756-454.webp" 
-          alt="Terra Home Studio Interior Stone - Decorative Objects" 
-          title="Terra Home Studio Interior Stone - Decorative Objects" 
-          className={`w-full h-full object-cover transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`} 
+        <img
+          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780564092756-454.webp"
+          alt="Terra Home Studio Interior Stone - Decorative Objects"
+          title="Terra Home Studio Interior Stone - Decorative Objects"
+          className={`w-full h-full object-cover transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
 
@@ -484,26 +487,26 @@ export function DecorativeObjects() {
         </div>
       </div>
 
-      <div 
-        ref={scrollRef} 
+      <div
+        ref={scrollRef}
         className={`relative z-10 w-full h-[55%] md:h-[65%] flex items-center overflow-x-auto no-scrollbar gap-10 md:gap-20 px-[calc(50vw-70px)] md:px-[calc(50vw-225px)] select-none snap-x snap-proximity scroll-smooth ${isVisible ? 'animate-fade-up' : 'opacity-0'}`}
         style={{ animationDelay: '0.4s' }}
       >
         {items.map((item, index) => (
-          <div 
-            key={`${item.id}-${index}`} 
+          <div
+            key={`${item.id}-${index}`}
             className={`flex-shrink-0 w-[140px] sm:w-[280px] md:w-[450px] h-full flex items-center justify-center transition-opacity duration-500 snap-center
               {(index % baseItems.length) === activeIndex ? 'opacity-100' : 'opacity-40'}
             `}
           >
-            <img 
-  src={item.img} 
-  alt={`Terra Home Studio - ${item.title}`} 
-  title={`Terra Home Studio - ${item.title}`} 
-  draggable="false"
-  loading="lazy" // 🌟 เติมตรงนี้
-  className="..." 
-/>
+            <img
+              src={item.img}
+              alt={`Terra Home Studio - ${item.title}`}
+              title={`Terra Home Studio - ${item.title}`}
+              draggable="false"
+              loading="lazy" // 🌟 เติมตรงนี้
+              className="..."
+            />
           </div>
         ))}
       </div>
@@ -514,7 +517,7 @@ export function DecorativeObjects() {
         </p>
       </div>
     </section>
-  ); 
+  );
 }
 
 export function VesselsTableware() {
@@ -540,7 +543,8 @@ export function VesselsTableware() {
   return (
     // ล็อคความสูงเป็น h-screen เพื่อให้พอดีจอ ไม่ให้มีสโครลบาร์
     <section ref={sectionRef} className="relative w-full h-screen bg-[#DCD6CD] flex flex-col items-center overflow-hidden pt-24 pb-8 px-4 sm:px-8">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes floatUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-float-up { animation: floatUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-100 { animation-delay: 0.1s; } .delay-200 { animation-delay: 0.2s; } .delay-300 { animation-delay: 0.3s; } .delay-450 { animation-delay: 0.4s; } .delay-500 { animation-delay: 0.5s; } .delay-600 { animation-delay: 0.6s; } .delay-700 { animation-delay: 0.7s; }
@@ -562,7 +566,7 @@ export function VesselsTableware() {
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-200' : 'opacity-0'}`}>
             <img src={items[0].img} alt={`Terra Home Studio - ${items[0].title}`} title={`Terra Home Studio - ${items[0].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
-          
+
           <div className={`w-full h-full bg-[#C1B4A6] flex flex-col justify-center items-center text-center p-6 sm:p-4 ${isVisible ? 'animate-float-up delay-300' : 'opacity-0'}`}>
             <p className="font-serif text-[#A65E44] text-base md:text-xl leading-relaxed max-w-[220px] mb-4 sm:mb-6">
               Elegant Vessels<br />&<br />Tableware made to elevate your table.
@@ -571,19 +575,19 @@ export function VesselsTableware() {
               LEARN MORE
             </button>
           </div>
-          
+
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-450' : 'opacity-0'}`}>
             <img src={items[1].img} alt={`Terra Home Studio - ${items[1].title}`} title={`Terra Home Studio - ${items[1].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
-          
+
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-500' : 'opacity-0'}`}>
             <img src={items[2].img} alt={`Terra Home Studio - ${items[2].title}`} title={`Terra Home Studio - ${items[2].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
-          
+
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-600' : 'opacity-0'}`}>
             <img src={items[3].img} alt={`Terra Home Studio - ${items[3].title}`} title={`Terra Home Studio - ${items[3].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
-          
+
           <div className={`w-full h-full overflow-hidden bg-[#C6BBAF] ${isVisible ? 'animate-float-up delay-700' : 'opacity-0'}`}>
             <img src={items[4].img} alt={`Terra Home Studio - ${items[4].title}`} title={`Terra Home Studio - ${items[4].title}`} className="w-full h-full object-cover hover:scale-103 transition-transform duration-700 ease-out cursor-pointer select-none" />
           </div>
@@ -613,7 +617,8 @@ export function BathDiffuserVessel() {
 
   return (
     <section ref={sectionRef} className="relative w-full h-screen max-h-screen flex flex-col overflow-hidden bg-[#dbcfc1]">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes smoothFloatUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-smooth-up { animation: smoothFloatUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-150 { animation-delay: 0.15s; } .delay-300 { animation-delay: 0.3s; } .delay-450 { animation-delay: 0.45s; } .delay-600 { animation-delay: 0.6s; } .delay-750 { animation-delay: 0.75s; } .delay-900 { animation-delay: 0.9s; }
@@ -621,23 +626,23 @@ export function BathDiffuserVessel() {
 
       {/* ครึ่งบน (แบนเนอร์) */}
       <div className="relative w-full h-[60%] overflow-hidden">
-        <img 
-          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780563503635-651.webp?auto=format&fit=crop&w=1800&q=80" 
-          alt="Bath & Diffuser Banner" 
-          title="Bath & Diffuser Banner" 
+        <img
+          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780563503635-651.webp?auto=format&fit=crop&w=1800&q=80"
+          alt="Bath & Diffuser Banner"
+          title="Bath & Diffuser Banner"
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
         />
-        
+
         {/* ฟิล์มกราเดี้ยนสีน้ำตาลเข้มพรีเมียม #2F2420 */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#2F2420] via-[#2F2420]/40 to-transparent z-10 pointer-events-none"></div>
-        
+
         <div className={`absolute top-[20%] md:top-[60%] left-0 right-0 w-full text-center px-4 z-20 ${isVisible ? 'animate-smooth-up delay-150' : 'opacity-0'}`}>
           <h2 className="text-base sm:text-2xl md:text-3xl lg:text-[2.5rem] font-serif tracking-[0.15em] text-white uppercase font-bold drop-shadow-[0_4px_12px_rgba(0,0,0,0.55)]">
             BATH & DIFFUSER VESSEL
           </h2>
         </div>
-        
-        
+
+
       </div>
 
       {/* ครึ่งล่าง (4 รูปเล็ก) */}
@@ -647,15 +652,15 @@ export function BathDiffuserVessel() {
           {subItems.map((item, index) => {
             const delays = ['delay-450', 'delay-600', 'delay-750', 'delay-900'];
             return (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 // 🌟 ปลดล็อกขยายความสูงสูงสุดขึ้นเป็น max-h-[20vh] md:max-h-[26vh] เพื่อให้รูปใหญ่เด่นเต็มตา สัดส่วนสมดุลพอดีเป๊ะครับ
                 className={`w-full aspect-square overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-[#DCD6CD] mx-auto max-h-[20vh] md:max-h-[26vh] ${isVisible ? 'animate-smooth-up ' + delays[index] : 'opacity-0'}`}
               >
-                <img 
-                  src={item.img} 
-                  alt={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`} 
-                  title={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`} 
+                <img
+                  src={item.img}
+                  alt={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`}
+                  title={`Terra Home Studio Bath & Diffuser Vessel ${item.id}`}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out cursor-pointer select-none"
                 />
               </div>

@@ -10,7 +10,7 @@ type Props = {
 
 export const revalidate = 0 // ✅ stock เปลี่ยนบ่อย ต้อง fresh ทุก request
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
 
 // ⚡ ฟังก์ชันทำ SEO (generateMetadata) แบบรองรับ Next.js ใหม่
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
