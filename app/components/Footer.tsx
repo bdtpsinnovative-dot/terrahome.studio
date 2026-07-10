@@ -84,21 +84,21 @@ export default function Footer() {
         </div>
 
         {/* Main Footer Content overlaid on top */}
-        <div className="relative z-10 pt-5 pb-2 px-6 md:px-12 xl:px-16 w-full">
+        <div className="relative z-10 pt-6 pb-1 px-6 md:px-12 xl:px-16 w-full">
           <div className="max-w-[1380px] mx-auto">
 
             {/* Main Layout: Flex for better fluid wrapping on smaller screens */}
-            <div className="flex flex-col lg:flex-row justify-between gap-6 lg:gap-6 xl:gap-8 items-start mb-2">
+            <div className="flex flex-col lg:flex-row justify-between gap-6 lg:gap-6 xl:gap-8 items-start">
 
               {/* Col 1: Logo & Description */}
               <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 lg:-ml-4 xl:-ml-6">
-                <div className="mb-4 flex flex-col items-start w-full">
+                <div className="mb-2 flex flex-col items-start w-full">
                   <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/logo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
                 </div>
-                <p className="text-xs leading-relaxed text-[#2A231D] font-medium max-w-[240px] mb-4">
+                <p className="text-xs leading-relaxed text-[#2A231D] font-medium max-w-[240px] mb-2">
                   Thoughtful home decor and objects that bring warmth, balance, and quiet living into everyday spaces.
                 </p>
-                <div className="w-8 h-[1px] bg-[#9C8C7A] mb-4"></div>
+                <div className="w-8 h-[1px] bg-[#9C8C7A] mb-2"></div>
                 {/* Social Icons (Not linked yet per request) */}
                 <div className="flex justify-center lg:justify-start space-x-3.5 w-full">
                 </div>
@@ -110,7 +110,7 @@ export default function Footer() {
 
                   {/* Contact Content */}
                   <div className="relative z-10 flex flex-col h-full justify-center">
-                    <div className="flex items-start gap-3.5 mb-4">
+                    <div className="flex items-start gap-3.5 mb-2">
                       <div className="w-8 h-8 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center text-[#7A695C] shrink-0 mt-0.5 shadow-inner border border-white/60">
                         <MapPin />
                       </div>
@@ -126,7 +126,7 @@ export default function Footer() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col space-y-3">
+                    <div className="flex flex-col space-y-2">
                       <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" className="flex items-center gap-3.5 group/link w-fit">
                         <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                           <Phone />
@@ -159,15 +159,15 @@ export default function Footer() {
               </div>
 
               {/* Col 3: Links & Hours (Remaining space) */}
-              <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-6 xl:gap-5">
+              <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-4">
 
                 {/* GET IN TOUCH */}
                 <div className="flex flex-col">
-                  <div className="mb-4">
-                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">GET IN TOUCH</h5>
+                  <div className="mb-2">
+                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-1">GET IN TOUCH</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
-                  <ul className="space-y-3.5 text-xs text-[#2A231D] font-medium">
+                  <ul className="space-y-2 text-xs text-[#2A231D] font-medium">
                     <li><span className="hover:text-black transition cursor-pointer whitespace-nowrap">Contact Us</span></li>
                     <li><span className="hover:text-black transition cursor-pointer whitespace-nowrap">Book An Appointment</span></li>
                   </ul>
@@ -178,12 +178,12 @@ export default function Footer() {
 
                 {/* CATEGORIES */}
                 <div className="flex flex-col col-span-1">
-                  <div className="mb-4">
-                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">CATEGORIES</h5>
+                  <div className="mb-2">
+                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-1">CATEGORIES</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
                   {/* แบ่ง 2 คอลัมน์ 5-5 */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     {categoryGroups.map(group => {
                       const isStandalone = group.items.length === 0 || (group.items.length === 1 && group.items[0] === group.label);
 
@@ -202,7 +202,7 @@ export default function Footer() {
                             <span>{group.label}</span>
                             <span className="text-[9px] text-[#5A524A] transition-transform duration-300 group-open:rotate-180 ml-1">▼</span>
                           </summary>
-                          <ul className="mt-2 mb-1 space-y-2 pl-3 border-l border-[#9C8C7A]/50">
+                          <ul className="mt-1 mb-1 space-y-1 pl-3 border-l border-[#9C8C7A]/50">
                             {group.items.map(item => {
                               // ใช้ Regex ตัดคำนำหน้ากลุ่มทิ้ง ไม่ต้อง if/else ให้เมื่อย
                               const display = item.replace(/^(Decorative|Decotative|Doll|Wall Art|Vase)\s+/i, "");
@@ -224,11 +224,11 @@ export default function Footer() {
 
                 {/* OPENING HOURS & ILLUSTRATION */}
                 <div className="flex flex-col relative w-full lg:max-w-[200px]">
-                  <div className="mb-4">
-                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">OPENING HOURS</h5>
+                  <div className="mb-2">
+                    <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-1">OPENING HOURS</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
-                  <table className="w-full text-left text-xs text-[#2A231D] font-medium border-separate border-spacing-y-2.5">
+                  <table className="w-full text-left text-xs text-[#2A231D] font-medium border-separate border-spacing-y-1">
                     <tbody>
                       <tr><td className="pr-4 align-top whitespace-nowrap">Monday</td><td className="text-left whitespace-nowrap">From 9:15 am</td></tr>
                       <tr><td className="pr-4 align-top whitespace-nowrap">Tuesday</td><td className="text-left whitespace-nowrap">Closed</td></tr>
@@ -247,7 +247,7 @@ export default function Footer() {
             </div>
 
             {/* Bottom Copyright Bar */}
-            <div className="relative border-t border-[#9C8C7A]/60 pt-3 flex flex-col md:flex-row items-center justify-between text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
+            <div className="relative border-t border-[#9C8C7A]/60 pt-2 flex flex-col md:flex-row items-center justify-between text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
               <div className="flex items-center gap-6">
                 <div className="w-[3px] h-[3px] rounded-full bg-[#9C8C7A] hidden md:block"></div>
                 <p>© 2025 TERRA HOME STUDIO. ALL RIGHTS RESERVED.</p>
