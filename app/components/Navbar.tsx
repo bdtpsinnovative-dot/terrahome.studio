@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/src/supabase/client';
+import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
@@ -105,12 +106,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   };
 
   const structuredCategories = useMemo(() => {
-    const finalCollections = collections && collections.length > 0 ? collections : [];
-    const cats = new Set<string>();
-    finalCollections.forEach(group => {
-      if (group && group.product_sup) cats.add(group.product_sup);
-    });
-    const rawCategories = Array.from(cats).sort();
+    const rawCategories = [...HARDCODED_CATEGORIES].sort();
 
     const groups: { label: string, isGroup: boolean, items: { fullValue: string, displayLabel: string }[], isSpecial?: boolean }[] = [
       { label: "All", isGroup: false, items: [{ fullValue: "All", displayLabel: "All" }] }
@@ -170,7 +166,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     });
 
     return groups;
-  }, [collections]);
+  }, []);
 
   const darkBannerPages = ['/', '/prop', '/about'];
   const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop'));

@@ -170,9 +170,9 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
 
-      {/* 1. จัดตำแหน่ง Navbar (ส่ง bannerGroups เข้าไปแทน เพื่อให้เมนู Dropdown อยู่ครบถ้วนเสมอ!) */}
+      {/* 1. จัดตำแหน่ง Navbar */}
       <div className="relative z-50">
-        <Navbar collections={bannerGroups || []} isLightMode={!hasBanner} />
+        <Navbar isLightMode={!hasBanner} />
       </div>
 
       {/* 2. ตัวแบนเนอร์ด้านบน */}

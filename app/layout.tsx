@@ -85,58 +85,11 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-type NavbarCollectionGroup = {
-  product_sup: string | null;
-  products: { id: string | number }[] | null;
-};
-
-const getCollectionsData = unstable_cache(
-  async (): Promise<NavbarCollectionGroup[]> => {
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseKey) {
-        console.warn("Supabase credentials missing. Skipping cache collections fetch.");
-        return [];
-      }
-
-      const supabase = createSupabaseClient(supabaseUrl, supabaseKey);
-
-      const { data, error } = await supabase
-        .from("collection_groups")
-        .select(`
-          product_sup,
-          products ( id )
-        `);
-
-      if (error) {
-        console.error("Navbar Supabase error:", error.message);
-        return [];
-      }
-
-      const activeData = ((data ?? []) as NavbarCollectionGroup[]).filter(
-        (item) => item.products && item.products.length > 0
-      );
-
-      console.log("Navbar cached categories count:", activeData.length);
-      return activeData;
-    } catch (error) {
-      console.error("Navbar data cache error:", error);
-      return [];
-    }
-  },
-  ["navbar-collection-groups"],
-  { revalidate: 3600 }
-);
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  const collections = await getCollectionsData();
 
   return (
     <html
@@ -208,7 +161,7 @@ export default async function RootLayout({
         />
         {/* 2. ห่อหุ้ม Navbar ด้วย Suspense เพื่อให้ฝั่ง Client สามารถดึง searchParams มาใช้ได้ตอน build */}
         <Suspense fallback={<div className="h-20 bg-[#F9F6F0] w-full animate-pulse" />}>
-          <Navbar collections={collections} />
+          <Navbar />
         </Suspense>
 
         <main className="flex-1 w-full">

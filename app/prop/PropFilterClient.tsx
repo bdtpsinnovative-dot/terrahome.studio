@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation" 
 import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
+import { HARDCODED_CATEGORIES } from "@/app/constants/categories"
 
 export default function PropFilterClient({ collections, branches }: { collections: any[], branches: any[] }) {
   const router = useRouter()
@@ -109,11 +110,7 @@ export default function PropFilterClient({ collections, branches }: { collection
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
   const structuredCategories = useMemo(() => {
-    const cats = new Set<string>()
-    collections.forEach(group => {
-      if (group.product_sup) cats.add(group.product_sup)
-    })
-    const rawCategories = Array.from(cats).sort()
+    const rawCategories = [...HARDCODED_CATEGORIES].sort()
 
     const decorativeItems: any[] = []
     const dollItems: any[] = []
@@ -163,7 +160,7 @@ export default function PropFilterClient({ collections, branches }: { collection
     })
 
     return finalMenu
-  }, [collections])
+  }, [])
 
   const renderPagination = () => {
     const pages = [];

@@ -1,0 +1,23 @@
+export const HARDCODED_CATEGORIES = [
+  "Art Object",
+  "Book End",
+  "Candle Holder",
+  "Decorative Bath",
+  "Decorative Box",
+  "Decorative Toy",
+  "Doll Animal",
+  "Doll Human",
+  "Doll Object",
+  "Doll Plant",
+  "Kitchenware",
+  "Tray",
+  "Vase Ceramic Handmade",
+  "Vase Glass Handmade",
+  "Vase Normal",
+  "Wall Art 3D Digital Print ",
+  "Wall Art Digital Print ",
+  "Wall Art Digital Print  ",
+  "Wall Art Hand Craft",
+  "Wall Art Hand Craft 50%",
+  "Wall Art Hand Craft 80%"
+];

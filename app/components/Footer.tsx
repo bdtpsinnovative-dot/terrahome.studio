@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/src/supabase/client';
+import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
 
 const Mail = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>;
 const MapPin = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
@@ -12,50 +12,34 @@ const Globe = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" str
 type CategoryGroup = { label: string; items: string[] };
 
 export default function Footer() {
-  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([{ label: "All", items: [] }]);
+  const categoryGroups = useMemo(() => {
+    const rawCategories = [...HARDCODED_CATEGORIES].sort();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const supabase = createClient();
-        const { data } = await supabase.from("collection_groups").select("product_sup, products(id)");
+    const grouped: Record<string, string[]> = {};
+    const newCategoryGroups: CategoryGroup[] = [{ label: "All", items: [] }];
 
-        // ดึงเฉพาะหมวดหมู่ที่มีสินค้า ตัดตัวซ้ำ แล้วเรียง A-Z
-        const rawCategories = [...new Set(((data ?? []) as any[])
-          .filter(d => d.products?.length)
-          .map(d => d.product_sup)
-          .filter(Boolean))].sort();
+    // จับหมวดหมู่ย่อยมัดรวมกลุ่มหลัก ถ้าไม่เข้าพวกก็ปล่อยแยกเดี่ยว
+    rawCategories.forEach(cat => {
+      const lower = cat.toLowerCase();
+      const key = (lower.startsWith("decorative") || lower.startsWith("decotative")) ? "Decorative"
+        : lower.startsWith("doll ") ? "Doll"
+          : lower.startsWith("vase") ? "Vase"
+            : lower.startsWith("wall art ") ? "Wall Art" : cat;
 
-        const grouped: Record<string, string[]> = {};
-        const newCategoryGroups: CategoryGroup[] = [{ label: "All", items: [] }];
-
-        // จับหมวดหมู่ย่อยมัดรวมกลุ่มหลัก ถ้าไม่เข้าพวกก็ปล่อยแยกเดี่ยว
-        rawCategories.forEach(cat => {
-          const lower = cat.toLowerCase();
-          const key = (lower.startsWith("decorative") || lower.startsWith("decotative")) ? "Decorative"
-            : lower.startsWith("doll ") ? "Doll"
-              : lower.startsWith("vase") ? "Vase"
-                : lower.startsWith("wall art ") ? "Wall Art" : cat;
-
-          if (key !== cat) {
-            (grouped[key] ||= []).push(cat);
-          } else {
-            newCategoryGroups.push({ label: cat, items: [cat] });
-          }
-        });
-
-        // ดันพวกที่จัดกลุ่มแล้วเข้า array กลาง
-        Object.entries(grouped).forEach(([label, items]) => newCategoryGroups.push({ label, items }));
-
-        // เรียงลำดับ A-Z อีกรอบตามชื่อกลุ่ม
-        newCategoryGroups.sort((a, b) => a.label.localeCompare(b.label));
-
-        setCategoryGroups(newCategoryGroups);
-      } catch (error) {
-        console.error("Failed to fetch footer categories:", error);
+      if (key !== cat) {
+        (grouped[key] ||= []).push(cat);
+      } else {
+        newCategoryGroups.push({ label: cat, items: [cat] });
       }
-    };
-    fetchCategories();
+    });
+
+    // ดันพวกที่จัดกลุ่มแล้วเข้า array กลาง
+    Object.entries(grouped).forEach(([label, items]) => newCategoryGroups.push({ label, items }));
+
+    // เรียงลำดับ A-Z อีกรอบตามชื่อกลุ่ม
+    newCategoryGroups.sort((a, b) => a.label.localeCompare(b.label));
+
+    return newCategoryGroups;
   }, []);
 
   return (
