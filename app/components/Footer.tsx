@@ -64,24 +64,31 @@ export default function Footer() {
       {/* Bottom Banner — รูปเบลอเป็น background, Content วางทับ */}
       <div className="relative w-full overflow-hidden">
 
-        {/* Background Image - minimal blur to show photo clearly */}
-        <img
-          src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780392557796-349.webp"
-          alt="TERRA Home Banner"
-          title="TERRA Home Banner"
-          className="absolute inset-0 w-full h-full object-cover scale-105"
-        />
-        {/* Overlay: same tone as About page bg */}
-        <div className="absolute inset-0 bg-[#DFD6CE]/33"></div>
-        {/* Top fade: ไล่สีจาก About (BrandIntroduction) bg ลงมา เพื่อให้สีต่อกัน */}
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#DFD6CE] to-transparent pointer-events-none"></div>
+        {/* Background Layer with Mask for seamless fade from ANY page background */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ 
+            maskImage: 'linear-gradient(to bottom, transparent 0px, black 160px)', 
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 160px)' 
+          }}
+        >
+          {/* Background Image - minimal blur to show photo clearly */}
+          <img
+            src="https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780392557796-349.webp"
+            alt="TERRA Home Banner"
+            title="TERRA Home Banner"
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+          />
+          {/* Overlay: same tone as About page bg */}
+          <div className="absolute inset-0 bg-[#DFD6CE]/33"></div>
+        </div>
 
         {/* Main Footer Content overlaid on top */}
-        <div className="relative z-10 pt-16 pb-4 px-6 md:px-12 xl:px-16 w-full">
+        <div className="relative z-10 pt-8 pb-2 px-6 md:px-12 xl:px-16 w-full">
           <div className="max-w-[1380px] mx-auto">
 
             {/* Main Layout: Flex for better fluid wrapping on smaller screens */}
-            <div className="flex flex-col lg:flex-row justify-between gap-10 lg:gap-6 xl:gap-8 items-start mb-8">
+            <div className="flex flex-col lg:flex-row justify-between gap-10 lg:gap-6 xl:gap-8 items-start mb-4">
 
               {/* Col 1: Logo & Description */}
               <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 pt-4 lg:pt-5 lg:-ml-4 xl:-ml-6">
@@ -98,28 +105,11 @@ export default function Footer() {
               </div>
 
               {/* การ์ด คอนเท็น*/}
-              <div className="w-full lg:w-[35%] xl:w-[32%] flex justify-start lg:-mt-9 relative z-20 group">
-                <div className="relative w-full max-w-[460px] bg-transparent rounded-xl shadow-[0_10px_40px_rgba(60,50,40,0.04)] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_60px_rgba(60,50,40,0.08)] hover:-translate-y-1">
+              <div className="w-full lg:w-[35%] xl:w-[32%] flex justify-start pt-4 lg:pt-5 relative z-20">
+                <div className="relative w-full max-w-[460px]">
 
-                  {/*เงาปลอม */}
-                  <div className="absolute right-[1%] bottom-[-5%] w-[25%] h-[15%] bg-[#2F241A]/50 blur-[20px] rounded-[100%] z-0 pointer-events-none transition-all duration-700 group-hover:scale-110"></div>
-
-                  {/* Background Image Container */}
-                  <div
-                    className="absolute right-0 bottom-0 w-[55%] h-[95%] bg-no-repeat opacity-[0.75] mix-blend-multiply z-0 pointer-events-none transition-transform duration-700 group-hover:scale-105 drop-shadow-[-5px_8px_12px_rgba(80,60,40,0.25)]"
-                    style={{
-                      backgroundImage: "url('https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1782277705238-624.webp')",
-                      backgroundPosition: "bottom right",
-                      backgroundSize: "contain"
-                    }}
-                  >
-                  </div>
-
-                  {/* Soft Gradient Mask for image fading */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent pointer-events-none z-0"></div>
-
-                  {/* Card Content */}
-                  <div className="relative z-10 p-6 xl:p-8 pr-[25%] flex flex-col h-full justify-center">
+                  {/* Contact Content */}
+                  <div className="relative z-10 flex flex-col h-full justify-center">
                     <div className="flex items-start gap-3.5 mb-6">
                       <div className="w-8 h-8 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center text-[#7A695C] shrink-0 mt-0.5 shadow-inner border border-white/60">
                         <MapPin />
@@ -250,36 +240,6 @@ export default function Footer() {
                     </tbody>
                   </table>
 
-                  {/* Decorative Arch Illustration (Positioned outside the table on desktop) */}
-                  <div className="hidden xl:flex absolute bottom-[-10px] -right-[130px] w-[110px] h-[190px] items-end justify-center opacity-[0.15] pointer-events-none">
-                    <svg viewBox="0 0 100 150" fill="none" stroke="#6E4F32" strokeWidth="0.8" className="w-full h-full">
-                      {/* Minimalist Arch */}
-                      <path d="M 15 150 L 15 65 A 35 35 0 0 1 85 65 L 85 150" />
-                      {/* Floor Line */}
-                      <path d="M 0 150 L 100 150" />
-
-                      {/* Minimalist Pot (Trapezoid) */}
-                      <path d="M 38 150 L 33 115 L 67 115 L 62 150 Z" />
-                      {/* Pot Details (Line across the top) */}
-                      <path d="M 35 125 L 65 125" />
-
-                      {/* Main Plant Stem */}
-                      <path d="M 50 115 Q 45 80 55 45" />
-
-                      {/* Minimalist Leaves */}
-                      <path d="M 49 95 Q 25 90 35 75 Q 45 80 48 90" fill="#6E4F32" fillOpacity="0.05" />
-                      <path d="M 51 85 Q 75 80 65 65 Q 55 70 52 80" fill="#6E4F32" fillOpacity="0.05" />
-                      <path d="M 52 65 Q 35 60 40 45 Q 50 55 53 60" fill="#6E4F32" fillOpacity="0.05" />
-                      <path d="M 54 50 Q 70 45 65 35 Q 55 40 55 48" fill="#6E4F32" fillOpacity="0.05" />
-                      {/* Top leaf */}
-                      <path d="M 55 45 Q 45 30 55 25 Q 60 35 55 45" fill="#6E4F32" fillOpacity="0.05" />
-
-                      {/* Accent dots (pebbles/soil) */}
-                      <circle cx="42" cy="112" r="0.6" fill="#6E4F32" />
-                      <circle cx="58" cy="113" r="0.6" fill="#6E4F32" />
-                      <circle cx="50" cy="111" r="0.6" fill="#6E4F32" />
-                    </svg>
-                  </div>
                 </div>
 
               </div>
