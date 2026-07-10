@@ -14,10 +14,10 @@ export const HARDCODED_CATEGORIES = [
   "Vase Ceramic Handmade",
   "Vase Glass Handmade",
   "Vase Normal",
-  "Wall Art 3D Digital Print ",
-  "Wall Art Digital Print ",
+  "Wall Art 3D Material",
+  "Wall Art 3D Physical Painting",
   "Wall Art Digital Print  ",
-  "Wall Art Hand Craft",
   "Wall Art Hand Craft 50%",
-  "Wall Art Hand Craft 80%"
+  "Wall Art Hand Craft 80%",
+  "Wall Art Hand Craft 100%"
 ];
