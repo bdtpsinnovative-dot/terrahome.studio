@@ -55,11 +55,12 @@ export default function CartPage() {
           id,
           quantity,
           product_id,
-          products (
+          products!inner (
             id, name, sku, price, image_url, collection_group_id,
-            collection_groups (
+            collection_groups!inner (
               name,
-              product_sup
+              product_sup,
+              tag
             ),
             stock (
               qty
@@ -67,6 +68,7 @@ export default function CartPage() {
           )
         `)
         .eq('user_id', session.user.id)
+        .ilike('products.collection_groups.tag', '%prop%')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -116,7 +118,7 @@ export default function CartPage() {
     if (error) {
       console.error("Error updating quantity:", error);
       // ถ้ายิงพลาด ให้รีโหลดข้อมูลใหม่
-      const { data } = await supabase.from('cart_items').select('*, products(*, collection_groups(*), stock(*))').eq('id', item.id).single();
+      const { data } = await supabase.from('cart_items').select('*, products!inner(*, collection_groups!inner(*), stock(*))').eq('id', item.id).single();
       if (data) {
         setCartItems(prev => prev.map(cartItem => cartItem.id === item.id ? data as any : cartItem));
       }

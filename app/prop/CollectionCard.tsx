@@ -14,10 +14,12 @@ interface ProductSlide {
 
 export default function CollectionCard({ 
   group, 
-  slides 
+  slides,
+  bgColor = "#EBE8E1" // 🌟 ส่งเป็น hex color แทน tailwind class เพื่อป้องกันปัญหา class โดน purge
 }: { 
   group: any
   slides: ProductSlide[]
+  bgColor?: string
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -42,8 +44,11 @@ export default function CollectionCard({
       title={`View details of ${group.name || group.id}`}
       className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
     >
-      {/* กล่องใส่รูปสินค้า ละลายพื้นหลังขาวเนียนๆ เข้ากับหน้าเว็บ */}
-      <div className="w-full aspect-square relative mb-5 flex items-center justify-center bg-[#EBE8E1] mix-blend-multiply">
+      {/* 🌟 ใช้ style={{ backgroundColor }} แทน Tailwind class เพื่อการันตีว่าสีไม่หายชัวร์ๆ */}
+      <div 
+        className="w-full aspect-square relative mb-5 flex items-center justify-center"
+        style={{ backgroundColor: bgColor }}
+      >
         {slides.length > 0 ? (
           slides.map((slide, idx) => (
             <img 
@@ -51,6 +56,7 @@ export default function CollectionCard({
               src={slide.image_url || ""} 
               alt={group.name || group.id} 
               title={group.name || group.id} 
+              // 🌟 ให้รูปภาพใช้ mix-blend-multiply เพื่อละลายพื้นหลังขาวเข้ากับสีของกล่องด้านบน
               className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
                 ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
               `}

@@ -104,6 +104,25 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     }
   };
 
+  // Fetch 16 Recommended Products (randomly from collections that have 'prop' tag)
+  const { data: recommendedCollectionsRaw } = await supabase
+    .from("collection_groups")
+    .select(`*, products!inner ( id, sku, name, image_url, price, status )`)
+    .ilike("tag", "%prop%")
+    
+  const activeRecommended = (recommendedCollectionsRaw || []).map(collection => {
+    return {
+      ...collection,
+      products: collection.products?.filter((p: any) => p.status === 'active' || !p.status) || []
+    }
+  }).filter(collection => collection.products && collection.products.length > 0 && collection.id !== currentGroupId);
+
+  for (let i = activeRecommended.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [activeRecommended[i], activeRecommended[j]] = [activeRecommended[j], activeRecommended[i]];
+  }
+  const recommendedCollections = activeRecommended.slice(0, 16);
+
   return (
     <>
       <script
@@ -114,6 +133,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
         groupProducts={groupProducts}
         currentGroupId={currentGroupId}
         initialSku={currentSku}
+        recommendedCollections={recommendedCollections}
       />
     </>
   )

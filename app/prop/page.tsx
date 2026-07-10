@@ -38,7 +38,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   // เพื่อให้มั่นใจว่ารูปจะไม่โดนตัดทิ้ง แม้สินค้านั้นจะไม่มีสต็อกในสาขาที่เลือกก็ตาม!
   const { data: bannerGroups } = await supabase
     .from("collection_groups")
-    .select("product_sup, image_url");
+    .select("product_sup, image_url")
+    .ilike("tag", "%prop%");
 
   let activeBannerImage = null;
   let allBannerImages: string[] = [];
@@ -66,6 +67,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   let collectionQuery = supabase
     .from("collection_groups")
     .select(`*, products!inner ( ${productSelectStr} )`)
+    .ilike("tag", "%prop%")
     .order("created_at", { ascending: false })
 
   if (branchId && branchId !== "all") {
@@ -121,8 +123,20 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
         discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
       }
     })
+    // 🌟 Shuffle products within the collection
+    for (let i = mappedProducts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [mappedProducts[i], mappedProducts[j]] = [mappedProducts[j], mappedProducts[i]];
+    }
+
     return { ...collection, products: mappedProducts }
   })
+
+  // 🌟 Shuffle the collections themselves
+  for (let i = mappedCollections.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [mappedCollections[i], mappedCollections[j]] = [mappedCollections[j], mappedCollections[i]];
+  }
 
   // เช็คว่ามีรูปแบนเนอร์ที่จะแสดงไหม? (ใช้ข้อมูลจาก bannerGroups ที่ดึงแยกมา)
   const hasBanner = activeBannerImage || allBannerImages.length > 0;
