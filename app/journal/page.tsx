@@ -1,117 +1,186 @@
 "use client";
 
-// 🌟 1. นำเข้า Variants เพิ่มเข้ามาตรงนี้ครับ
 import { motion, Variants } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
-const JOURNALS = [
-  {
-    id: 1,
-    title: "ยกระดับการจัดการคลังสินค้าด้วยระบบ RFID เทคโนโลยีแห่งอนาคต",
-    category: "SYSTEM TECH",
-    date: "08.06.2026",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80"
-  },
+const FEATURED_ARTICLE = {
+  id: 1,
+  title: "ศิลปะแห่งความสงบนิ่ง: การผสานประติมากรรมเข้ากับพื้นที่อยู่อาศัยยุคใหม่",
+  category: "INTERIOR STYLING",
+  date: "08.06.2026",
+  image: "/journal/On line-17.jpg",
+  excerpt: "ค้นพบวิธีการจัดวางวัตถุตกแต่งและประติมากรรมรูปทรงแอ็บสแตรกต์ เพื่อสร้างจุดนำสายตาที่เรียบง่ายแต่เปี่ยมไปด้วยพลัง ท่ามกลางความวุ่นวายของชีวิตเมือง"
+};
+
+const ARTICLES = [
   {
     id: 2,
-    title: "การจัดการสต็อกพรอพ (Props) สถาปัตยกรรมฐานข้อมูลที่ไร้รอยต่อ",
-    category: "DATABASE",
+    title: "สุนทรียภาพแห่งความผ่อนคลาย: ยกระดับกิจวัตรประจำวันด้วยสัมผัสจากหินธรรมชาติและกลิ่นหอม",
+    category: "BATH & WELLNESS",
     date: "05.06.2026",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
+    image: "/journal/On line-37.jpg"
   },
   {
     id: 3,
-    title: "Minimal UI/UX Design เทรนด์การออกแบบระบบหลังบ้านยุค 2026",
-    category: "DESIGN TRENDS",
+    title: "ความขี้เล่นที่ถูกคัดสรร: ศิลปะการจัดวางของตกแต่งให้ดูสนุกแต่ยังคงความหรูหรา",
+    category: "CURATED OBJECTS",
     date: "28.05.2026",
-    image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80"
+    image: "/journal/On line-40.jpg"
   }
 ];
 
 export default function JournalPage() {
-  // 🌟 2. ใส่ : Variants ต่อท้ายชื่อตัวแปร
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  // 🌟 3. ใส่ : Variants ต่อท้ายชื่อตัวแปร
-  const cardVariants: Variants = {
+  const fadeUp: Variants = {
     hidden: { y: 40, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 50, damping: 15 }
+      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+    }
+  };
+
+  const staggerContainer: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 }
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f1eb] text-[#1c1b19] py-28 px-4 sm:px-8 lg:px-16">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#f4f1eb] text-[#1c1b19] pt-32 pb-24 px-4 sm:px-8 lg:px-12 xl:px-16 selection:bg-[#1c1b19] selection:text-[#f4f1eb]">
+      <div className="max-w-[1440px] mx-auto">
         
-        {/* Header Section */}
-        <div className="mb-20 flex flex-col md:flex-row md:items-end md:justify-between border-b border-[#e1ded7] pb-10">
-          <div className="space-y-2">
+        {/* Page Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="mb-16 md:mb-24 flex flex-col md:flex-row md:items-end justify-between border-b border-[#1c1b19] pb-10"
+        >
+          <div className="flex flex-col gap-4">
             <span className="text-[10px] font-medium tracking-[0.25em] text-[#767167] uppercase">
-              Our Notebook
+              Terrahome Studio
             </span>
-            <h1 className="text-3xl md:text-5xl font-light tracking-tight uppercase">
-              Journal & Insights
+            <h1 className="text-4xl md:text-6xl lg:text-[5.5rem] font-light tracking-tighter uppercase leading-[0.9] -ml-1">
+              Journal <br className="hidden md:block"/> & Insights
             </h1>
           </div>
-          <p className="text-xs text-[#646057] tracking-wider mt-4 md:mt-0">
-            TOTAL ARTICLES ({JOURNALS.length})
-          </p>
-        </div>
+          <div className="mt-8 md:mt-0 text-right">
+             <span className="text-[10px] font-medium tracking-widest text-[#767167] uppercase">
+                Est. 2026
+             </span>
+          </div>
+        </motion.div>
 
-        {/* Journal Grid สไตล์เดียวกับหน้าร้านค้าในระบบ */}
+        {/* Featured Article - Editorial Style */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-[#e1ded7]"
-          variants={containerVariants}
+          variants={staggerContainer}
           initial="hidden"
           animate="visible"
+          className="mb-32 group cursor-pointer"
         >
-          {JOURNALS.map((post) => (
-            <motion.article
-              key={post.id}
-              variants={cardVariants}
-              className="group border-r border-b border-[#e1ded7] p-6 bg-transparent flex flex-col h-full transition-colors duration-500 hover:bg-[#ece9e4]/50"
-            >
-              {/* Image Showcase */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#ece9e4] mb-8">
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  title={post.title}
-                  className="object-cover w-full h-full transform scale-100 group-hover:scale-105 transition-transform duration-700 ease-out grayscale-[20%] group-hover:grayscale-0"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 left-4 text-[10px] tracking-[0.15em] bg-[#f4f1eb]/90 backdrop-blur-sm text-[#1c1b19] px-2.5 py-1 uppercase font-medium">
-                  {post.category}
-                </div>
-              </div>
-
-              {/* Meta info & Title */}
-              <div className="flex flex-col flex-grow">
-                <span className="text-[10px] text-[#9a9488] tracking-widest mb-2">{post.date}</span>
-                <h3 className="text-lg font-normal text-[#1c1b19] leading-snug tracking-tight mb-6 line-clamp-2 group-hover:text-[#646057] transition-colors duration-300">
-                  {post.title}
-                </h3>
-
-                {/* Read More Button Link */}
-                <div className="mt-auto pt-4 flex items-center justify-between border-t border-[#e1ded7]/60 group/link">
-                  <span className="text-[11px] font-medium tracking-widest uppercase text-[#767167] group-hover/link:text-[#1c1b19] transition-colors">
-                    Read Article
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
+            
+            {/* Featured Content (Left side on Desktop) */}
+            <div className="lg:col-span-5 flex flex-col justify-center order-2 lg:order-1">
+              <motion.div variants={fadeUp}>
+                <div className="flex items-center gap-4 mb-8">
+                  <span className="text-[10px] font-bold tracking-[0.2em] bg-[#1c1b19] text-[#f4f1eb] px-3 py-1.5 uppercase">
+                    Featured
                   </span>
-                  <ArrowRight className="w-4 h-4 text-[#767167] transform -rotate-45 group-hover/link:rotate-0 group-hover/link:text-[#1c1b19] transition-transform duration-300" />
+                  <span className="text-[10px] text-[#767167] tracking-[0.15em] uppercase">{FEATURED_ARTICLE.category}</span>
                 </div>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-normal leading-[1.15] tracking-tight mb-8 group-hover:text-[#646057] transition-colors duration-500">
+                  {FEATURED_ARTICLE.title}
+                </h2>
+                <p className="text-[#646057] text-sm md:text-base leading-relaxed mb-12 max-w-md">
+                  {FEATURED_ARTICLE.excerpt}
+                </p>
+              </motion.div>
+
+              <motion.div variants={fadeUp}>
+                <div className="inline-flex items-center gap-4 border-b border-[#1c1b19] pb-1.5 group/btn">
+                  <span className="text-xs font-medium tracking-[0.15em] uppercase">
+                    Read the Story
+                  </span>
+                  <ArrowRight className="w-4 h-4 transform group-hover/btn:translate-x-2 transition-transform duration-300" />
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Featured Image (Right side on Desktop) */}
+            <div className="lg:col-span-7 relative h-[60vh] lg:h-[75vh] w-full overflow-hidden order-1 lg:order-2 bg-[#ece9e4]">
+              <motion.img
+                variants={fadeUp}
+                src={FEATURED_ARTICLE.image}
+                alt={FEATURED_ARTICLE.title}
+                className="absolute inset-0 w-full h-full object-cover transform scale-100 group-hover:scale-[1.03] transition-transform duration-[1.5s] ease-out grayscale-[15%] group-hover:grayscale-0"
+              />
+              <div className="absolute top-6 right-6 lg:top-8 lg:right-8 mix-blend-difference text-white">
+                <span className="text-xs tracking-widest">{FEATURED_ARTICLE.date}</span>
               </div>
-            </motion.article>
-          ))}
+            </div>
+          </div>
         </motion.div>
+
+        {/* Recent Articles */}
+        <div className="border-t border-[#1c1b19]/20 pt-16">
+          <div className="flex justify-between items-end mb-16">
+            <h3 className="text-3xl font-light tracking-tight uppercase">Recent Reads</h3>
+            <span className="text-[10px] font-medium tracking-widest text-[#767167] uppercase hidden md:block">
+              Latest Knowledge
+            </span>
+          </div>
+
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-x-12 lg:gap-x-16 gap-y-16"
+          >
+            {ARTICLES.map((article) => (
+              <motion.article 
+                key={article.id} 
+                variants={fadeUp}
+                className="group cursor-pointer flex flex-col"
+              >
+                {/* Image Box */}
+                <div className="relative aspect-[4/3] overflow-hidden mb-8 bg-[#ece9e4]">
+                  <img
+                    src={article.image}
+                    alt={article.title}
+                    className="w-full h-full object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[1.2s] ease-out grayscale-[15%] group-hover:grayscale-0"
+                  />
+                  {/* Subtle overlay on hover */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+                  
+                  {/* Read More Text overlaid */}
+                  <div className="absolute bottom-6 left-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0 mix-blend-difference">
+                     <span className="text-[10px] font-medium tracking-[0.2em] uppercase border-b border-white pb-1">Read Article</span>
+                  </div>
+                </div>
+
+                {/* Meta */}
+                <div className="flex justify-between items-baseline mb-4">
+                  <span className="text-[10px] font-bold text-[#1c1b19] tracking-[0.15em] uppercase">
+                    {article.category}
+                  </span>
+                  <span className="text-[10px] text-[#767167] tracking-widest">
+                    {article.date}
+                  </span>
+                </div>
+                
+                {/* Title */}
+                <h4 className="text-2xl font-normal leading-snug tracking-tight group-hover:text-[#646057] transition-colors duration-300">
+                  {article.title}
+                </h4>
+              </motion.article>
+            ))}
+          </motion.div>
+        </div>
+
       </div>
     </div>
   );

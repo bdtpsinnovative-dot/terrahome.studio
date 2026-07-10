@@ -21,17 +21,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://terrahome-studio.vercel.app'),
-  title: "Terra Home Studio | ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล",
-  description: "Discover premium ceramic vessels from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอลเพื่อบ้านคุณ",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Terra Home Studio | ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล",
+    template: "%s | Terra Home Studio",
+  },
+  description: "Discover premium ceramic vessels, decorative objects and tableware from Terra Home Studio. ค้นพบของตกแต่งบ้านและแจกันเซรามิกดีไซน์มินิมอล สไตล์ wabi-sabi และ Nordic เพื่อบ้านคุณ",
+  keywords: ["ของตกแต่งบ้าน", "เซรามิก", "แจกัน", "minimalist home decor", "ceramic vase", "decorative objects", "Thailand", "terra home studio"],
+  authors: [{ name: "Terra Home Studio" }],
+  creator: "Terra Home Studio",
   icons: {
-    icon: '/favicon-square.png',
+    icon: [
+      { url: '/favicon-square.png', type: 'image/png' },
+    ],
+    apple: '/favicon-square.png',
   },
   openGraph: {
     title: "Terra Home Studio | Crafted for Calm Living",
     description: "Discover thoughtfully designed ceramic vessels, tableware, and decorative objects. ค้นพบของตกแต่งบ้านเซรามิก แจกัน และภาชนะบนโต๊ะอาหารดีไซน์มินิมอล",
-    url: "https://terrahome-studio.vercel.app",
+    url: SITE_URL,
     siteName: "Terra Home Studio",
     images: [
       {
@@ -41,7 +52,7 @@ export const metadata: Metadata = {
         alt: "Terra Home Studio - Crafted for Calm Living",
       },
     ],
-    locale: "en_US",
+    locale: "th_TH",
     type: "website",
   },
   twitter: {
@@ -52,6 +63,16 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
@@ -141,18 +162,45 @@ export default async function RootLayout({
             </Script>
           </>
         )}
-        {/* JSON-LD Schema for Organization */}
+        {/* JSON-LD Schema for Organization + WebSite */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "Terra Home Studio",
-              "url": "https://terrahome-studio.vercel.app",
-              "logo": "https://terrahome-studio.vercel.app/logo.png",
-              "description": "Thoughtfully designed ceramic vessels, tableware, and decorative objects for calm living. ของตกแต่งบ้านเซรามิก แจกัน และภาชนะบนโต๊ะอาหารดีไซน์มินิมอล",
-            }),
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "Terra Home Studio",
+                "alternateName": "TERRA Home Studio",
+                "url": SITE_URL,
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": `${SITE_URL}/logo.png`,
+                  "width": 512,
+                  "height": 512,
+                },
+                "description": "Thoughtfully designed ceramic vessels, tableware, and decorative objects for calm living. ของตกแต่งบ้านเซรามิก แจกัน และภาชนะบนโต๊ะอาหารดีไซน์มินิมอล สไตล์ minimalist, wabi-sabi, Nordic",
+                "foundingDate": "2022",
+                "areaServed": "TH",
+                "sameAs": [],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "Terra Home Studio",
+                "url": SITE_URL,
+                "description": "ของตกแต่งบ้านเซรามิก แจกัน และ Decorative Objects ดีไซน์มินิมอล จาก Terra Home Studio",
+                "inLanguage": ["th", "en"],
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": `${SITE_URL}/prop?category={search_term_string}`,
+                  },
+                  "query-input": "required name=search_term_string",
+                },
+              },
+            ]),
           }}
         />
         {/* 2. ห่อหุ้ม Navbar ด้วย Suspense เพื่อให้ฝั่ง Client สามารถดึง searchParams มาใช้ได้ตอน build */}

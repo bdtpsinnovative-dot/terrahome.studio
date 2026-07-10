@@ -1,35 +1,40 @@
 import { MetadataRoute } from 'next';
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app';
+
+// Use a stable date for static pages to avoid Google treating every deploy as a full re-crawl
+const STATIC_UPDATED = new Date('2026-07-10');
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: 'https://terrahome-studio.vercel.app',
-      lastModified: new Date(),
+      url: SITE_URL,
+      lastModified: STATIC_UPDATED,
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: 'https://terrahome-studio.vercel.app/prop',
-      lastModified: new Date(),
+      url: `${SITE_URL}/prop`,
+      lastModified: STATIC_UPDATED,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: 'https://terrahome-studio.vercel.app/about',
-      lastModified: new Date(),
+      url: `${SITE_URL}/about`,
+      lastModified: STATIC_UPDATED,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: 'https://terrahome-studio.vercel.app/journal',
-      lastModified: new Date(),
+      url: `${SITE_URL}/journal`,
+      lastModified: STATIC_UPDATED,
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
-      url: 'https://terrahome-studio.vercel.app/contact',
-      lastModified: new Date(),
+      url: `${SITE_URL}/contact`,
+      lastModified: STATIC_UPDATED,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
@@ -42,14 +47,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
     const { data: products } = await supabase
       .from('products')
-      .select('collection_group_id, sku')
+      .select('collection_group_id, sku, updated_at')
+      .not('collection_group_id', 'is', null) // ✅ กรอง null ออก — ป้องกัน /prop/null/... URLs
       .order('id', { ascending: false });
 
     if (products && products.length > 0) {
       const productPages: MetadataRoute.Sitemap = products.map((item) => ({
-        url: `https://terrahome-studio.vercel.app/prop/${encodeURIComponent(item.collection_group_id)}/${encodeURIComponent(item.sku)}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
+        url: `${SITE_URL}/prop/${encodeURIComponent(item.collection_group_id)}/${encodeURIComponent(item.sku)}`,
+        lastModified: item.updated_at ? new Date(item.updated_at) : STATIC_UPDATED,
+        changeFrequency: 'weekly' as const,
         priority: 0.6,
       }));
       return [...staticPages, ...productPages];
@@ -60,3 +66,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return staticPages;
 }
+

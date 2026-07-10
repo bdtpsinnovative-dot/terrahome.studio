@@ -8,7 +8,9 @@ type Props = {
   params: Promise<{ groupId: string; sku: string }> // ⚡ ปรับเป็น Promise ตามมาตรฐาน Next.js ใหม่
 }
 
-export const revalidate = 0
+export const revalidate = 0 // ✅ stock เปลี่ยนบ่อย ต้อง fresh ทุก request
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app'
 
 // ⚡ ฟังก์ชันทำ SEO (generateMetadata) แบบรองรับ Next.js ใหม่
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -17,30 +19,55 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
   const supabase = await createClient()
-  const { data: products } = await supabase
+  const { data: product } = await supabase
     .from("products")
-    .select("name, image_url")
+    .select("name, image_url, price, description")
     .eq("sku", currentSku)
     .single()
 
-  const title = products ? `${products.name} | Terra Home Studio` : "Product Details | Terra Home Studio"
-  const description = products 
-    ? `Discover minimalist home decor ${products.name} from the ${currentGroupId} collection. เช็คสินค้าและสาขาที่จำหน่าย ณ Terra Home Studio` 
-    : `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่ายในสต็อกปัจจุบัน`
+  const productName = product?.name || "Decorative Object"
+  const title = `${productName} — ${currentGroupId} Collection`
+  const description = product
+    ? `Shop ${productName} from the ${currentGroupId} collection at Terra Home Studio. เช็คสต็อกและสาขาที่จำหน่าย ${productName} พร้อมจัดส่ง`
+    : `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่ายใน Terra Home Studio`
+
+  const canonicalUrl = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`
+  const fullUrl = `${SITE_URL}${canonicalUrl}`
 
   return {
-    title: title,
-    description: description,
+    title,
+    description,
     alternates: {
-      canonical: `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
-      title: title,
-      description: description,
-      url: `https://terrahome-studio.vercel.app/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
+      title,
+      description,
+      url: fullUrl,
       siteName: 'Terra Home Studio',
-      images: products?.image_url ? [{ url: products.image_url }] : [],
-      type: 'article',
+      images: product?.image_url ? [
+        {
+          url: product.image_url,
+          width: 800,
+          height: 800,
+          alt: `${productName} - Terra Home Studio`,
+        }
+      ] : [
+        {
+          url: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478880815-990.webp",
+          width: 1200,
+          height: 630,
+          alt: "Terra Home Studio - Decorative Objects",
+        }
+      ],
+      type: 'website',
+      locale: 'th_TH',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: product?.image_url ? [product.image_url] : [],
     },
   }
 }
@@ -88,20 +115,59 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     redirect(`/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(groupProducts[0].sku)}`)
   }
   const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
+  const canonicalUrl = `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`;
+
+  // ✅ Product schema ที่ครบถ้วนกว่าเดิม พร้อม brand, category, itemCondition
   const productSchema = {
     "@context": "https://schema.org/",
     "@type": "Product",
-    "name": activeProduct?.name || "Product Details",
-    "image": activeProduct?.image_url || "",
-    "description": `เช็คสต็อกสินค้ากลุ่ม ${currentGroupId} และสาขาที่พร้อมจำหน่าย ณ Terra Home Studio`,
+    "name": activeProduct?.name || "Decorative Object",
+    "image": activeProduct?.image_url ? [activeProduct.image_url] : [],
+    "description": `${activeProduct?.name || "Decorative Object"} จาก ${currentGroupId} collection — Terra Home Studio. ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล สไตล์ wabi-sabi`,
     "sku": currentSku,
+    "brand": {
+      "@type": "Brand",
+      "name": "Terra Home Studio",
+    },
+    "category": "Home Decor > Ceramic & Decorative Objects",
+    "itemCondition": "https://schema.org/NewCondition",
     "offers": {
       "@type": "Offer",
       "priceCurrency": "THB",
       "price": activeProduct?.price || 0,
       "availability": totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "url": `https://terrahome-studio.vercel.app/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`
-    }
+      "url": canonicalUrl,
+      "seller": {
+        "@type": "Organization",
+        "name": "Terra Home Studio",
+      },
+    },
+  };
+
+  // ✅ BreadcrumbList schema สำหรับ navigation signal
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Collections",
+        "item": `${SITE_URL}/prop`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": currentGroupId,
+        "item": `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
+      },
+    ],
   };
 
   // Fetch 16 Recommended Products (randomly from collections that have 'prop' tag)
@@ -128,6 +194,10 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <ProductDetailClient 
         groupProducts={groupProducts}

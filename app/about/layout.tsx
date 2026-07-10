@@ -1,8 +1,26 @@
 import type { Metadata } from 'next';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.vercel.app';
+
+const aboutPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About Terra Home Studio",
+  "description": "เรื่องราวและปรัชญาของ Terra Home Studio แบรนด์ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล สไตล์ wabi-sabi และ Nordic จาก Bangkok",
+  "url": `${SITE_URL}/about`,
+  "breadcrumb": {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
+      { "@type": "ListItem", "position": 2, "name": "About", "item": `${SITE_URL}/about` },
+    ],
+  },
+};
+
 export const metadata: Metadata = {
-  title: 'About Us | Terra Home Studio - Minimalist Home Decor & Objects (เกี่ยวกับเรา)',
-  description: 'Our philosophy and story behind Terra Home Studio. ทำความรู้จักกับแบรนด์ของแต่งบ้านเซรามิกดีไซน์มินิมอล เพื่อบ้านที่อบอุ่นและสงบเงียบ',
+  title: 'About | Terra Home Studio - เรื่องราวของแบรนด์',
+  description: 'เรื่องราวและปรัชญาของ Terra Home Studio แบรนด์ของตกแต่งบ้านเซรามิกดีไซน์มินิมอล สไตล์ wabi-sabi และ Nordic ก่อตั้งโดยทีมนักออกแบบที่หลงใหลในความเรียบง่ายและงานคราฟท์',
+  keywords: ['terra home studio', 'เกี่ยวกับเรา', 'แบรนด์ของแต่งบ้าน', 'minimalist', 'wabi-sabi', 'ceramic design'],
   alternates: {
     canonical: '/about',
   },
@@ -13,5 +31,13 @@ export default function AboutLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
+      />
+      {children}
+    </>
+  );
 }

@@ -21,6 +21,7 @@ type CartItem = {
     collection_groups?: {
       name: string;
       product_sup: string;
+      tag?: string;
     };
     stock?: {
       qty: number;

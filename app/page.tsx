@@ -1,5 +1,7 @@
 'use client';
-
+// SEO Note: Homepage metadata is defined in app/layout.tsx (metadataBase, title, description, OG tags)
+// The HeroFallback component below is rendered server-side as Suspense fallback, providing H1 to Google.
+// Google indexes the SSR-rendered fallback: "Crafted for Calm Living." as H1 ✅
 import React, { useRef, useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 // --- ย้ายปุ่ม "Our Story" ออกจากสไลด์แรก ไปไว้สไลด์อื่นๆ แทนตามสั่งครับนาย ---
