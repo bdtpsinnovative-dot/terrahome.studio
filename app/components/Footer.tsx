@@ -84,33 +84,33 @@ export default function Footer() {
         </div>
 
         {/* Main Footer Content overlaid on top */}
-        <div className="relative z-10 pt-8 pb-2 px-6 md:px-12 xl:px-16 w-full">
+        <div className="relative z-10 pt-5 pb-2 px-6 md:px-12 xl:px-16 w-full">
           <div className="max-w-[1380px] mx-auto">
 
             {/* Main Layout: Flex for better fluid wrapping on smaller screens */}
-            <div className="flex flex-col lg:flex-row justify-between gap-10 lg:gap-6 xl:gap-8 items-start mb-4">
+            <div className="flex flex-col lg:flex-row justify-between gap-6 lg:gap-6 xl:gap-8 items-start mb-2">
 
               {/* Col 1: Logo & Description */}
-              <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 pt-4 lg:pt-5 lg:-ml-4 xl:-ml-6">
-                <div className="mb-6 flex flex-col items-start w-full">
+              <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 lg:-ml-4 xl:-ml-6">
+                <div className="mb-4 flex flex-col items-start w-full">
                   <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/logo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
                 </div>
-                <p className="text-xs leading-relaxed text-[#2A231D] font-medium max-w-[240px] mb-8">
+                <p className="text-xs leading-relaxed text-[#2A231D] font-medium max-w-[240px] mb-4">
                   Thoughtful home decor and objects that bring warmth, balance, and quiet living into everyday spaces.
                 </p>
-                <div className="w-8 h-[1px] bg-[#9C8C7A] mb-8"></div>
+                <div className="w-8 h-[1px] bg-[#9C8C7A] mb-4"></div>
                 {/* Social Icons (Not linked yet per request) */}
                 <div className="flex justify-center lg:justify-start space-x-3.5 w-full">
                 </div>
               </div>
 
               {/* การ์ด คอนเท็น*/}
-              <div className="w-full lg:w-[35%] xl:w-[32%] flex justify-start pt-4 lg:pt-5 relative z-20">
+              <div className="w-full lg:w-[35%] xl:w-[32%] flex justify-start relative z-20">
                 <div className="relative w-full max-w-[460px]">
 
                   {/* Contact Content */}
                   <div className="relative z-10 flex flex-col h-full justify-center">
-                    <div className="flex items-start gap-3.5 mb-6">
+                    <div className="flex items-start gap-3.5 mb-4">
                       <div className="w-8 h-8 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center text-[#7A695C] shrink-0 mt-0.5 shadow-inner border border-white/60">
                         <MapPin />
                       </div>
@@ -126,7 +126,7 @@ export default function Footer() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col space-y-4">
+                    <div className="flex flex-col space-y-3">
                       <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" className="flex items-center gap-3.5 group/link w-fit">
                         <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                           <Phone />
@@ -159,11 +159,11 @@ export default function Footer() {
               </div>
 
               {/* Col 3: Links & Hours (Remaining space) */}
-              <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-8 xl:gap-5 pt-4 lg:pt-5">
+              <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-6 xl:gap-5">
 
                 {/* GET IN TOUCH */}
                 <div className="flex flex-col">
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">GET IN TOUCH</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
@@ -178,7 +178,7 @@ export default function Footer() {
 
                 {/* CATEGORIES */}
                 <div className="flex flex-col col-span-1">
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">CATEGORIES</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
@@ -224,7 +224,7 @@ export default function Footer() {
 
                 {/* OPENING HOURS & ILLUSTRATION */}
                 <div className="flex flex-col relative w-full lg:max-w-[200px]">
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <h5 className="font-bold uppercase text-[#3A352F] text-[13px] tracking-[0.2em] mb-2">OPENING HOURS</h5>
                     <div className="w-8 h-[1px] bg-[#9C8C7A]"></div>
                   </div>
@@ -247,7 +247,7 @@ export default function Footer() {
             </div>
 
             {/* Bottom Copyright Bar */}
-            <div className="relative border-t border-[#9C8C7A]/60 pt-4 flex flex-col md:flex-row items-center justify-between text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
+            <div className="relative border-t border-[#9C8C7A]/60 pt-3 flex flex-col md:flex-row items-center justify-between text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
               <div className="flex items-center gap-6">
                 <div className="w-[3px] h-[3px] rounded-full bg-[#9C8C7A] hidden md:block"></div>
                 <p>© 2025 TERRA HOME STUDIO. ALL RIGHTS RESERVED.</p>
