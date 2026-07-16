@@ -224,7 +224,11 @@ export default function ProductDetailClient({
               {activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : "POA"}
             </p>
 
-            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-3 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+              <div>
+                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
+                <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || '-'}</span>
+              </div>
               <div>
                 <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">WIDTH</span>
                 <span className="font-medium text-[10px] text-[#3A3835]">{specs.width_cm || '-'} cm</span>
