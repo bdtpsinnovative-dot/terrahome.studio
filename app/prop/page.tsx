@@ -171,9 +171,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
 
       {/* 1. จัดตำแหน่ง Navbar */}
-      <div className="relative z-50">
-        <Navbar isLightMode={!hasBanner} />
-      </div>
+      <Navbar isLightMode={!hasBanner} />
 
       {/* 2. ตัวแบนเนอร์ด้านบน */}
       {hasBanner && (
@@ -187,7 +185,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       )}
 
       {/* 3. โซนเนื้อหาสินค้าด้านล่าง */}
-      <div className="relative z-30 max-w-[1600px] mx-auto w-full px-4 lg:py-16 pt-0 pb-24">
+      <div className={`max-w-[1600px] mx-auto w-full px-4 lg:py-16 pb-24 ${hasBanner ? 'pt-4 lg:pt-0' : 'pt-24 lg:pt-28'}`}>
         <PropFilterClient collections={mappedCollections} branches={branches || []} />
       </div>
       <Footer />

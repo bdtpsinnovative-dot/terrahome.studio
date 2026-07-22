@@ -21,10 +21,22 @@ export default function PropFilterClient({ collections, branches }: { collection
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
+  // 🌟 ล็อกไม่ให้หน้าจอหมุนหรือเลื่อนเมื่อเปิดเมนู Filter มือถือ
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [isSidebarOpen])
+
   const initialExpandedGroups = useMemo(() => {
-    if ((initialCategory.startsWith("Decorative ") || initialCategory.startsWith("Decotative ")) && !initialCategory.toLowerCase().includes("candle holder")) return ["DECORATIVE"]
-    if (initialCategory.startsWith("Doll ")) return ["DOLL"]
-    if (initialCategory.startsWith("Wall Art ")) return ["WALL ART"]
+    const catLower = initialCategory.toLowerCase().trim()
+    if ((catLower.startsWith("decorative") || catLower.startsWith("decotative")) && !catLower.includes("candle holder")) return ["DECORATIVE"]
+    if (catLower.startsWith("doll")) return ["DOLL"]
+    if (catLower.startsWith("vase")) return ["VASE"]
+    if (catLower.startsWith("wall art")) return ["WALL ART"]
     return []
   }, [initialCategory])
 
@@ -36,13 +48,25 @@ export default function PropFilterClient({ collections, branches }: { collection
   useEffect(() => {
     const urlCategory = searchParams.get('category') || "All"
     const urlPage = Number(searchParams.get('page')) || 1
-    const urlSearch = searchParams.get('search') || "" // 🌟 3. คอยดักฟังเผื่อมีการล้าง URL หรือเปลี่ยนค่าจากภายนอก
+    const urlSearch = searchParams.get('search') || ""
     setActiveFilter(urlCategory)
     setCurrentPage(urlPage)
     setSearchQuery(urlSearch)
   }, [searchParams])
 
-  // 🌟 4. อัปเดตฟังก์ชันเพื่อรองรับพารามิเตอร์การค้นหาบนแถบที่อยู่ URL
+  useEffect(() => {
+    const catLower = activeFilter.toLowerCase().trim()
+    if (catLower.startsWith("doll ")) {
+      setExpandedGroups(prev => prev.includes("DOLL") ? prev : [...prev, "DOLL"])
+    } else if ((catLower.startsWith("decorative ") || catLower.startsWith("decotative ")) && !catLower.includes("candle holder")) {
+      setExpandedGroups(prev => prev.includes("DECORATIVE") ? prev : [...prev, "DECORATIVE"])
+    } else if (catLower.startsWith("vase ")) {
+      setExpandedGroups(prev => prev.includes("VASE") ? prev : [...prev, "VASE"])
+    } else if (catLower.startsWith("wall art ")) {
+      setExpandedGroups(prev => prev.includes("WALL ART") ? prev : [...prev, "WALL ART"])
+    }
+  }, [activeFilter])
+
   const updateURL = (newFilter: string, newPage: number, newSearch: string) => {
     const params = new URLSearchParams(searchParams.toString())
     
@@ -60,15 +84,25 @@ export default function PropFilterClient({ collections, branches }: { collection
 
   const handleFilterChange = (filterValue: string) => {
     setActiveFilter(filterValue)
-    setCurrentPage(1) 
-    updateURL(filterValue, 1, searchQuery) // 🌟 ส่งค่าค้นหาปัจจุบันไปด้วย
-    setIsSidebarOpen(false) 
+    setCurrentPage(1)
+    updateURL(filterValue, 1, searchQuery)
+    setIsSidebarOpen(false)
+
+    const filterLower = filterValue.toLowerCase().trim()
+    if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
+      setExpandedGroups(prev => prev.includes("DECORATIVE") ? prev : [...prev, "DECORATIVE"])
+    } else if (filterLower.startsWith("doll")) {
+      setExpandedGroups(prev => prev.includes("DOLL") ? prev : [...prev, "DOLL"])
+    } else if (filterLower.startsWith("vase")) {
+      setExpandedGroups(prev => prev.includes("VASE") ? prev : [...prev, "VASE"])
+    } else if (filterLower.startsWith("wall art")) {
+      setExpandedGroups(prev => prev.includes("WALL ART") ? prev : [...prev, "WALL ART"])
+    }
   }
 
-  // 🌟 5. สร้างฟังก์ชันการจัดการเมื่อผู้ใช้พิมพ์ค้นหา
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
-    setCurrentPage(1) // รีเซ็ตหน้ากลับไปที่ 1 เสมอเวลาคนค้นหาใหม่
+    setCurrentPage(1)
     updateURL(activeFilter, 1, val)
   }
 
@@ -79,20 +113,48 @@ export default function PropFilterClient({ collections, branches }: { collection
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
     setCurrentPage(page);
-    updateURL(activeFilter, page, searchQuery); // 🌟 ส่งค่าค้นหาปัจจุบันไปด้วย
+    updateURL(activeFilter, page, searchQuery);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🌟 6. เจาะระบบกรองข้อมูลตัวเก่ง: เอาทั้งหมวดหมู่ และคำค้นหามามัดรวมกัน
   const filteredCollections = useMemo(() => {
-    // กรองตามหมวดหมู่ก่อน
-    let result = activeFilter === "All" 
-      ? collections 
-      : activeFilter === "SPECIAL_DISCOUNT"
-        ? collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
-        : collections.filter(group => group.product_sup === activeFilter)
+    let result = collections
 
-    // ถ้ามีการพิมพ์คำค้นหา ให้ทำการสแกนทะลวงเข้าไปกรองต่อทันที
+    const filterUpper = activeFilter.toUpperCase().trim()
+
+    if (activeFilter === "All") {
+      result = collections
+    } else if (activeFilter === "SPECIAL_DISCOUNT") {
+      result = collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
+    } else if (filterUpper === "DECORATIVE") {
+      result = collections.filter(group => {
+        const sup = (group.product_sup || "").trim().toLowerCase()
+        return (sup.startsWith("decorative") || sup.startsWith("decotative")) && !sup.includes("candle holder")
+      })
+    } else if (filterUpper === "DOLL") {
+      result = collections.filter(group => {
+        const sup = (group.product_sup || "").trim().toLowerCase()
+        return sup.startsWith("doll")
+      })
+    } else if (filterUpper === "VASE") {
+      result = collections.filter(group => {
+        const sup = (group.product_sup || "").trim().toLowerCase()
+        return sup.startsWith("vase")
+      })
+    } else if (filterUpper === "WALL ART") {
+      result = collections.filter(group => {
+        const sup = (group.product_sup || "").trim().toLowerCase()
+        return sup.startsWith("wall art")
+      })
+    } else {
+      const targetTrimmed = activeFilter.trim().toLowerCase()
+      result = collections.filter(group => {
+        if (!group.product_sup) return false
+        const groupSupTrimmed = group.product_sup.trim().toLowerCase()
+        return groupSupTrimmed === targetTrimmed
+      })
+    }
+
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(group => {
@@ -110,56 +172,53 @@ export default function PropFilterClient({ collections, branches }: { collection
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
   const structuredCategories = useMemo(() => {
-    const rawCategories = [...HARDCODED_CATEGORIES].sort()
+    const decorativeItems = [
+      { fullValue: "Decorative Bath", displayLabel: "BATH" },
+      { fullValue: "Decorative Box", displayLabel: "BOX" },
+      { fullValue: "Decorative Toy", displayLabel: "TOY" },
+    ]
 
-    const decorativeItems: any[] = []
-    const dollItems: any[] = []
-    const wallArtItems: any[] = []
-    const independentItems: any[] = []
+    const dollItems = [
+      { fullValue: "Doll Animal", displayLabel: "ANIMAL" },
+      { fullValue: "Doll Human", displayLabel: "HUMAN" },
+      { fullValue: "Doll Object", displayLabel: "OBJECT" },
+      { fullValue: "Doll Plant", displayLabel: "PLANT" },
+    ]
 
-    rawCategories.forEach(cat => {
-      if ((cat.startsWith("Decorative") || cat.startsWith("Decotative")) && !cat.toLowerCase().includes("candle holder")) {
-        decorativeItems.push({ fullValue: cat, displayLabel: cat.toUpperCase() })
-      } 
-      else if (cat.startsWith("Doll ")) {
-        dollItems.push({ fullValue: cat, displayLabel: cat.toUpperCase() })
-      } 
-      else if (cat.startsWith("Wall Art ")) {
-        wallArtItems.push({ fullValue: cat, displayLabel: cat.toUpperCase() })
-      } 
-      else {
-        independentItems.push({ fullValue: cat, displayLabel: cat.toUpperCase() })
+    const vaseItems = [
+      { fullValue: "Vase Ceramic 3D Printing", displayLabel: "CERAMIC 3D PRINTING" },
+      { fullValue: "Vase Ceramic Handmade", displayLabel: "CERAMIC HANDMADE" },
+      { fullValue: "Vase Glass Handmade", displayLabel: "GLASS HANDMADE" },
+      { fullValue: "Vase Normal", displayLabel: "NORMAL" },
+    ]
+
+    const wallArtItems = [
+      { fullValue: "Wall Art 3D Material", displayLabel: "3D MATERIAL" },
+      { fullValue: "Wall Art 3D Physical Painting", displayLabel: "3D PHYSICAL PAINTING" },
+      { fullValue: "Wall Art Digital Print  ", displayLabel: "DIGITAL PRINT" },
+      { fullValue: "Wall Art Hand Craft 100%", displayLabel: "HAND CRAFT 100%" },
+      { fullValue: "Wall Art Hand Craft 50%", displayLabel: "HAND CRAFT 50%" },
+      { fullValue: "Wall Art Hand Craft 80%", displayLabel: "HAND CRAFT 80%" },
+    ]
+
+    return [
+      { label: "ALL", isGroup: false, fullValue: "All" },
+      { label: "ART OBJECT", isGroup: false, fullValue: "Art Object" },
+      { label: "BOOK END", isGroup: false, fullValue: "Book End" },
+      { label: "CANDLE HOLDER", isGroup: false, fullValue: "Candle Holder" },
+      { label: "DECORATIVE", isGroup: true, items: decorativeItems },
+      { label: "DOLL", isGroup: true, items: dollItems },
+      { label: "KITCHENWARE", isGroup: false, fullValue: "Kitchenware" },
+      { label: "TRAY", isGroup: false, fullValue: "Tray" },
+      { label: "VASE", isGroup: true, items: vaseItems },
+      { label: "WALL ART", isGroup: true, items: wallArtItems },
+      { 
+        label: "SALE OFFERS %", 
+        isGroup: false, 
+        fullValue: "SPECIAL_DISCOUNT",
+        isSpecial: true 
       }
-    })
-
-    const finalMenu: any[] = [{ label: "ALL", isGroup: false, fullValue: "All" }]
-
-    const artObject = independentItems.find(i => i.displayLabel.includes("ART OBJECT"))
-    if (artObject) finalMenu.push({ label: artObject.displayLabel, isGroup: false, fullValue: artObject.fullValue })
-    else finalMenu.push({ label: "ART OBJECT", isGroup: false, fullValue: "ART_OBJECT_EMPTY" })
-
-    const bookEnd = independentItems.find(i => i.displayLabel.includes("BOOK END"))
-    if (bookEnd) finalMenu.push({ label: bookEnd.displayLabel, isGroup: false, fullValue: bookEnd.fullValue })
-
-    finalMenu.push({ label: "DECORATIVE", isGroup: true, items: decorativeItems })
-    if (dollItems.length > 0) finalMenu.push({ label: "DOLL", isGroup: true, items: dollItems })
-
-    independentItems.forEach(item => {
-      if (!item.displayLabel.includes("ART OBJECT") && !item.displayLabel.includes("BOOK END")) {
-        finalMenu.push({ label: item.displayLabel, isGroup: false, fullValue: item.fullValue })
-      }
-    })
-
-    if (wallArtItems.length > 0) finalMenu.push({ label: "WALL ART", isGroup: true, items: wallArtItems })
-
-    finalMenu.push({ 
-      label: "SALE OFFERS %", 
-      isGroup: false, 
-      fullValue: "SPECIAL_DISCOUNT",
-      isSpecial: true 
-    })
-
-    return finalMenu
+    ]
   }, [])
 
   const renderPagination = () => {
@@ -213,7 +272,7 @@ export default function PropFilterClient({ collections, branches }: { collection
         if (!menuItem.isGroup) {
           const isActive = activeFilter === menuItem.fullValue
           return (
-            <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group py-3 transition-all duration-300">
+            <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue && menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group py-3 transition-all duration-300">
               <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
                 {menuItem.label}
               </span>
@@ -222,20 +281,22 @@ export default function PropFilterClient({ collections, branches }: { collection
         }
 
         const isExpanded = expandedGroups.includes(menuItem.label)
-        const hasActiveChild = menuItem.items.some((child: any) => activeFilter === child.fullValue)
+        const hasActiveChild = menuItem.items?.some((child: any) => activeFilter === child.fullValue) || activeFilter === menuItem.label
         return (
           <div key={menuItem.label} className="w-full flex flex-col items-start text-left">
-            <button onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className="flex items-center justify-between w-full text-left group py-3">
-              <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
-                {menuItem.label}
-              </span>
-              <span className={`text-[12px] font-light transition-transform duration-300 ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
+            <div className="flex items-center justify-between w-full gap-2">
+              <button onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.label); }} className="text-left group py-3 flex-1">
+                <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
+                  {menuItem.label}
+                </span>
+              </button>
+              <button type="button" onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className={`min-w-[32px] h-8 flex items-center justify-center text-[12px] font-light transition-transform duration-300 ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
                 {isExpanded ? '−' : '+'}
-              </span>
-            </button>
+              </button>
+            </div>
             <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="flex flex-col pl-4 pb-2 pt-1 items-start text-left">
-                {menuItem.items.map((childItem: any) => {
+                {menuItem.items?.map((childItem: any) => {
                   const isChildActive = activeFilter === childItem.fullValue
                   return (
                     <button key={childItem.fullValue} onClick={(e) => { e.preventDefault(); handleFilterChange(childItem.fullValue); }} className="text-left w-full group py-2.5 transition-colors duration-300">
@@ -256,12 +317,12 @@ export default function PropFilterClient({ collections, branches }: { collection
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
       
-      <div className={`fixed inset-0 z-[100] md:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-        <div className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] pt-12 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="px-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-6">
+      <div className={`fixed inset-0 z-[9999] xl:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+        <div className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col touch-manipulation z-10 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="px-8 pt-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-4 bg-[#EFE9E1]">
             <span className="text-[11px] uppercase tracking-[0.3em] font-medium text-[#3A3835]">Filters</span>
-            <button onClick={() => setIsSidebarOpen(false)} className="text-[#3A3835] hover:text-[#B8834A] transition-colors p-1 -mr-2">
+            <button type="button" onClick={() => setIsSidebarOpen(false)} className="text-[#3A3835] hover:text-[#B8834A] transition-colors p-1 -mr-2 touch-manipulation">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -275,7 +336,7 @@ export default function PropFilterClient({ collections, branches }: { collection
 
       <div className="flex flex-row items-start w-full px-0 relative">
         
-        <div className="hidden md:flex sticky top-32 z-40 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
+        <div className="hidden xl:flex sticky top-32 z-10 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
           <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#84492C] opacity-20">
             Home Decor Collections
           </span>
@@ -284,24 +345,15 @@ export default function PropFilterClient({ collections, branches }: { collection
         <div className="flex-1 w-full flex flex-col relative z-10 px-4 md:pl-6 md:pr-6">
           
           {/* 🌟 7. ส่วนหัวแบบปรับสไตล์ใหม่: ย้ายหัวข้อ และนำ Search Bar มาจัดวางให้สวยงาม คลีนๆ เข้ากับธีมหน้าเว็บ */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end pb-5 mb-0 pt-6 gap-4 border-b border-[#D5D2CA]/30">
-            <div className="flex flex-col gap-1.5 w-full sm:w-auto">
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="md:hidden flex items-center justify-center gap-2 mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#3A3835] border border-[#C4B5A5]/80 px-4 py-2.5 bg-white/50 backdrop-blur-sm active:bg-[#EFE9E1] transition-all duration-300 w-full"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                </svg>
-                Filter Menu
-              </button>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end pb-5 mb-0 pt-6 gap-4 border-b border-[#D5D2CA]/30">
+            <div className="flex flex-col gap-1.5 w-full md:w-auto">
               <h1 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal">
                 {getDisplayTitle()}
               </h1>
             </div>
             
-            {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่มล้างค่าคำค้นหา ✕ */}
-            <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+            {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่ม FILTER และ BranchSelector */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 w-full md:w-auto justify-end">
               <div className="relative w-full sm:w-64 group">
                 <input
                   type="text"
@@ -324,7 +376,18 @@ export default function PropFilterClient({ collections, branches }: { collection
                 )}
               </div>
 
-              <div className="pb-0.5">
+              <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
+                <button 
+                  type="button"
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="xl:hidden flex items-center gap-1.5 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                  </svg>
+                  <span>FILTER</span>
+                </button>
+
                 {branches && branches.length > 0 && (
                   <BranchSelector branches={branches} isLightPage={true} />
                 )}

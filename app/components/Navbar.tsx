@@ -106,66 +106,53 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   };
 
   const structuredCategories = useMemo(() => {
-    const rawCategories = [...HARDCODED_CATEGORIES].sort();
-
-    const groups: { label: string, isGroup: boolean, items: { fullValue: string, displayLabel: string }[], isSpecial?: boolean }[] = [
-      { label: "All", isGroup: false, items: [{ fullValue: "All", displayLabel: "All" }] }
+    const decorativeItems = [
+      { fullValue: "Decorative Bath", displayLabel: "Bath" },
+      { fullValue: "Decorative Box", displayLabel: "Box" },
+      { fullValue: "Decorative Toy", displayLabel: "Toy" },
     ];
 
-    const decorativeItems: any[] = [];
-    const dollItems: any[] = [];
-    const wallArtItems: any[] = [];
-    const vaseItems: any[] = [];
-    const others: any[] = [];
+    const dollItems = [
+      { fullValue: "Doll Animal", displayLabel: "Animal" },
+      { fullValue: "Doll Human", displayLabel: "Human" },
+      { fullValue: "Doll Object", displayLabel: "Object" },
+      { fullValue: "Doll Plant", displayLabel: "Plant" },
+    ];
 
-    rawCategories.forEach(cat => {
-      const lowerCat = cat.toLowerCase();
+    const vaseItems = [
+      { fullValue: "Vase Ceramic 3D Printing", displayLabel: "Ceramic 3D Printing" },
+      { fullValue: "Vase Ceramic Handmade", displayLabel: "Ceramic Handmade" },
+      { fullValue: "Vase Glass Handmade", displayLabel: "Glass Handmade" },
+      { fullValue: "Vase Normal", displayLabel: "Normal" },
+    ];
 
-      if ((cat.startsWith("Decorative") || cat.startsWith("Decotative")) && !cat.toLowerCase().includes("candle holder")) {
-        let display = cat;
-        if (cat.startsWith("Decorative ")) display = cat.replace("Decorative ", "");
-        else if (cat.startsWith("Decotative ")) display = cat.replace("Decotative ", "");
-        decorativeItems.push({ fullValue: cat, displayLabel: display });
+    const wallArtItems = [
+      { fullValue: "Wall Art 3D Material", displayLabel: "3D Material" },
+      { fullValue: "Wall Art 3D Physical Painting", displayLabel: "3D Physical Painting" },
+      { fullValue: "Wall Art Digital Print  ", displayLabel: "Digital Print" },
+      { fullValue: "Wall Art Hand Craft 100%", displayLabel: "Hand Craft 100%" },
+      { fullValue: "Wall Art Hand Craft 50%", displayLabel: "Hand Craft 50%" },
+      { fullValue: "Wall Art Hand Craft 80%", displayLabel: "Hand Craft 80%" },
+    ];
+
+    return [
+      { label: "All", isGroup: false, items: [{ fullValue: "All", displayLabel: "All" }] },
+      { label: "Art Object", isGroup: false, items: [{ fullValue: "Art Object", displayLabel: "Art Object" }] },
+      { label: "Book End", isGroup: false, items: [{ fullValue: "Book End", displayLabel: "Book End" }] },
+      { label: "Candle Holder", isGroup: false, items: [{ fullValue: "Candle Holder", displayLabel: "Candle Holder" }] },
+      { label: "Decorative", isGroup: true, items: decorativeItems },
+      { label: "Doll", isGroup: true, items: dollItems },
+      { label: "Kitchenware", isGroup: false, items: [{ fullValue: "Kitchenware", displayLabel: "Kitchenware" }] },
+      { label: "Tray", isGroup: false, items: [{ fullValue: "Tray", displayLabel: "Tray" }] },
+      { label: "Vase", isGroup: true, items: vaseItems },
+      { label: "Wall Art", isGroup: true, items: wallArtItems },
+      {
+        label: "SALE OFFERS %",
+        isGroup: false,
+        items: [{ fullValue: "SPECIAL_DISCOUNT", displayLabel: "SALE OFFERS %" }],
+        isSpecial: true
       }
-      else if (cat.startsWith("Doll ")) {
-        dollItems.push({ fullValue: cat, displayLabel: cat.replace("Doll ", "") });
-      }
-      else if (cat.startsWith("Wall Art ")) {
-        wallArtItems.push({ fullValue: cat, displayLabel: cat.replace("Wall Art ", "") });
-      }
-      else if (lowerCat.startsWith("vase")) {
-        let display = cat;
-        if (lowerCat.startsWith("vase ")) {
-          display = cat.replace(/^Vase\s+/i, "");
-        }
-        vaseItems.push({ fullValue: cat, displayLabel: display });
-      }
-      else {
-        others.push({ fullValue: cat, displayLabel: cat });
-      }
-    });
-
-    others.forEach(item => {
-      groups.push({ label: item.displayLabel, isGroup: false, items: [item] });
-    });
-
-    if (decorativeItems.length > 0) groups.push({ label: "Decorative", isGroup: true, items: decorativeItems });
-    if (dollItems.length > 0) groups.push({ label: "Doll", isGroup: true, items: dollItems });
-    if (wallArtItems.length > 0) groups.push({ label: "Wall Art", isGroup: true, items: wallArtItems });
-    if (vaseItems.length > 0) groups.push({ label: "Vase", isGroup: true, items: vaseItems });
-
-    const allGroup = groups.shift();
-    groups.sort((a, b) => a.label.localeCompare(b.label));
-    if (allGroup) groups.unshift(allGroup);
-
-    groups.push({
-      label: "SALE OFFERS %",
-      isGroup: false,
-      items: [{ fullValue: "SPECIAL_DISCOUNT", displayLabel: "SALE OFFERS %" }],
-      isSpecial: true
-    });
-
-    return groups;
+    ];
   }, []);
 
   const darkBannerPages = ['/', '/prop', '/about'];
@@ -272,7 +259,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
       `}} />
 
       <div
-        className={`fixed inset-0 z-[40] lg:hidden transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+        className={`fixed inset-0 z-[9999] lg:hidden transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
           }`}
       >
         {/* ─── BACKDROP (Full Screen Dim) ─── */}
@@ -439,17 +426,26 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                         );
                       }
                       const isExpanded = expandedGroups.includes(group.label);
-                      const isGroupActive = group.items.some(item => currentCategory === item.fullValue);
+                      const isGroupActive = group.items.some(item => currentCategory === item.fullValue) || (currentCategory === group.label.toUpperCase());
+                      const groupUrl = createCategoryUrl(group.label.toUpperCase());
                       return (
                         <div key={group.label} className="w-full flex flex-col pl-5 relative">
-                          <button onClick={(e) => toggleGroup(e, group.label)} className="flex items-center justify-between w-full text-left group/btn">
-                            <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isGroupActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
-                              {group.label}
-                            </span>
-                            <span className={`${innerPlusColor} text-[12px] font-light transition-transform duration-300`}>
-                              {isExpanded ? '−' : '+'}
-                            </span>
-                          </button>
+                          <div className="flex items-center justify-between w-full text-left">
+                            <Link
+                              href={groupUrl}
+                              onClick={(e) => handleNavClick(e, groupUrl)}
+                              className="flex-1 py-1 group/btn"
+                            >
+                              <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isGroupActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
+                                {group.label}
+                              </span>
+                            </Link>
+                            <button type="button" onClick={(e) => toggleGroup(e, group.label)} className="p-1 min-w-[28px] text-right">
+                              <span className={`${innerPlusColor} text-[12px] font-light transition-transform duration-300`}>
+                                {isExpanded ? '−' : '+'}
+                              </span>
+                            </button>
+                          </div>
                           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[300px] mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                             <div className={`flex flex-col gap-4 pl-3 ml-0.5 border-l ${innerSubBorderColor}`}>
                               {group.items.map(item => {
