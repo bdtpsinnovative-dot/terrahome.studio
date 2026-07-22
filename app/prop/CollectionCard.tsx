@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface ProductSlide {
   image_url: string
@@ -21,7 +22,35 @@ export default function CollectionCard({
   slides: ProductSlide[]
   bgColor?: string
 }) {
+  const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [prefetchStarted, setPrefetchStarted] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
+
+  const currentSlide = slides[currentIndex] || { image_url: null, price: null, sku: "", name: "" }
+  const displayPrice = currentSlide.price
+
+  const firstProductSku = group.products?.[0]?.sku
+  const targetHref = firstProductSku
+    ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(firstProductSku)}`
+    : currentSlide.sku
+      ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(currentSlide.sku)}`
+      : `/prop/${encodeURIComponent(group.id)}`
+
+  const handlePrefetch = () => {
+    if (!prefetchStarted) {
+      setPrefetchStarted(true)
+      // Next.js router.prefetch may return void in some environments,
+      // so we don't assume a Promise is always returned here.
+      void router.prefetch(targetHref)
+    }
+  }
+
+  const handleNavigate = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    setIsNavigating(true)
+    router.push(targetHref)
+  }
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -31,97 +60,101 @@ export default function CollectionCard({
     return () => clearInterval(timer)
   }, [slides.length])
 
-  const currentSlide = slides[currentIndex] || { image_url: null, price: null, sku: "", name: "" }
-  const displayPrice = currentSlide.price
-
-  const targetHref = currentSlide.sku 
-    ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(currentSlide.sku)}`
-    : `/prop/${encodeURIComponent(group.id)}`
-
   return (
-    <Link 
-      href={targetHref} 
-      title={`View details of ${group.name || group.id}`}
-      className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
-    >
-      {/* 🌟 ใช้ style={{ backgroundColor }} แทน Tailwind class เพื่อการันตีว่าสีไม่หายชัวร์ๆ */}
-      <div 
-        className="w-full aspect-square relative mb-5 flex items-center justify-center"
-        style={{ backgroundColor: bgColor }}
+    <>
+      {isNavigating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-[10px] border border-[#D5D2CA] shadow-2xl px-8 py-6 flex flex-col items-center gap-3">
+            <span className="h-10 w-10 border-2 border-[#84492C] border-t-transparent rounded-full animate-spin"></span>
+            <span className="text-sm uppercase tracking-[0.3em] text-[#84492C] font-semibold">Loading...</span>
+          </div>
+        </div>
+      )}
+      <Link 
+        href={targetHref} 
+        prefetch={false}
+        title={`View details of ${group.name || group.id}`}
+        onMouseEnter={handlePrefetch}
+        onFocus={handlePrefetch}
+        onClick={handleNavigate}
+        className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
       >
-        {slides.length > 0 ? (
-          slides.map((slide, idx) => (
-            <img 
-              key={idx}
-              src={slide.image_url || ""} 
-              alt={group.name || group.id} 
-              title={group.name || group.id} 
-              // 🌟 ให้รูปภาพใช้ mix-blend-multiply เพื่อละลายพื้นหลังขาวเข้ากับสีของกล่องด้านบน
-              className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
-                ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
-              `}
-            />
-          ))
-        ) : (
-          <span className="text-[10px] uppercase font-light tracking-[0.2em] text-[#8C8A86]">No Image</span>
-        )}
-      </div>
+        {/* 🌟 ใช้ style={{ backgroundColor }} แทน Tailwind class เพื่อการันตีว่าสีไม่หายชัวร์ๆ */}
+        <div 
+          className="w-full aspect-square relative mb-5 flex items-center justify-center"
+          style={{ backgroundColor: bgColor }}
+        >
+          {slides.length > 0 ? (
+            slides.map((slide, idx) => (
+              <img 
+                key={idx}
+                src={slide.image_url || ""} 
+                alt={group.name || group.id} 
+                title={group.name || group.id} 
+                // 🌟 ให้รูปภาพใช้ mix-blend-multiply เพื่อละลายพื้นหลังขาวเข้ากับสีของกล่องด้านบน
+                className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
+                  ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
+                `}
+              />
+            ))
+          ) : (
+            <span className="text-[10px] uppercase font-light tracking-[0.2em] text-[#8C8A86]">No Image</span>
+          )}
+        </div>
 
-      {/* ส่วนรายละเอียดสินค้า: ปรับขนาดตัวอักษรและราคาให้ใหญ่และคมชัดขึ้นตามบรีฟ */}
-      <div className="flex flex-col items-center text-center mt-auto px-2">
-        {/* 🌟 ปรับชื่อสินค้าให้ใหญ่ขึ้นจาก 8px เป็น 10px/11px และปรับเป็น font-medium เพื่อความคมชัด */}
-        <span className="text-[#3A3835] text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-medium text-center mb-1.5">
-          {currentSlide.name ? currentSlide.name.substring(0, 25) : "PRODUCT"}
-        </span>
+        {/* ส่วนรายละเอียดสินค้า: ปรับขนาดตัวอักษรและราคาให้ใหญ่และคมชัดขึ้นตามบรีฟ */}
+        <div className="flex flex-col items-center text-center mt-auto px-2">
+          {/* 🌟 ปรับชื่อสินค้าให้ใหญ่ขึ้นจาก 8px เป็น 10px/11px และปรับเป็น font-medium เพื่อความคมชัด */}
+          <span className="text-[#3A3835] text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-medium text-center mb-1.5">
+            {currentSlide.name ? currentSlide.name.substring(0, 25) : "PRODUCT"}
+          </span>
+          {(() => {
+            if (displayPrice === null || displayPrice <= 0) {
+              return (
+                <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-0.5">
+                  Price upon request
+                </p>
+              )
+            }
 
-        {(() => {
-          if (displayPrice === null || displayPrice <= 0) {
-            return (
-              <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-0.5">
-                Price upon request
+            const originalPrice = displayPrice
+            let finalPrice = originalPrice
+            let isDiscounted = false
+            let discountLabel = ""
+
+            if (currentSlide.discount_value && currentSlide.discount_type) {
+              isDiscounted = true
+              if (currentSlide.discount_type === 'PERCENT') {
+                finalPrice = originalPrice - (originalPrice * (currentSlide.discount_value / 100))
+                discountLabel = `-${currentSlide.discount_value}%`
+              } else if (currentSlide.discount_type === 'FIXED') {
+                finalPrice = originalPrice - currentSlide.discount_value
+                discountLabel = `-฿${currentSlide.discount_value}`
+              }
+            }
+
+            return isDiscounted ? (
+              <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider">
+                  <span className="text-[#8C8A86] line-through opacity-60">
+                    THB {originalPrice.toLocaleString()}
+                  </span>
+                  <span className="text-[#DC2626] font-semibold opacity-90">
+                    {discountLabel}
+                  </span>
+                </div>
+                <p className="text-[#3A3835] text-[12px] font-semibold tracking-widest font-mono">
+                  THB {finalPrice.toLocaleString()}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-0.5 opacity-95">
+                THB {originalPrice.toLocaleString()}
               </p>
             )
-          }
-
-          const originalPrice = displayPrice
-          let finalPrice = originalPrice
-          let isDiscounted = false
-          let discountLabel = ""
-
-          if (currentSlide.discount_value && currentSlide.discount_type) {
-            isDiscounted = true
-            if (currentSlide.discount_type === 'PERCENT') {
-              finalPrice = originalPrice - (originalPrice * (currentSlide.discount_value / 100))
-              discountLabel = `-${currentSlide.discount_value}%`
-            } else if (currentSlide.discount_type === 'FIXED') {
-              finalPrice = originalPrice - currentSlide.discount_value
-              discountLabel = `-฿${currentSlide.discount_value}`
-            }
-          }
-
-          return isDiscounted ? (
-            // 🏷️ แบบมีส่วนลด: ปรับขนาดราคาเดิมและ Badge ขึ้นเป็น 10px และราคาลดจริงขึ้นเป็น 12px
-            <div className="flex flex-col items-center gap-0.5 mt-0.5">
-              <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider">
-                <span className="text-[#8C8A86] line-through opacity-60">
-                  THB {originalPrice.toLocaleString()}
-                </span>
-                <span className="text-[#DC2626] font-semibold opacity-90">
-                  {discountLabel}
-                </span>
-              </div>
-              <p className="text-[#3A3835] text-[12px] font-semibold tracking-widest font-mono">
-                THB {finalPrice.toLocaleString()}
-              </p>
-            </div>
-          ) : (
-            // 💵 แบบราคาทั่วไป: ขยายขนาดฟอนต์จาก 10px ขึ้นเป็น 12px และเพิ่มความหนาเป็น font-medium เพื่อความพรีเมียม
-            <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-0.5 opacity-95">
-              THB {originalPrice.toLocaleString()}
-            </p>
-          )
-        })()}
-      </div>
-    </Link>
+          })()}
+        </div>
+      </Link>
+    </>
   )
 }

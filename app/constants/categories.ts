@@ -12,6 +12,7 @@ export const HARDCODED_CATEGORIES = [
   "Kitchenware",
   "Tray",
   "Vase Ceramic Handmade",
+  "Vase Ceramic 3D Printing",
   "Vase Glass Handmade",
   "Vase Normal",
   "Wall Art 3D Material",

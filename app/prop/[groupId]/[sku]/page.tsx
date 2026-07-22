@@ -80,26 +80,28 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
 
   const supabase = await createClient()
 
-  const { data: rawGroupProducts, error } = await supabase
-    .from("products")
+  const { data: groupData, error } = await supabase
+    .from("collection_groups")
     .select(`
-      *,
-      stock (
-        qty,
-        branches (
-          id,
-          branch_name,
-          latitude,
-          longitude
+      products (
+        *,
+        stock (
+          qty,
+          branches (
+            id,
+            branch_name,
+            latitude,
+            longitude
+          )
         )
       )
     `)
-    .eq("collection_group_id", currentGroupId)
-    .order("sku", { ascending: true })
+    .eq("id", currentGroupId)
+    .single()
 
-  const groupProducts = (rawGroupProducts || []).filter(p => p.status === 'active' || !p.status)
+  const groupProducts = (groupData?.products || []).filter((p: any) => p.status === 'active' || !p.status)
 
-  if (error || !groupProducts || groupProducts.length === 0) {
+  if (error || !groupData || !groupProducts || groupProducts.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white text-slate-500">
         <p className="text-lg mb-4">ไม่พบข้อมูลสินค้ากลุ่มนี้ในระบบ หรือสินค้าถูกปิดการขายชั่วคราว</p>
@@ -114,6 +116,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   if (!activeProduct && groupProducts.length > 0) {
     redirect(`/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(groupProducts[0].sku)}`)
   }
+
   const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
   const canonicalUrl = `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`;
 

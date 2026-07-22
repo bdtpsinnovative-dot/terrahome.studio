@@ -341,15 +341,26 @@ export default function PropFilterClient({ collections, branches }: { collection
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 w-full relative">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
-                    const slides = group.products
+                    const slides = group.cover_image_url ? [
+                      {
+                        image_url: group.cover_image_url,
+                        price: null,
+                        sku: "",
+                        name: group.name || "",
+                        discount_value: null,
+                        discount_type: null,
+                      }
+                    ] : group.products
                       ?.filter((p: any) => p.image_url !== null && p.image_url !== "")
                       .map((p: any) => ({
-                        image_url: p.image_url, price: p.price, sku: p.sku, name: p.name, 
-                        discount_value: p.discount_value, discount_type: p.discount_type
+                        image_url: p.image_url,
+                        price: p.price,
+                        sku: p.sku,
+                        name: p.name,
+                        discount_value: p.discount_value,
+                        discount_type: p.discount_type,
                       })) || []
-                    if (slides.length === 0 && group.cover_image_url) {
-                      slides.push({ image_url: group.cover_image_url, price: null, sku: "", name: "", discount_value: null, discount_type: null })
-                    }
+
                     return (
                       <div key={group.id} className="border-b border-r border-[#D5D2CA]/70 py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative">
                         <CollectionCard group={group} slides={slides} />
