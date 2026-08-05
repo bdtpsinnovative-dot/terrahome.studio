@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { createClient } from '@/src/supabase/client';
+import { createClient, getSafeSession } from '@/src/supabase/client';
 import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
@@ -28,7 +28,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSafeSession();
       setUser(session?.user || null);
     };
 
@@ -279,7 +279,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
           {/* ── Header: Logo + Close ── */}
           <div className="flex items-start justify-between px-6 pt-7 pb-2">
             {/* Logo text */}
-            <Link href="/" title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="flex flex-col leading-none select-none">
+            <Link href="/" prefetch={false} title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="flex flex-col leading-none select-none">
               <span className="font-serif text-[#3A3835] text-[22px] tracking-[0.12em] font-medium">TERRA</span>
               <span className="text-[7.5px] uppercase tracking-[0.28em] text-[#8C8A86] font-light -mt-0.5">HOME STUDIO</span>
             </Link>
@@ -309,6 +309,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                 <div key={num} className="mob-nav-item">
                   <Link
                     href={href}
+                    prefetch={false}
                     title={label}
                     onClick={(e) => handleNavClick(e, url)}
                     className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
@@ -332,7 +333,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                 <div className="flex items-center justify-between border-t border-[#C4B5A5]/40 pt-5">
                 {user ? (
                   <>
-                    <Link href="/cart" title="Shopping Cart" onClick={() => setIsMobileMenuOpen(false)}
+                    <Link href="/cart" prefetch={false} title="Shopping Cart" onClick={() => setIsMobileMenuOpen(false)}
                       className="mob-util-item flex flex-col items-center gap-2 group"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
@@ -341,7 +342,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                       <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">cart</span>
                     </Link>
 
-                    <Link href="/profile" title="My Profile" onClick={() => setIsMobileMenuOpen(false)}
+                    <Link href="/profile" prefetch={false} title="My Profile" onClick={() => setIsMobileMenuOpen(false)}
                       className="mob-util-item flex flex-col items-center gap-2 group"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
@@ -360,7 +361,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                     </button>
                   </>
                 ) : (
-                  <Link href="/login" title="Login or Register" onClick={() => setIsMobileMenuOpen(false)}
+                  <Link href="/login" prefetch={false} title="Login or Register" onClick={() => setIsMobileMenuOpen(false)}
                     className="mob-util-item flex items-center justify-center gap-3 w-full group"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
@@ -383,12 +384,12 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
         <div className="hidden lg:flex flex-1 basis-0 min-w-0 items-center justify-start">
           {/* 🌟 เติม whitespace-nowrap เข้าไปที่บรรทัดด้านล่างนี้ครับ */}
           <div className={`hidden lg:flex items-center space-x-4 lg:space-x-5 xl:space-x-10 whitespace-nowrap text-[9.5px] xl:text-[11px] tracking-[0.15em] xl:tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
-            <Link href="/about" title="About Us" onClick={(e) => handleNavClick(e, '/about')} className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+            <Link href="/about" prefetch={false} title="About Us" onClick={(e) => handleNavClick(e, '/about')} className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               About
             </Link>
 
             <div className="relative group h-full flex items-center">
-              <Link href={homeDecorMainUrl} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href={homeDecorMainUrl} prefetch={false} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 HOME DECOR
               </Link>
               <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
@@ -402,7 +403,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                         const item = group.items[0];
                         const targetUrl = createCategoryUrl(item.fullValue);
                         return (
-                          <Link key={item.fullValue} href={targetUrl} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className={`w-full mt-2 pt-5 border-t ${innerTitleColor} flex items-center group/item`}>
+                          <Link key={item.fullValue} href={targetUrl} prefetch={false} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className={`w-full mt-2 pt-5 border-t ${innerTitleColor} flex items-center group/item`}>
                             <span className="text-[10px] uppercase tracking-[0.2em] font-bold flex items-center gap-2 transition-colors duration-300 text-[#C25B4E] hover:text-[#9e463a]">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                                 <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5z" clipRule="evenodd" />
@@ -417,7 +418,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                         const isItemActive = (item.fullValue === 'All' && !currentCategory) || (currentCategory === item.fullValue);
                         const targetUrl = createCategoryUrl(item.fullValue);
                         return (
-                          <Link key={item.fullValue} href={targetUrl} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className="relative flex items-center w-full pl-5 group/item">
+                          <Link key={item.fullValue} href={targetUrl} prefetch={false} title={item.displayLabel || group.label} onClick={(e) => handleNavClick(e, targetUrl)} className="relative flex items-center w-full pl-5 group/item">
                             <span className={`absolute left-0 w-1.5 h-1.5 rounded-full ${innerDotBg} transition-all duration-300 ${isItemActive ? 'opacity-100 scale-100' : 'opacity-0 scale-50 group-hover/item:opacity-50 group-hover/item:scale-100'}`} />
                             <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isItemActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
                               {item.displayLabel}
@@ -433,6 +434,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                           <div className="flex items-center justify-between w-full text-left">
                             <Link
                               href={groupUrl}
+                              prefetch={false}
                               onClick={(e) => handleNavClick(e, groupUrl)}
                               className="flex-1 py-1 group/btn"
                             >
@@ -452,7 +454,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                                 const isSubActive = currentCategory === item.fullValue;
                                 const subTargetUrl = createCategoryUrl(item.fullValue);
                                 return (
-                                  <Link key={item.fullValue} href={subTargetUrl} title={item.displayLabel} onClick={(e) => handleNavClick(e, subTargetUrl)} className={`text-[9.5px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
+                                  <Link key={item.fullValue} href={subTargetUrl} prefetch={false} title={item.displayLabel} onClick={(e) => handleNavClick(e, subTargetUrl)} className={`text-[9.5px] uppercase tracking-[0.15em] transition-colors duration-300 ${isSubActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
                                     {item.displayLabel}
                                   </Link>
                                 );
@@ -467,10 +469,10 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
               </div>
             </div>
 
-            <Link href="/journal" title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+            <Link href="/journal" prefetch={false} title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Art & Gallery
             </Link>
-            <Link href="/contact" title="Contact Us" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+            <Link href="/contact" prefetch={false} title="Contact Us" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Contact
             </Link>
           </div>
@@ -478,7 +480,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
         {/* ---------------- 2. ตรงกลาง (โลโก้) ---------------- */}
         <div className="flex-shrink-0 flex items-center justify-center select-none z-10 px-2 lg:px-4">
-          <Link href="/" title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="block transition-transform duration-300 hover:scale-105">
+          <Link href="/" prefetch={false} title="Terra Home Studio" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(e, '/'); }} className="block transition-transform duration-300 hover:scale-105">
             <img
               src={logoPath}
               alt="Terra Home Studio Logo"
@@ -495,7 +497,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
           <div className="hidden lg:flex items-center space-x-4 lg:space-x-6">
             {user ? (
               <>
-                <Link href="/cart" title="Shopping Cart" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center relative" aria-label="Cart">
+                <Link href="/cart" prefetch={false} title="Shopping Cart" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center relative" aria-label="Cart">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-[20px] md:h-[20px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                   </svg>
@@ -532,6 +534,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
                       <Link
                         href="/profile"
+                        prefetch={false}
                         title="My Profile"
                         onClick={() => setIsProfileOpen(false)}
                         className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-[#3A3835] hover:bg-white/40 transition-colors flex items-center gap-2"
@@ -556,7 +559,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                 </div>
               </>
             ) : (
-              <Link href="/login" title="Login" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center" aria-label="Login">
+              <Link href="/login" prefetch={false} title="Login" className="hover:opacity-60 transition duration-300 p-1.5 flex items-center justify-center" aria-label="Login">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px] md:w-[20px] md:h-[20px]">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>

@@ -174,7 +174,7 @@ export default function Footer() {
                       if (isStandalone) {
                         const href = group.label.toLowerCase() === "all" ? "/prop" : `/prop?category=${encodeURIComponent(group.label)}`;
                         return (
-                          <Link key={group.label} href={href} title={group.label} className="text-xs text-[#2A231D] font-medium uppercase tracking-wide hover:text-black transition block w-fit whitespace-nowrap">
+                          <Link key={group.label} href={href} prefetch={false} title={group.label} className="text-xs text-[#2A231D] font-medium uppercase tracking-wide hover:text-black transition block w-fit whitespace-nowrap">
                             {group.label}
                           </Link>
                         );
@@ -193,7 +193,7 @@ export default function Footer() {
 
                               return (
                                 <li key={item}>
-                                  <Link href={`/prop?category=${encodeURIComponent(item)}`} title={display} className="text-[10.5px] text-[#3A352F] font-medium hover:text-black transition cursor-pointer block w-fit whitespace-nowrap">
+                                  <Link href={`/prop?category=${encodeURIComponent(item)}`} prefetch={false} title={display} className="text-[10.5px] text-[#3A352F] font-medium hover:text-black transition cursor-pointer block w-fit whitespace-nowrap">
                                     {display}
                                   </Link>
                                 </li>

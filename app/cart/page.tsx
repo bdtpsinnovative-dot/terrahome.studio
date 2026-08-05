@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Minus, Plus, ShoppingBag, AlertCircle } from 'lucide-react';
-import { createClient } from '@/src/supabase/client'; 
+import { createClient, getSafeSession } from '@/src/supabase/client';
 
 // ⚡ อัปเดต Type ให้รองรับข้อมูล Stock และ Collection Group
 type CartItem = {
@@ -40,7 +40,7 @@ export default function CartPage() {
 
   useEffect(() => {
     const loadCart = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSafeSession();
       
       if (!session) {
         router.push('/login');
@@ -190,6 +190,7 @@ export default function CartPage() {
             <p className="text-[12px] text-[#8C8A86] mb-8">Looks like you haven't added anything to your cart yet.</p>
             <Link 
               href="/prop" 
+              prefetch={false}
               title="Browse our props collections"
               className="bg-[#3A3835] text-white px-10 py-4 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#84492C] transition-colors shadow-sm rounded-[2px]"
             >
@@ -211,6 +212,7 @@ export default function CartPage() {
                     
                     <Link 
                       href={`/prop/${item.products.collection_group_id}/${item.products.sku}`}
+                      prefetch={false}
                       title={`View details of ${item.products.name}`}
                       className="w-full sm:w-[120px] aspect-square bg-[#F4F1EB] rounded-[2px] overflow-hidden flex-shrink-0 group relative"
                     >
@@ -242,6 +244,7 @@ export default function CartPage() {
                           </p>
                           <Link 
                             href={`/prop/${item.products.collection_group_id}/${item.products.sku}`}
+                            prefetch={false}
                             title={`View details of ${item.products.name}`}
                             className="font-serif text-lg uppercase tracking-wider text-[#3A3835] hover:text-[#84492C] transition-colors line-clamp-2"
                           >

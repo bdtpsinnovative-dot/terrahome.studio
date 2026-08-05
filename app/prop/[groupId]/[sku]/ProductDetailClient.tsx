@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { ArrowLeft, CheckCircle2, MapPin, Navigation } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
-import { createClient } from '@/src/supabase/client'
+import { createClient, getSafeSession } from '@/src/supabase/client'
 
 const BranchMap = dynamic(() => import('./BranchMap'), { 
   ssr: false, 
@@ -97,7 +97,7 @@ export default function ProductDetailClient({
       setIsAddingToCart(true)
 
       // เช็คว่าล็อกอินหรือยัง
-      const { data: { session } } = await supabase.auth.getSession()
+      const session = await getSafeSession()
       
       if (!session) {
         alert("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้านะครับ")

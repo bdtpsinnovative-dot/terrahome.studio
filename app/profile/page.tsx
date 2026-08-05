@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, User, Phone, Mail, ShieldCheck, CheckCircle2, Camera, X } from 'lucide-react';
 import Cropper from 'react-easy-crop'; // ⚡ นำเข้าไลบรารีครอปรูป
-import { createClient } from '@/src/supabase/client'; 
+import { createClient, getSafeSession } from '@/src/supabase/client';
 
 // ==========================================
 // ⚡ ฟังก์ชันแปลงรูปที่ครอปให้เป็น WebP ขนาดจิ๋ว
@@ -72,7 +72,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSafeSession();
       
       if (!session) {
         router.push('/login');
