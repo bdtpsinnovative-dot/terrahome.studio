@@ -24,7 +24,6 @@ export default function CollectionCard({
 }) {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [prefetchStarted, setPrefetchStarted] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
 
   const currentSlide = slides[currentIndex] || { image_url: null, price: null, sku: "", name: "" }
@@ -36,15 +35,6 @@ export default function CollectionCard({
     : currentSlide.sku
       ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(currentSlide.sku)}`
       : `/prop/${encodeURIComponent(group.id)}`
-
-  const handlePrefetch = () => {
-    if (!prefetchStarted) {
-      setPrefetchStarted(true)
-      // Next.js router.prefetch may return void in some environments,
-      // so we don't assume a Promise is always returned here.
-      void router.prefetch(targetHref)
-    }
-  }
 
   const handleNavigate = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
@@ -74,8 +64,6 @@ export default function CollectionCard({
         href={targetHref} 
         prefetch={false}
         title={`View details of ${group.name || group.id}`}
-        onMouseEnter={handlePrefetch}
-        onFocus={handlePrefetch}
         onClick={handleNavigate}
         className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
       >
