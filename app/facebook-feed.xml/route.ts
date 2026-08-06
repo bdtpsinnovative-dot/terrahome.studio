@@ -4,6 +4,12 @@ export const dynamic = 'force-dynamic';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com';
 
+// ล้างตัวอักษรควบคุมที่ผิดกฎ XML 1.0 (XML 1.0 Illegal Control Characters)
+function cleanXmlString(str: string): string {
+  if (!str) return '';
+  return str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u0084\u0086-\u009F]/g, '');
+}
+
 // ฟังก์ชันสำหรับป้องกันตัวอักษรพิเศษใน XML (XML Escaping)
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
@@ -49,9 +55,9 @@ export async function GET() {
       throw productsError;
     }
 
-    // กรองเฉพาะสินค้าที่สถานะเป็น active หรือไม่ระบุสถานะ (active โดยปริยาย) และมี sku/id
+    // กรองสินค้าที่แอคทีฟ และต้องมีราคาสินค้าที่มากกว่า 0 เท่านั้น (เพื่อไม่ให้ Meta แจ้งเตือนข้อผิดพลาดเรื่องราคา)
     const activeProducts = (products || []).filter(
-      (p: any) => p.status === 'active' || !p.status
+      (p: any) => (p.status === 'active' || !p.status) && p.price && p.price > 0
     );
 
     // 2. ดึงโปรโมชันส่วนลดที่เปิดใช้งานอยู่ในปัจจุบัน
@@ -110,8 +116,14 @@ export async function GET() {
       const totalStock = product.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
       const availability = totalStock > 0 ? 'in stock' : 'out of stock';
 
+      // ล้างอักขระควบคุม (Control Characters) ที่มักปนเปื้อนในฐานข้อมูลเพื่อป้องกันไม่ให้ XML Parser ทำงานล้มเหลว
+      const cleanName = cleanXmlString(product.name || '');
+      const cleanDesc = cleanXmlString(product.description || product.name || '');
+      const cleanSku = cleanXmlString(product.sku || String(product.id));
+      const cleanGroupId = cleanXmlString(product.collection_group_id || '');
+
       // สร้าง Canonical Link หน้าสินค้า
-      const productUrl = `${SITE_URL}/prop/${encodeURIComponent(product.collection_group_id)}/${encodeURIComponent(product.sku)}`;
+      const productUrl = `${SITE_URL}/prop/${encodeURIComponent(cleanGroupId)}/${encodeURIComponent(cleanSku)}`;
 
       // จัดการ URL รูปภาพสินค้าให้สมบูรณ์ (หากเป็น path สัมพัทธ์ ให้เติม SITE_URL นำหน้า)
       let imageUrl = product.image_url || '';
@@ -120,14 +132,17 @@ export async function GET() {
       }
 
       return `    <item>
-      <g:id>${escapeXml(product.sku || String(product.id))}</g:id>
-      <g:title>${escapeXml(product.name)}</g:title>
-      <g:description>${escapeXml(product.description || product.name)}</g:description>
+      <g:id>${escapeXml(cleanSku)}</g:id>
+      <g:title>${escapeXml(cleanName)}</g:title>
+      <g:description>${escapeXml(cleanDesc)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
+      <g:brand>Terra Home Studio</g:brand>
+      <g:condition>new</g:condition>
       <g:availability>${availability}</g:availability>
       <g:price>${originalPrice} THB</g:price>
       ${hasDiscount && salePrice < originalPrice ? `<g:sale_price>${Math.round(salePrice)} THB</g:sale_price>` : ''}
+      <g:item_group_id>${escapeXml(cleanGroupId)}</g:item_group_id>
     </item>`;
     }).join('\n');
 
