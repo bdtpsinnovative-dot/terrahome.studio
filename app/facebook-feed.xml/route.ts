@@ -2,7 +2,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.terrahome-studio.com';
 
 // ล้างตัวอักษรควบคุมที่ผิดกฎ XML 1.0 (XML 1.0 Illegal Control Characters)
 function cleanXmlString(str: string): string {
@@ -117,8 +117,16 @@ export async function GET() {
       const availability = totalStock > 0 ? 'in stock' : 'out of stock';
 
       // ล้างอักขระควบคุม (Control Characters) ที่มักปนเปื้อนในฐานข้อมูลเพื่อป้องกันไม่ให้ XML Parser ทำงานล้มเหลว
-      const cleanName = cleanXmlString(product.name || '');
-      const cleanDesc = cleanXmlString(product.description || product.name || '');
+      let cleanName = cleanXmlString(product.name || '').trim();
+      if (!cleanName || cleanName === '-') {
+        cleanName = `${product.collection_group_id || 'Decorative'} Object`;
+      }
+
+      let cleanDesc = cleanXmlString(product.description || '').trim();
+      if (!cleanDesc || cleanDesc === '-' || cleanDesc === '') {
+        cleanDesc = `${cleanName} - High-quality decorative craft piece from Terra Home Studio.`;
+      }
+
       const cleanSku = cleanXmlString(product.sku || String(product.id));
       const cleanGroupId = cleanXmlString(product.collection_group_id || '');
 
