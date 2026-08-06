@@ -32,33 +32,60 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // 1. ดึงข้อมูลสินค้าที่แอคทีฟทั้งหมด พร้อมข้อมูลสต็อก
-    const { data: products, error: productsError } = await supabase
-      .from('products')
+    // 1. ดึงข้อมูลกลุ่มคอลเล็กชันที่มี tag เป็น 'prop' (สำหรับเว็บของตกแต่งบ้าน) เพื่อไม่ให้ดึงสินค้าของเว็บอื่น (เช่น เฟอร์นิเจอร์) ที่ใช้ฐานข้อมูลร่วมกัน
+    const { data: collections, error: productsError } = await supabase
+      .from('collection_groups')
       .select(`
         id,
-        sku,
-        name,
-        description,
-        image_url,
-        price,
-        status,
-        collection_group_id,
-        stock (
-          qty
+        tag,
+        products!inner (
+          id,
+          sku,
+          name,
+          description,
+          image_url,
+          price,
+          status,
+          collection_group_id,
+          stock (
+            qty
+          )
         )
       `)
-      .not('collection_group_id', 'is', null);
+      .ilike('tag', '%prop%');
 
     if (productsError) {
       console.error('Error fetching products for Facebook feed:', productsError);
       throw productsError;
     }
 
+    // ทำการยุบรวม (Flatten) สินค้าจากคอลเล็กชันต่างๆ และตัดสินค้าที่ซ้ำออก
+    const allProducts: any[] = [];
+    const seenProductIds = new Set<string>();
+
+    if (collections) {
+      for (const collection of collections) {
+        if (collection.products) {
+          for (const product of collection.products) {
+            if (!seenProductIds.has(product.id)) {
+              seenProductIds.add(product.id);
+              allProducts.push(product);
+            }
+          }
+        }
+      }
+    }
+
     // กรองสินค้าที่แอคทีฟ และต้องมีราคาสินค้าที่มากกว่า 0 เท่านั้น (เพื่อไม่ให้ Meta แจ้งเตือนข้อผิดพลาดเรื่องราคา)
-    const activeProducts = (products || []).filter(
+    const activeProducts = allProducts.filter(
       (p: any) => (p.status === 'active' || !p.status) && p.price && p.price > 0
     );
+
+    // 🌟 ทำการสุ่มสลับลำดับสินค้า (Shuffle) ด้วยวิธี Fisher-Yates เพื่อให้แสดงผลแบบสุ่มลำดับตามต้องการ
+    for (let i = activeProducts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [activeProducts[i], activeProducts[j]] = [activeProducts[j], activeProducts[i]];
+    }
 
     // 2. ดึงโปรโมชันส่วนลดที่เปิดใช้งานอยู่ในปัจจุบัน
     const { data: activeDiscounts, error: discountsError } = await supabase
