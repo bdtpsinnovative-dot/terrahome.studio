@@ -10,6 +10,27 @@ export const revalidate = 3600 // cache 1 ชั่วโมง แทน 0 ช�
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
 
+function getCategoryOrder(productSup: string | null | undefined): number {
+  const value = (productSup || '').trim().toLowerCase()
+  if (value.startsWith('vase')) return 1
+  if (value.startsWith('doll') || value.startsWith('decorative') || value.startsWith('decotative')) return 2
+  if (value.includes('ornament') || value.startsWith('art object')) return 3
+  return 4
+}
+
+function getCollectionSubOrder(collection: any): number {
+  const products = collection.products || []
+  const hasHotAvailable = products.some((product: any) => product.hot_rank !== null && product.availability_status === 'available')
+  const hasAvailable = products.some((product: any) => product.availability_status === 'available')
+  const hasHotPreorder = products.some((product: any) => product.hot_rank !== null && product.availability_status === 'preorder')
+
+  // Within each category: hot + available, available, hot + preorder, preorder.
+  if (hasHotAvailable) return 0
+  if (hasAvailable) return 1
+  if (hasHotPreorder) return 2
+  return 3
+}
+
 export const metadata: Metadata = {
   title: 'คอลเล็กชันของตกแต่งบ้าน | Terra Home Studio - เซรามิก แจกัน Decorative Objects',
   description: 'ช้อปของตกแต่งบ้านเซรามิก แจกัน Decorative Objects และ Vessels จาก Terra Home Studio คอลเล็กชันดีไซน์มินิมอล สไตล์ wabi-sabi และ Nordic เช็คสต็อกสาขาได้ทันที',
@@ -86,25 +107,19 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   }
 
   // 2. ดึงข้อมูลสินค้าและกรองตามสาขา (เฉพาะส่วนเนื้อหาสินค้าด้านล่าง)
-  const productSelectStr = branchId && branchId !== "all"
-    ? `id, sku, name, image_url, price, status, stock!inner ( branch_id, qty )`
-    : `id, sku, name, image_url, price, status`
+  const productSelectStr = `id, sku, name, image_url, price, status, category_id, specs, stock ( branch_id, qty )`
 
-  let collectionQuery = supabase
+  const collectionQuery = supabase
     .from("collection_groups")
     .select(`*, products!inner ( ${productSelectStr} )`)
     .ilike("tag", "%prop%")
+    .eq("products.category_id", "prop")
     .order("created_at", { ascending: false })
-
-  if (branchId && branchId !== "all") {
-    collectionQuery = collectionQuery
-      .eq("products.stock.branch_id", branchId)
-      .gt("products.stock.qty", 0) // กรองเฉพาะสาขาที่มีสต็อกมากกว่า 0
-  }
 
   const { data: collections, error } = await collectionQuery
 
   if (error) {
+    console.error("[PropCollectionsPage] Supabase collection fetch error:", error)
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EBE8E1]">
         <div className="text-center">
@@ -120,6 +135,24 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
     .eq("active", true)
 
+  // Hot Item ranking is computed from the raw event table by the migration's
+  // RPC. Keep the catalog usable if the migration has not been run yet.
+  const { data: hotItems, error: hotItemsError } = await supabase
+    .rpc('get_prop_hot_items', { limit_count: 20 })
+
+  if (hotItemsError) {
+    console.warn('[PropCollectionsPage] Hot Item ranking unavailable:', hotItemsError.message)
+  }
+
+  const hotRankByProductId = new Map<number, number>()
+  const hotScoreByProductId = new Map<number, number>()
+  ;(hotItems || []).forEach((item: any, index: number) => {
+    const productId = Number(item.product_id)
+    if (!Number.isSafeInteger(productId)) return
+    hotRankByProductId.set(productId, index + 1)
+    hotScoreByProductId.set(productId, Number(item.score) || 0)
+  })
+
   const now = new Date()
 
   // กรอง Collection ที่มีสินค้าอยู่จริงๆ และดึงเฉพาะสินค้าที่ Active เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
@@ -134,6 +167,10 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   const mappedCollections = activeCollections.map((collection) => {
     const mappedProducts = collection.products.map((product: any) => {
+      const stockItems = branchId && branchId !== "all"
+        ? (product.stock || []).filter((stockItem: any) => String(stockItem.branch_id) === String(branchId))
+        : (product.stock || [])
+      const totalStock = stockItems.reduce((sum: number, stockItem: any) => sum + Number(stockItem.qty || 0), 0) || 0
       let applicableDiscount = null
       if (activeDiscounts && activeDiscounts.length > 0) {
         applicableDiscount = activeDiscounts.find(discount => {
@@ -145,24 +182,85 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       }
       return {
         ...product,
+        stock: stockItems,
+        total_stock: totalStock,
+        availability_status: totalStock > 0 ? 'available' : 'preorder',
+        hot_rank: hotRankByProductId.get(Number(product.id)) || null,
+        hot_score: hotScoreByProductId.get(Number(product.id)) || null,
         discount_value: applicableDiscount ? applicableDiscount.value : null,
         discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
       }
     })
-    // 🌟 Shuffle products within the collection
-    for (let i = mappedProducts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [mappedProducts[i], mappedProducts[j]] = [mappedProducts[j], mappedProducts[i]];
-    }
 
-    return { ...collection, products: mappedProducts }
+    // Keep the four tiers from the ordering brief:
+    // 1) Hot Item + available, 2) available, 3) Hot Item + pre-order,
+    // 4) pre-order. Hot products must keep their actual ranking; only the
+    // non-hot products are randomized within their tier.
+    const shuffle = (items: any[]) => {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items
+    }
+    const sortHot = (items: any[]) => items.sort((a: any, b: any) => {
+      const rankDiff = (a.hot_rank || Infinity) - (b.hot_rank || Infinity)
+      return rankDiff !== 0 ? rankDiff : Number(a.id) - Number(b.id)
+    })
+    const hotAvailableProducts = mappedProducts.filter((product: any) => product.hot_rank !== null && product.availability_status === 'available')
+    const availableProducts = mappedProducts.filter((product: any) => product.hot_rank === null && product.availability_status === 'available')
+    const hotPreorderProducts = mappedProducts.filter((product: any) => product.hot_rank !== null && product.availability_status === 'preorder')
+    const preorderProducts = mappedProducts.filter((product: any) => product.hot_rank === null && product.availability_status === 'preorder')
+
+    return {
+      ...collection,
+      products: [
+        ...sortHot(hotAvailableProducts),
+        ...shuffle(availableProducts),
+        ...sortHot(hotPreorderProducts),
+        ...shuffle(preorderProducts),
+      ],
+      has_available_products: hotAvailableProducts.length + availableProducts.length > 0,
+      is_preorder_only: hotAvailableProducts.length + availableProducts.length === 0 && hotPreorderProducts.length + preorderProducts.length > 0,
+      hot_rank: mappedProducts.reduce((best: number | null, product: any) => {
+        if (!product.hot_rank) return best
+        return best === null ? product.hot_rank : Math.min(best, product.hot_rank)
+      }, null),
+      hot_score: mappedProducts.reduce((best: number, product: any) => best + (product.hot_score || 0), 0),
+    }
   })
 
-  // 🌟 Shuffle the collections themselves
-  for (let i = mappedCollections.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [mappedCollections[i], mappedCollections[j]] = [mappedCollections[j], mappedCollections[i]];
+  // Match the product-ordering design: Hot Item first, then Vase, Doll/
+  // Decorative, Ornament and the remaining categories. Within each category,
+  // use the sub-order Hot+stock -> stock -> Hot+preorder -> preorder.
+  const shuffleCollections = (items: any[]) => {
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    return items
   }
+  const collectionBuckets = new Map<number, any[]>()
+  mappedCollections.forEach((collection: any) => {
+    const categoryOrder = getCategoryOrder(collection.product_sup)
+    const subOrder = getCollectionSubOrder(collection)
+    const bucket = collection.hot_rank !== null && subOrder === 0
+      ? 0
+      : (categoryOrder * 10) + subOrder
+    const items = collectionBuckets.get(bucket) || []
+    items.push(collection)
+    collectionBuckets.set(bucket, items)
+  })
+
+  const orderedCollections = Array.from(collectionBuckets.keys())
+    .sort((a, b) => a - b)
+    .flatMap((bucket) => {
+      const items = collectionBuckets.get(bucket) || []
+      if (bucket === 0) {
+        return items.sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity))
+      }
+      return shuffleCollections(items)
+    })
 
   // เช็คว่ามีรูปแบนเนอร์ที่จะแสดงไหม? (ใช้ข้อมูลจาก bannerGroups ที่ดึงแยกมา)
   const hasBanner = activeBannerImage || allBannerImages.length > 0;
@@ -186,7 +284,11 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
       {/* 3. โซนเนื้อหาสินค้าด้านล่าง */}
       <div className={`max-w-[1600px] mx-auto w-full px-4 lg:py-16 pb-24 ${hasBanner ? 'pt-4 lg:pt-0' : 'pt-24 lg:pt-28'}`}>
-        <PropFilterClient collections={mappedCollections} branches={branches || []} />
+        <PropFilterClient
+          collections={orderedCollections}
+          branches={branches || []}
+          hotProductIds={(hotItems || []).map((item: any) => Number(item.product_id)).filter(Number.isSafeInteger)}
+        />
       </div>
       <Footer />
     </div>

@@ -22,3 +22,16 @@ export const HARDCODED_CATEGORIES = [
   "Wall Art Hand Craft 80%",
   "Wall Art Hand Craft 100%"
 ];
+
+// Keep display names separate from fullValue so existing URLs and filters remain stable.
+export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  "Art Object": "Ornament",
+  "Book End": "Bookends",
+  "Candle Holder": "Candle Holders",
+  "Decorative": "Decorative Objects",
+  "Doll": "Dolls & Toys",
+  "Kitchenware": "Tableware",
+  "Tray": "Trays",
+  "Vase": "Vessels",
+  "Wall Art": "Art & Wall Decor",
+};

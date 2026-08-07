@@ -83,6 +83,8 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   const { data: groupData, error } = await supabase
     .from("collection_groups")
     .select(`
+      id,
+      product_sup,
       products (
         *,
         stock (
@@ -99,7 +101,9 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     .eq("id", currentGroupId)
     .single()
 
-  const groupProducts = (groupData?.products || []).filter((p: any) => p.status === 'active' || !p.status)
+  const groupProducts = (groupData?.products || []).filter((p: any) =>
+    p.category_id === 'prop' && (p.status === 'active' || !p.status)
+  )
 
   if (error || !groupData || !groupProducts || groupProducts.length === 0) {
     return (
@@ -173,24 +177,63 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     ],
   };
 
-  // Fetch 16 Recommended Products (randomly from collections that have 'prop' tag)
-  const { data: recommendedCollectionsRaw } = await supabase
-    .from("collection_groups")
-    .select(`*, products!inner ( id, sku, name, image_url, price, status )`)
-    .ilike("tag", "%prop%")
-    
-  const activeRecommended = (recommendedCollectionsRaw || []).map(collection => {
-    return {
-      ...collection,
-      products: collection.products?.filter((p: any) => p.status === 'active' || !p.status) || []
-    }
-  }).filter(collection => collection.products && collection.products.length > 0 && collection.id !== currentGroupId);
+  // Recommendations prioritize the same product type and colour/tone, then
+  // use sequential browsing behaviour, engagement and stock as tie-breakers.
+  const { data: relatedProductScores, error: relatedError } = await supabase
+    .rpc('get_prop_related_products', {
+      current_product_id: Number(activeProduct.id),
+      limit_count: 16,
+    })
 
-  for (let i = activeRecommended.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [activeRecommended[i], activeRecommended[j]] = [activeRecommended[j], activeRecommended[i]];
+  if (relatedError) {
+    console.warn('[ProductDetail] related-product ranking unavailable:', relatedError.message)
   }
-  const recommendedCollections = activeRecommended.slice(0, 16);
+
+  const relatedRank = new Map<number, number>()
+  ;(relatedProductScores || []).forEach((item: any, index: number) => {
+    const productId = Number(item.product_id)
+    if (Number.isSafeInteger(productId)) relatedRank.set(productId, index)
+  })
+  const relatedProductIds = Array.from(relatedRank.keys())
+
+  let recommendedCollections: any[] = []
+  if (relatedProductIds.length > 0) {
+    const { data: relatedCollectionsRaw } = await supabase
+      .from("collection_groups")
+      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id )`)
+      .ilike("tag", "%prop%")
+      .eq("products.category_id", "prop")
+      .in("products.id", relatedProductIds)
+
+    recommendedCollections = (relatedCollectionsRaw || [])
+      .filter((collection: any) => String(collection.id) !== String(currentGroupId))
+      .map((collection: any) => {
+        const products = (collection.products || [])
+          .filter((product: any) => (product.status === 'active' || !product.status) && relatedRank.has(Number(product.id)))
+          .sort((a: any, b: any) => (relatedRank.get(Number(a.id)) ?? Infinity) - (relatedRank.get(Number(b.id)) ?? Infinity))
+        return { ...collection, products }
+      })
+      .filter((collection: any) => collection.products.length > 0)
+      .sort((a: any, b: any) => (relatedRank.get(Number(a.products[0].id)) ?? Infinity) - (relatedRank.get(Number(b.products[0].id)) ?? Infinity))
+  }
+
+  // Deterministic same-category fallback until enough sequential events exist.
+  if (recommendedCollections.length === 0 && groupData.product_sup) {
+    const { data: fallbackCollectionsRaw } = await supabase
+      .from("collection_groups")
+      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id )`)
+      .ilike("tag", "%prop%")
+      .eq("products.category_id", "prop")
+      .eq("product_sup", groupData.product_sup)
+      .neq("id", currentGroupId)
+      .order("created_at", { ascending: false })
+      .limit(16)
+
+    recommendedCollections = (fallbackCollectionsRaw || []).map((collection: any) => ({
+      ...collection,
+      products: (collection.products || []).filter((product: any) => product.status === 'active' || !product.status),
+    })).filter((collection: any) => collection.products.length > 0)
+  }
 
   return (
     <>

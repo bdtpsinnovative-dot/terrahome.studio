@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient, getSafeSession } from '@/src/supabase/client';
-import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
+import { CATEGORY_DISPLAY_NAMES } from '@/app/constants/categories';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
@@ -137,19 +137,25 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
     return [
       { label: "All", isGroup: false, items: [{ fullValue: "All", displayLabel: "All" }] },
-      { label: "Art Object", isGroup: false, items: [{ fullValue: "Art Object", displayLabel: "Art Object" }] },
-      { label: "Book End", isGroup: false, items: [{ fullValue: "Book End", displayLabel: "Book End" }] },
-      { label: "Candle Holder", isGroup: false, items: [{ fullValue: "Candle Holder", displayLabel: "Candle Holder" }] },
-      { label: "Decorative", isGroup: true, items: decorativeItems },
-      { label: "Doll", isGroup: true, items: dollItems },
-      { label: "Kitchenware", isGroup: false, items: [{ fullValue: "Kitchenware", displayLabel: "Kitchenware" }] },
-      { label: "Tray", isGroup: false, items: [{ fullValue: "Tray", displayLabel: "Tray" }] },
-      { label: "Vase", isGroup: true, items: vaseItems },
-      { label: "Wall Art", isGroup: true, items: wallArtItems },
+      { label: "Art Object", displayLabel: CATEGORY_DISPLAY_NAMES["Art Object"], isGroup: false, items: [{ fullValue: "Art Object", displayLabel: CATEGORY_DISPLAY_NAMES["Art Object"] }] },
+      { label: "Book End", displayLabel: CATEGORY_DISPLAY_NAMES["Book End"], isGroup: false, items: [{ fullValue: "Book End", displayLabel: CATEGORY_DISPLAY_NAMES["Book End"] }] },
+      { label: "Candle Holder", displayLabel: CATEGORY_DISPLAY_NAMES["Candle Holder"], isGroup: false, items: [{ fullValue: "Candle Holder", displayLabel: CATEGORY_DISPLAY_NAMES["Candle Holder"] }] },
+      { label: "Decorative", displayLabel: CATEGORY_DISPLAY_NAMES["Decorative"], isGroup: true, items: decorativeItems },
+      { label: "Doll", displayLabel: CATEGORY_DISPLAY_NAMES["Doll"], isGroup: true, items: dollItems },
+      { label: "Kitchenware", displayLabel: CATEGORY_DISPLAY_NAMES["Kitchenware"], isGroup: false, items: [{ fullValue: "Kitchenware", displayLabel: CATEGORY_DISPLAY_NAMES["Kitchenware"] }] },
+      { label: "Tray", displayLabel: CATEGORY_DISPLAY_NAMES["Tray"], isGroup: false, items: [{ fullValue: "Tray", displayLabel: CATEGORY_DISPLAY_NAMES["Tray"] }] },
+      { label: "Vase", displayLabel: CATEGORY_DISPLAY_NAMES["Vase"], isGroup: true, items: vaseItems },
+      { label: "Wall Art", displayLabel: CATEGORY_DISPLAY_NAMES["Wall Art"], isGroup: true, items: wallArtItems },
       {
         label: "SALE OFFERS %",
         isGroup: false,
         items: [{ fullValue: "SPECIAL_DISCOUNT", displayLabel: "SALE OFFERS %" }],
+        isSpecial: true
+      },
+      {
+        label: "PRE-ORDER",
+        isGroup: false,
+        items: [{ fullValue: "PRE_ORDER", displayLabel: "PRE-ORDER" }],
         isSpecial: true
       }
     ];
@@ -196,8 +202,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const innerSubBorderColor = 'border-[#3A3835]/10';
 
   const navContainerClass = `fixed top-0 transition-all duration-500 ${isScrolled || isMobileMenuOpen
-      ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
-      : 'bg-transparent'
+    ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
+    : 'bg-transparent'
     }`;
 
   const createCategoryUrl = (categoryValue: string) => {
@@ -300,76 +306,76 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
           {isMobileMenuOpen && (
             <div className="flex-grow flex flex-col justify-center pb-16">
               <nav className="flex flex-col px-5">
-              {[
-                { num: '01', label: 'HOME DECOR', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop') },
-                { num: '02', label: 'ART & GALLERY', href: '/journal', url: '/journal', active: isActive('/journal') },
-                { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
-                { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
-              ].map(({ num, label, href, url, active }) => (
-                <div key={num} className="mob-nav-item">
-                  <Link
-                    href={href}
-                    prefetch={false}
-                    title={label}
-                    onClick={(e) => handleNavClick(e, url)}
-                    className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
-                  >
-                    <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
-                      {num}
-                    </span>
-                    <span
-                      className={`mob-nav-label font-serif leading-tight transition-colors ${active ? 'text-[#B8834A] font-semibold' : 'text-[#3A3835] font-normal group-hover:text-[#B8834A]'}`}
-                      style={{ fontSize: 'clamp(26px, 6vw, 34px)' }}
+                {[
+                  { num: '01', label: 'Product', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop') },
+                  { num: '02', label: 'Idea & Gallary', href: '/journal', url: '/journal', active: isActive('/journal') },
+                  { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
+                  { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
+                ].map(({ num, label, href, url, active }) => (
+                  <div key={num} className="mob-nav-item">
+                    <Link
+                      href={href}
+                      prefetch={false}
+                      title={label}
+                      onClick={(e) => handleNavClick(e, url)}
+                      className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
                     >
-                      {label}
-                    </span>
-                  </Link>
-                </div>
-              ))}
+                      <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
+                        {num}
+                      </span>
+                      <span
+                        className={`mob-nav-label font-serif leading-tight transition-colors ${active ? 'text-[#B8834A] font-semibold' : 'text-[#3A3835] font-normal group-hover:text-[#B8834A]'}`}
+                        style={{ fontSize: 'clamp(26px, 6vw, 34px)' }}
+                      >
+                        {label}
+                      </span>
+                    </Link>
+                  </div>
+                ))}
               </nav>
-              
+
               {/* ── Utility Section: cart / profile / sign out ── */}
               <div className="absolute bottom-8 left-0 right-0 px-8">
                 <div className="flex items-center justify-between border-t border-[#C4B5A5]/40 pt-5">
-                {user ? (
-                  <>
-                    <Link href="/cart" prefetch={false} title="Shopping Cart" onClick={() => setIsMobileMenuOpen(false)}
-                      className="mob-util-item flex flex-col items-center gap-2 group"
+                  {user ? (
+                    <>
+                      <Link href="/cart" prefetch={false} title="Shopping Cart" onClick={() => setIsMobileMenuOpen(false)}
+                        className="mob-util-item flex flex-col items-center gap-2 group"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
+                        </svg>
+                        <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">cart</span>
+                      </Link>
+
+                      <Link href="/profile" prefetch={false} title="My Profile" onClick={() => setIsMobileMenuOpen(false)}
+                        className="mob-util-item flex flex-col items-center gap-2 group"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">profile</span>
+                      </Link>
+
+                      <button onClick={handleSignOut}
+                        className="mob-util-item flex flex-col items-center gap-2 group"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#C0614A] flex-shrink-0 group-hover:text-red-600 transition-colors">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                        </svg>
+                        <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#C0614A] group-hover:text-red-600 transition-colors">sign out</span>
+                      </button>
+                    </>
+                  ) : (
+                    <Link href="/login" prefetch={false} title="Login or Register" onClick={() => setIsMobileMenuOpen(false)}
+                      className="mob-util-item flex items-center justify-center gap-3 w-full group"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" />
                       </svg>
-                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">cart</span>
+                      <span className="font-sans uppercase text-[10px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">Login / Register</span>
                     </Link>
-
-                    <Link href="/profile" prefetch={false} title="My Profile" onClick={() => setIsMobileMenuOpen(false)}
-                      className="mob-util-item flex flex-col items-center gap-2 group"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                      </svg>
-                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">profile</span>
-                    </Link>
-
-                    <button onClick={handleSignOut}
-                      className="mob-util-item flex flex-col items-center gap-2 group"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#C0614A] flex-shrink-0 group-hover:text-red-600 transition-colors">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-                      </svg>
-                      <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#C0614A] group-hover:text-red-600 transition-colors">sign out</span>
-                    </button>
-                  </>
-                ) : (
-                  <Link href="/login" prefetch={false} title="Login or Register" onClick={() => setIsMobileMenuOpen(false)}
-                    className="mob-util-item flex items-center justify-center gap-3 w-full group"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#8C8A86] flex-shrink-0 group-hover:text-[#B8834A] transition-colors">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" />
-                    </svg>
-                    <span className="font-sans uppercase text-[10px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">Login / Register</span>
-                  </Link>
-                )}
+                  )}
                 </div>
               </div>
             </div>
@@ -390,7 +396,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
             <div className="relative group h-full flex items-center">
               <Link href={homeDecorMainUrl} prefetch={false} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
-                HOME DECOR
+                Product
               </Link>
               <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                 <div className={`${dropDownBg} w-[290px] p-8 text-left rounded-sm transition-colors duration-300`}>
@@ -408,7 +414,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                                 <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5z" clipRule="evenodd" />
                               </svg>
-                              {group.label}
+                              {group.displayLabel || group.label}
                             </span>
                           </Link>
                         )
@@ -439,7 +445,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                               className="flex-1 py-1 group/btn"
                             >
                               <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${isGroupActive ? `${innerActiveTextColor} font-bold` : `${innerTextColor} font-medium ${innerTextHoverColor}`}`}>
-                                {group.label}
+                                {group.displayLabel || group.label}
                               </span>
                             </Link>
                             <button type="button" onClick={(e) => toggleGroup(e, group.label)} className="p-1 min-w-[28px] text-right">
@@ -470,7 +476,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             </div>
 
             <Link href="/journal" prefetch={false} title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
-              Art & Gallery
+              Idea & Gallery
             </Link>
             <Link href="/contact" prefetch={false} title="Contact Us" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Contact

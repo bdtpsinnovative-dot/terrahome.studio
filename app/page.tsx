@@ -3,42 +3,34 @@
 // The HeroFallback component below is rendered server-side as Suspense fallback, providing H1 to Google.
 // Google indexes the SSR-rendered fallback: "Crafted for Calm Living." as H1 ✅
 import React, { useRef, useEffect, useState, useMemo, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-// --- ย้ายปุ่ม "Our Story" ออกจากสไลด์แรก ไปไว้สไลด์อื่นๆ แทนตามสั่งครับนาย ---
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 const heroSlides = [
   {
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478880815-990.webp",
     title: "Crafted for Calm Living.",
     subtitle: "Thoughtfully designed to bring warmth and harmony into your home.",
-    buttons: [] // หน้าแรกสุดคลีนๆ ปิดปุ่มเกลี้ยงตามรูปเป๊ะครับนาย!
   },
   {
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478898478-829.webp",
     title: "Decorative Objects",
     subtitle: "",
-    buttons: [
-      { label: "Shop Collection", target: "decorative" },
-      { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
-    ]
   },
   {
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478913463-688.webp",
     title: "Vessels & Tableware",
     subtitle: "",
-    buttons: [
-      { label: "Discover More", target: "vessels" },
-      { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
-    ]
   },
   {
     src: "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1780478931773-588.webp",
     title: "BATH & DIFFUSER VESSEL",
     subtitle: "",
-    buttons: [
-      { label: "Explore Range", target: "bath" },
-      { label: "Our Story", target: "about" } // ใส่ปุ่ม Our Story เพิ่มให้ตรงนี้ครับ
-    ]
   }
+];
+
+const heroActions = [
+  { label: "Collections", href: "/prop" },
+  { label: "Product", href: "/prop#products" },
 ];
 
 export default function HomePage() {
@@ -85,8 +77,9 @@ function HeroFallback() {
           Thoughtfully designed to bring warmth and harmony into your home.
         </h2>
         <div className="mt-8 flex gap-6 z-30 pointer-events-auto">
-          <a href="/prop" title="Discover Collections" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Discover Collections</a>
-          <a href="/about" title="Our Story" className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">Our Story</a>
+          {heroActions.map((action) => (
+            <a key={action.href} href={action.href} title={action.label} className="text-white/80 hover:text-white text-[10px] uppercase font-bold tracking-[0.2em] border-b border-white/20 pb-1">{action.label}</a>
+          ))}
         </div>
       </div>
     </section>
@@ -95,7 +88,6 @@ function HeroFallback() {
 
 function HomeContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const view = searchParams.get('view');
 
   // เพิ่มเงื่อนไขหน้า About (Brand Intro)
@@ -120,7 +112,7 @@ function HomeContent() {
       {/* หน้าแรก: ล็อคให้โชว์แค่ HeroSection เท่านั้น เลื่อนลงไม่ได้แน่นอน */}
       {activeTab === 0 && (
         <div className="animate-fade-in w-full h-screen overflow-hidden">
-          <HeroSection onNavigate={(targetView) => router.push(`/?view=${targetView}`)} />
+          <HeroSection />
         </div>
       )}
 
@@ -138,7 +130,7 @@ function HomeContent() {
   );
 }
 
-export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => void }) {
+export function HeroSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -196,24 +188,17 @@ export function HeroSection({ onNavigate }: { onNavigate?: (view: string) => voi
           )
         )}
 
-        {/* ถ้าเป็นสไลด์แรกสุด (currentIndex === 0) จะไม่มีการเรนเดอร์ปุ่มเด็ดขาด */}
-        {currentIndex !== 0 && (
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 animate-fade-in-up delay-600 pointer-events-auto mt-6">
-            {heroSlides[currentIndex].buttons.map((btn, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  if (onNavigate && btn.target) {
-                    onNavigate(btn.target);
-                  }
-                }}
-                className="px-6 sm:px-8 py-3 sm:py-3.5 border border-white/40 text-white/90 text-[9px] md:text-xs uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-xs bg-black/10 rounded-none font-sans font-normal hover:bg-white hover:text-black hover:border-white hover:scale-105"
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 animate-fade-in-up delay-600 pointer-events-auto mt-6">
+          {heroActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="px-6 sm:px-8 py-3 sm:py-3.5 border border-white/40 text-white/90 text-[9px] md:text-xs uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-xs bg-black/10 rounded-none font-sans font-normal hover:bg-white hover:text-black hover:border-white hover:scale-105"
+            >
+              {action.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="absolute inset-0 z-20 flex items-center justify-between px-2 sm:px-8 pointer-events-none">

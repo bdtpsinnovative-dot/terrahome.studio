@@ -11,6 +11,7 @@ interface ProductSlide {
   name?: string 
   discount_value?: number | null 
   discount_type?: 'PERCENT' | 'FIXED' | null
+  availability_status?: 'available' | 'preorder'
 }
 
 export default function CollectionCard({ 
@@ -97,6 +98,14 @@ export default function CollectionCard({
             {currentSlide.name ? currentSlide.name.substring(0, 25) : "PRODUCT"}
           </span>
           {(() => {
+            if (currentSlide.availability_status === 'preorder') {
+              return (
+                <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold mt-0.5">
+                  PRE-ORDER
+                </p>
+              )
+            }
+
             if (displayPrice === null || displayPrice <= 0) {
               return (
                 <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-0.5">

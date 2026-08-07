@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation" 
 import dynamic from "next/dynamic"
@@ -58,6 +58,53 @@ export default function ProductDetailClient({
   // ⚡ 2. State สำหรับปุ่ม Add to Cart
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [addedSuccess, setAddedSuccess] = useState(false)
+  const trackedViewsRef = useRef<Set<number>>(new Set())
+  const pendingViewsRef = useRef<Set<number>>(new Set())
+
+  useEffect(() => {
+    const productId = Number(activeProduct?.id)
+    if (!Number.isSafeInteger(productId) || trackedViewsRef.current.has(productId) || pendingViewsRef.current.has(productId)) return
+
+    pendingViewsRef.current.add(productId)
+    const payload = JSON.stringify({
+      event_type: 'product_view',
+      product_id: productId,
+      collection_group_id: currentGroupId,
+      metadata: {
+        path: window.location.pathname,
+      },
+    })
+
+    const sendViewEvent = async () => {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const response = await fetch('/api/algorithm/events', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: payload,
+            credentials: 'same-origin',
+            cache: 'no-store',
+            keepalive: true,
+          })
+
+          if (!response.ok) throw new Error(`product_view returned ${response.status}`)
+
+          trackedViewsRef.current.add(productId)
+          pendingViewsRef.current.delete(productId)
+          return
+        } catch (error) {
+          if (attempt === 1 && process.env.NODE_ENV !== 'production') {
+            console.warn('[algorithm-events] product_view was not recorded', error)
+          }
+          if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 400))
+        }
+      }
+
+      pendingViewsRef.current.delete(productId)
+    }
+
+    void sendViewEvent()
+  }, [activeProduct?.id, currentGroupId])
 
   const handleSelectProduct = (product: any) => {
     setActiveProduct(product)
@@ -318,7 +365,7 @@ export default function ProductDetailClient({
                     ))
                   ) : (
                     <div className="text-center text-[9px] text-[#8C8A86] uppercase tracking-[0.2em] py-5">
-                      CURRENTLY OUT OF STOCK
+                      PRE-ORDER AVAILABLE
                     </div>
                   )}
                 </div>
@@ -416,7 +463,7 @@ export default function ProductDetailClient({
                   ADDING...
                 </>
               ) : outOfStock ? (
-                'OUT OF STOCK'
+                'PRE-ORDER'
               ) : addedSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />

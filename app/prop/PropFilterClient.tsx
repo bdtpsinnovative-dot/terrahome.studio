@@ -1,12 +1,36 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation" 
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
-import { HARDCODED_CATEGORIES } from "@/app/constants/categories"
+import { CATEGORY_DISPLAY_NAMES } from "@/app/constants/categories"
 
-export default function PropFilterClient({ collections, branches }: { collections: any[], branches: any[] }) {
+type AttributeMode = "color" | "material"
+
+function normalizeAttribute(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase()
+}
+
+function attributeValues(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(attributeValues)
+  if (typeof value !== "string") return []
+  return value
+    .split(/[,/|]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function productAttributeValues(product: any, mode: AttributeMode): string[] {
+  const specs = product?.specs && typeof product.specs === "object" ? product.specs : {}
+  const rawValues = mode === "color"
+    ? [product?.color, product?.colour, product?.colors, product?.colours, specs.color, specs.colour, specs.colors, specs.colours]
+    : [product?.material, product?.materials, specs.material, specs.materials]
+
+  return Array.from(new Set(rawValues.flatMap(attributeValues).map(normalizeAttribute)))
+}
+
+export default function PropFilterClient({ collections, branches, hotProductIds = [] }: { collections: any[], branches: any[], hotProductIds?: number[] }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -14,11 +38,13 @@ export default function PropFilterClient({ collections, branches }: { collection
   const initialCategory = searchParams.get('category') || "All"
   const initialPage = Number(searchParams.get('page')) || 1
   const initialSearch = searchParams.get('search') || "" // 🌟 1. ดึงค่าค้นหาเริ่มต้นจาก URL
+  const initialAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [searchQuery, setSearchQuery] = useState(initialSearch) // 🌟 2. เพิ่ม State สำหรับเก็บบล็อกคำค้นหา
-  
+  const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // 🌟 ล็อกไม่ให้หน้าจอหมุนหรือเลื่อนเมื่อเปิดเมนู Filter มือถือ
@@ -41,7 +67,7 @@ export default function PropFilterClient({ collections, branches }: { collection
   }, [initialCategory])
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>(initialExpandedGroups)
-  
+
   const itemsPerPage = 40
   const topRef = useRef<HTMLDivElement>(null)
 
@@ -49,9 +75,11 @@ export default function PropFilterClient({ collections, branches }: { collection
     const urlCategory = searchParams.get('category') || "All"
     const urlPage = Number(searchParams.get('page')) || 1
     const urlSearch = searchParams.get('search') || ""
+    const urlAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
     setActiveFilter(urlCategory)
     setCurrentPage(urlPage)
     setSearchQuery(urlSearch)
+    setAttributeFilter(urlAttribute)
   }, [searchParams])
 
   useEffect(() => {
@@ -67,17 +95,20 @@ export default function PropFilterClient({ collections, branches }: { collection
     }
   }, [activeFilter])
 
-  const updateURL = (newFilter: string, newPage: number, newSearch: string) => {
+  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter) => {
     const params = new URLSearchParams(searchParams.toString())
-    
+
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
     else params.delete('category')
-    
+
     if (newPage > 1) params.set('page', newPage.toString())
     else params.delete('page')
 
     if (newSearch) params.set('search', newSearch)
     else params.delete('search')
+
+    if (newAttribute && newAttribute !== "ALL_ATTRIBUTE") params.set('attribute', newAttribute)
+    else params.delete('attribute')
 
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
@@ -106,6 +137,36 @@ export default function PropFilterClient({ collections, branches }: { collection
     updateURL(activeFilter, 1, val)
   }
 
+  const attributeOptions = useMemo(() => {
+    const colorLabels = new Map<string, string>()
+    const materialLabels = new Map<string, string>()
+
+    for (const group of collections) {
+      for (const product of group.products || []) {
+        for (const value of productAttributeValues(product, "color")) {
+          if (!colorLabels.has(value)) colorLabels.set(value, value)
+        }
+        for (const value of productAttributeValues(product, "material")) {
+          if (!materialLabels.has(value)) materialLabels.set(value, value)
+        }
+      }
+    }
+
+    const colorOptions = Array.from(colorLabels.entries()).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
+    const materialOptions = Array.from(materialLabels.entries()).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
+
+    return colorOptions.length > 0
+      ? { mode: "color" as const, label: "COLOR", options: colorOptions }
+      : { mode: "material" as const, label: "MATERIAL", options: materialOptions }
+  }, [collections])
+
+  const handleAttributeChange = (value: string) => {
+    setAttributeFilter(value)
+    setCurrentPage(1)
+    updateURL(activeFilter, 1, searchQuery, value)
+    setIsSidebarOpen(false)
+  }
+
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => prev.includes(groupLabel) ? prev.filter(g => g !== groupLabel) : [...prev, groupLabel])
   }
@@ -124,8 +185,25 @@ export default function PropFilterClient({ collections, branches }: { collection
 
     if (activeFilter === "All") {
       result = collections
+    } else if (activeFilter === "HOT_ITEM") {
+      const hotIdSet = new Set(hotProductIds)
+      result = collections
+        .filter(group => group.products?.some((p: any) => hotIdSet.has(Number(p.id))))
+        .map(group => ({
+          ...group,
+          products: group.products
+            .filter((p: any) => hotIdSet.has(Number(p.id)))
+            .sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity)),
+        }))
     } else if (activeFilter === "SPECIAL_DISCOUNT") {
       result = collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
+    } else if (activeFilter === "PRE_ORDER") {
+      result = collections
+        .filter(group => group.products?.some((p: any) => p.availability_status === 'preorder'))
+        .map(group => ({
+          ...group,
+          products: group.products.filter((p: any) => p.availability_status === 'preorder'),
+        }))
     } else if (filterUpper === "DECORATIVE") {
       result = collections.filter(group => {
         const sup = (group.product_sup || "").trim().toLowerCase()
@@ -155,11 +233,20 @@ export default function PropFilterClient({ collections, branches }: { collection
       })
     }
 
+    if (attributeFilter !== "ALL_ATTRIBUTE") {
+      result = result
+        .map((group) => ({
+          ...group,
+          products: (group.products || []).filter((product: any) => productAttributeValues(product, attributeOptions.mode).includes(attributeFilter)),
+        }))
+        .filter((group) => group.products.length > 0)
+    }
+
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(group => {
         const matchGroupName = group.name?.toLowerCase().includes(query)
-        const matchProducts = group.products?.some((p: any) => 
+        const matchProducts = group.products?.some((p: any) =>
           p.name?.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query)
         )
         return matchGroupName || matchProducts
@@ -167,7 +254,7 @@ export default function PropFilterClient({ collections, branches }: { collection
     }
 
     return result
-  }, [activeFilter, collections, searchQuery])
+  }, [activeFilter, attributeFilter, attributeOptions.mode, collections, searchQuery])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -203,20 +290,27 @@ export default function PropFilterClient({ collections, branches }: { collection
 
     return [
       { label: "ALL", isGroup: false, fullValue: "All" },
-      { label: "ART OBJECT", isGroup: false, fullValue: "Art Object" },
-      { label: "BOOK END", isGroup: false, fullValue: "Book End" },
-      { label: "CANDLE HOLDER", isGroup: false, fullValue: "Candle Holder" },
-      { label: "DECORATIVE", isGroup: true, items: decorativeItems },
-      { label: "DOLL", isGroup: true, items: dollItems },
-      { label: "KITCHENWARE", isGroup: false, fullValue: "Kitchenware" },
-      { label: "TRAY", isGroup: false, fullValue: "Tray" },
-      { label: "VASE", isGroup: true, items: vaseItems },
-      { label: "WALL ART", isGroup: true, items: wallArtItems },
-      { 
-        label: "SALE OFFERS %", 
-        isGroup: false, 
+
+      { label: "ART OBJECT", displayLabel: "ORNAMENT", isGroup: false, fullValue: "Art Object" },
+      { label: "BOOK END", displayLabel: "BOOKENDS", isGroup: false, fullValue: "Book End" },
+      { label: "CANDLE HOLDER", displayLabel: "CANDLE HOLDERS", isGroup: false, fullValue: "Candle Holder" },
+      { label: "DECORATIVE", displayLabel: "DECORATIVE OBJECTS", isGroup: true, items: decorativeItems },
+      { label: "DOLL", displayLabel: "DOLLS & TOYS", isGroup: true, items: dollItems },
+      { label: "KITCHENWARE", displayLabel: "TABLEWARE", isGroup: false, fullValue: "Kitchenware" },
+      { label: "TRAY", displayLabel: "TRAYS", isGroup: false, fullValue: "Tray" },
+      { label: "VASE", displayLabel: "VESSELS", isGroup: true, items: vaseItems },
+      { label: "WALL ART", displayLabel: "ART & WALL DECOR", isGroup: true, items: wallArtItems },
+      {
+        label: "PRE-ORDER",
+        isGroup: false,
+        fullValue: "PRE_ORDER",
+        isSpecial: true,
+      },
+      {
+        label: "SALE OFFERS %",
+        isGroup: false,
         fullValue: "SPECIAL_DISCOUNT",
-        isSpecial: true 
+        isSpecial: true
       }
     ]
   }, [])
@@ -228,11 +322,10 @@ export default function PropFilterClient({ collections, branches }: { collection
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`w-8 h-8 text-[11px] font-mono transition-all duration-300 ${
-            currentPage === i 
-            ? 'text-[#3A3835] border-b border-[#3A3835] font-bold' 
+          className={`w-8 h-8 text-[11px] font-mono transition-all duration-300 ${currentPage === i
+            ? 'text-[#3A3835] border-b border-[#3A3835] font-bold'
             : 'text-[#8C8A86] hover:text-[#3A3835]'
-          }`}
+            }`}
         >
           {i}
         </button>
@@ -242,24 +335,35 @@ export default function PropFilterClient({ collections, branches }: { collection
   };
 
   const getDisplayTitle = () => {
-    if (activeFilter === "All") return "Home Decor"
+    if (activeFilter === "All") return "Product"
     if (activeFilter === "SPECIAL_DISCOUNT") return "SPECIAL OFFERS"
+    if (activeFilter === "PRE_ORDER") return "PRE-ORDER"
+    if (CATEGORY_DISPLAY_NAMES[activeFilter]) return CATEGORY_DISPLAY_NAMES[activeFilter]
     return activeFilter.replace(/^(Decorative|Doll|Wall Art|Decotative)\s+/i, '').toUpperCase()
   };
 
   const renderSidebarContent = () => (
     <div className="flex flex-col w-full text-left pb-12 pt-2 px-6">
+      {attributeOptions.options.length > 0 && (
+        <div className="w-full border-b border-[#C4B5A5]/30 pb-6 mb-4">
+          <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.25em] text-[#8C8A86]">FILTER BY {attributeOptions.label}</p>
+          <button type="button" onClick={() => handleAttributeChange("ALL_ATTRIBUTE")} className={`min-h-10 w-full text-left text-[11px] uppercase tracking-[0.2em] transition-colors ${attributeFilter === "ALL_ATTRIBUTE" ? 'font-semibold text-[#84492C]' : 'font-light text-[#8C8A86] hover:text-[#3A3835]'}`}>ALL {attributeOptions.label}</button>
+          <div className="mt-1 max-h-64 overflow-y-auto pr-1">
+            {attributeOptions.options.map((option) => <button key={option.value} type="button" onClick={() => handleAttributeChange(option.value)} className={`block min-h-10 w-full text-left text-[11px] uppercase tracking-[0.18em] transition-colors ${attributeFilter === option.value ? 'font-semibold text-[#84492C]' : 'font-light text-[#8C8A86] hover:text-[#3A3835]'}`}>{option.label}</button>)}
+          </div>
+        </div>
+      )}
       {structuredCategories.map((menuItem, idx) => {
         if (menuItem.isSpecial) {
           const isActive = activeFilter === menuItem.fullValue
           return (
             <div key={menuItem.fullValue} className="w-full py-1 mt-6 border-t border-[#C4B5A5]/30 pt-6">
-              <button 
-                onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.fullValue); }} 
+              <button
+                onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.fullValue); }}
                 className={`w-full flex items-center justify-between text-left group transition-all duration-300`}
               >
                 <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#84492C]/80 font-medium group-hover:text-[#84492C]'}`}>
-                  {menuItem.label}
+                  {menuItem.displayLabel || menuItem.label}
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#84492C]/60 group-hover:text-[#84492C]'}`}>
                   <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5zM6 7a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -274,7 +378,7 @@ export default function PropFilterClient({ collections, branches }: { collection
           return (
             <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue && menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group py-3 transition-all duration-300">
               <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
-                {menuItem.label}
+                {menuItem.displayLabel || menuItem.label}
               </span>
             </button>
           )
@@ -287,7 +391,7 @@ export default function PropFilterClient({ collections, branches }: { collection
             <div className="flex items-center justify-between w-full gap-2">
               <button onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.label); }} className="text-left group py-3 flex-1">
                 <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
-                  {menuItem.label}
+                  {menuItem.displayLabel || menuItem.label}
                 </span>
               </button>
               <button type="button" onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className={`min-w-[32px] h-8 flex items-center justify-center text-[12px] font-light transition-transform duration-300 ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
@@ -316,8 +420,8 @@ export default function PropFilterClient({ collections, branches }: { collection
 
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
-      
-      <div className={`fixed inset-0 z-[9999] xl:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+
+      <div className={`fixed inset-0 z-[9999] 2xl:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
         <div className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col touch-manipulation z-10 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="px-8 pt-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-4 bg-[#EFE9E1]">
@@ -335,7 +439,7 @@ export default function PropFilterClient({ collections, branches }: { collection
       </div>
 
       <div className="flex flex-row items-start w-full px-0 relative">
-        
+
         <div className="hidden xl:flex sticky top-32 z-10 h-[calc(100vh-200px)] w-48 shrink-0 flex-col items-center justify-center select-none border-r border-[#84492C]/20 bg-transparent overflow-hidden">
           <span className="-rotate-90 tracking-[0.3em] text-[28px] lg:text-[32px] font-medium uppercase whitespace-nowrap origin-center text-[#84492C] opacity-20">
             Home Decor Collections
@@ -343,18 +447,18 @@ export default function PropFilterClient({ collections, branches }: { collection
         </div>
 
         <div className="flex-1 w-full flex flex-col relative z-10 px-4 md:pl-6 md:pr-6">
-          
+
           {/* 🌟 7. ส่วนหัวแบบปรับสไตล์ใหม่: ย้ายหัวข้อ และนำ Search Bar มาจัดวางให้สวยงาม คลีนๆ เข้ากับธีมหน้าเว็บ */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end pb-5 mb-0 pt-6 gap-4 border-b border-[#D5D2CA]/30">
-            <div className="flex flex-col gap-1.5 w-full md:w-auto">
+          <div className="flex min-w-0 flex-col lg:flex-row justify-between items-start lg:items-end pb-5 mb-0 pt-6 gap-4 border-b border-[#D5D2CA]/30">
+            <div className="flex min-w-0 flex-col gap-1.5 w-full lg:w-auto">
               <h1 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal">
                 {getDisplayTitle()}
               </h1>
             </div>
-            
+
             {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่ม FILTER และ BranchSelector */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 w-full md:w-auto justify-end">
-              <div className="relative w-full sm:w-64 group">
+            <div className="flex min-w-0 flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-6 w-full lg:w-auto justify-end">
+              <div className="relative min-w-0 w-full sm:w-64 group">
                 <input
                   type="text"
                   placeholder="SEARCH PROPS, SKU..."
@@ -363,8 +467,8 @@ export default function PropFilterClient({ collections, branches }: { collection
                   className="w-full bg-white/60 backdrop-blur-sm pl-3 pr-8 py-1.5 border border-[#D5D2CA] text-[11px] font-mono tracking-wider text-[#3A3835] uppercase placeholder-[#8C8A86]/50 outline-none focus:border-[#3A3835] focus:bg-white transition-all duration-300 rounded-sm"
                 />
                 {searchQuery ? (
-                  <button 
-                    onClick={() => handleSearchChange("")} 
+                  <button
+                    onClick={() => handleSearchChange("")}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8A86] hover:text-[#3A3835] text-[11px] transition-colors"
                   >
                     ✕
@@ -376,11 +480,11 @@ export default function PropFilterClient({ collections, branches }: { collection
                 )}
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
-                <button 
+              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-5 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
+                <button
                   type="button"
                   onClick={() => setIsSidebarOpen(true)}
-                  className="xl:hidden flex items-center gap-1.5 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                  className="2xl:hidden flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-1 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
@@ -402,7 +506,7 @@ export default function PropFilterClient({ collections, branches }: { collection
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 w-full relative">
+                <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
                     const slides = group.cover_image_url ? [
                       {
@@ -412,6 +516,7 @@ export default function PropFilterClient({ collections, branches }: { collection
                         name: group.name || "",
                         discount_value: null,
                         discount_type: null,
+                        availability_status: group.products?.[0]?.availability_status,
                       }
                     ] : group.products
                       ?.filter((p: any) => p.image_url !== null && p.image_url !== "")
@@ -422,6 +527,7 @@ export default function PropFilterClient({ collections, branches }: { collection
                         name: p.name,
                         discount_value: p.discount_value,
                         discount_type: p.discount_type,
+                        availability_status: p.availability_status,
                       })) || []
 
                     return (
@@ -446,5 +552,5 @@ export default function PropFilterClient({ collections, branches }: { collection
 
       </div>
     </div>
-  ) 
+  )
 }
