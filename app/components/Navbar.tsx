@@ -265,7 +265,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
       `}} />
 
       <div
-        className={`fixed inset-0 z-[9999] lg:hidden transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+        className={`fixed inset-0 z-[9999] transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
           }`}
       >
         {/* ─── BACKDROP (Full Screen Dim) ─── */}
@@ -499,7 +499,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
         {/* ---------------- 3. ฝั่งขวา ---------------- */}
         <div className={`flex-1 basis-0 min-w-0 flex items-center justify-end ${isMobileMenuOpen ? 'text-[#3A3835]' : textColor}`}>
 
-          {/* 🌟 โซนจอคอม (Desktop) จะซ่อนปุ่ม 3 ขีด โชว์แค่ User/Cart */}
+          {/* โซนเครื่องมือด้านขวา */}
           <div className="hidden lg:flex items-center space-x-4 lg:space-x-6">
             {user ? (
               <>
@@ -576,8 +576,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
           {/* เติม <button ตรงนี้ครับ */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]"
-            aria-label="Menu"
+            className="hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]"
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] rotate-45 translate-y-[7.5px]' : hamburgerLineColor}`}></span>
             <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : hamburgerLineColor}`}></span>

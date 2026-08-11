@@ -420,10 +420,9 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
-
-      <div className={`fixed inset-0 z-[9999] 2xl:hidden transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`fixed inset-0 z-[9999] transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-        <div className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col touch-manipulation z-10 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div id="filter-drawer" className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col touch-manipulation z-10 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="px-8 pt-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-4 bg-[#EFE9E1]">
             <span className="text-[11px] uppercase tracking-[0.3em] font-medium text-[#3A3835]">Filters</span>
             <button type="button" onClick={() => setIsSidebarOpen(false)} className="text-[#3A3835] hover:text-[#B8834A] transition-colors p-1 -mr-2 touch-manipulation">
@@ -484,7 +483,9 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen(true)}
-                  className="2xl:hidden flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-1 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                  aria-expanded={isSidebarOpen}
+                  aria-controls="filter-drawer"
+                  className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
