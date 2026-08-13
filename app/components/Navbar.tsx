@@ -567,7 +567,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
         {/* ---------------- 3. ฝั่งขวา ---------------- */}
         <div className={`flex-1 basis-0 min-w-0 flex items-center justify-end ${isMobileMenuOpen ? 'text-[#3A3835]' : textColor}`}>
 
-          {/* 🌟 โซนจอคอม (Desktop) จะซ่อนปุ่ม 3 ขีด โชว์แค่ User/Cart */}
+          {/* โซนเครื่องมือด้านขวา */}
           <div className="hidden lg:flex items-center space-x-4 lg:space-x-6">
             {user ? (
               <>
