@@ -1,24 +1,12 @@
 'use client';
 
-/* Hallmark · component: navigation drawer · genre: editorial · theme: existing Terra editorial
- * states: default · hover · focus · active · disabled · loading · error · success
- * contrast: pass (46–50) · audience: Prop storefront visitors · use: browse primary destinations
- */
-
 import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient, getSafeSession } from '@/src/supabase/client';
 import { CATEGORY_DISPLAY_NAMES } from '@/app/constants/categories';
 
-type NavbarUser = {
-  email?: string | null;
-  user_metadata?: {
-    avatar_url?: string | null;
-  };
-};
-
-export default function Navbar({ isLightMode = false }: { collections?: unknown[], isLightMode?: boolean }) {
+export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,7 +23,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const [user, setUser] = useState<NavbarUser | null>(null);
+  const [user, setUser] = useState<any>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -63,8 +51,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
   };
 
   useEffect(() => {
-    const resetLoadingState = window.setTimeout(() => setIsLoading(false), 0);
-    return () => window.clearTimeout(resetLoadingState);
+    setIsLoading(false);
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -88,22 +75,14 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
-  // ล็อกหน้าจอและรองรับ Escape ตอนเปิดเมนู 3 ขีด
+  // ล็อกหน้าจอไม่ให้เลื่อนตอนเปิดเมนู 3 ขีด
   useEffect(() => {
-    if (!isMobileMenuOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsMobileMenuOpen(false);
-    };
-
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; }
   }, [isMobileMenuOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -222,7 +201,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
   const innerPlusColor = 'text-[#8C8A86]';
   const innerSubBorderColor = 'border-[#3A3835]/10';
 
-  const navContainerClass = `fixed top-0 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-500 ${isScrolled || isMobileMenuOpen
+  const navContainerClass = `fixed top-0 transition-all duration-500 ${isScrolled || isMobileMenuOpen
     ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
     : 'bg-transparent'
     }`;
@@ -257,7 +236,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
         </div>
       )}
 
-      {/* ─── Shared Menu Drawer — same interaction on mobile and desktop ── */}
+      {/* ─── Mobile Overlay Menu — Reference Match ─────────────────────── */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes mobileMenuReveal {
@@ -279,25 +258,14 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
         .mob-util-item:nth-child(1) { animation-delay: 0.42s; }
         .mob-util-item:nth-child(2) { animation-delay: 0.50s; }
         .mob-util-item:nth-child(3) { animation-delay: 0.58s; }
-        .mob-nav-row { transition: color 0.25s cubic-bezier(0.65, 0, 0.35, 1); }
+        .mob-nav-row { transition: color 0.25s ease; }
         .mob-nav-row:hover .mob-nav-label { color: #B8834A; }
         .mob-nav-row:hover .mob-nav-num   { color: #B8834A; }
         .mob-nav-row:hover .mob-nav-icon  { color: #B8834A; }
-        .prop-menu-control[data-state="loading"] { cursor: wait; opacity: 0.6; }
-        .prop-menu-control[data-state="error"] { color: #C0614A; }
-        .prop-menu-control[data-state="success"] { color: #6F8066; }
-        @media (prefers-reduced-motion: reduce) {
-          .mob-nav-item, .mob-util-item { animation: none; opacity: 1; }
-          .mob-nav-row { transition: none; }
-        }
       `}} />
 
       <div
-        id="prop-site-menu"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Site menu"
-        className={`fixed inset-0 z-[9999] transition-[opacity,visibility] duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+        className={`fixed inset-0 z-[9999] transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
           }`}
       >
         {/* ─── BACKDROP (Full Screen Dim) ─── */}
@@ -310,8 +278,9 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
 
         {/* ─── LEFT PANEL (Drawer) ─── */}
         <div
-          className={`relative flex flex-col w-[min(88vw,400px)] h-full overflow-y-auto bg-[#EFE9E1] shadow-2xl transition-transform duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`relative flex flex-col w-[85%] sm:w-[60%] max-w-[400px] h-full bg-[#EFE9E1] shadow-2xl transition-transform duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
+          style={{ transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }}
         >
           {/* ── Header: Logo + Close ── */}
           <div className="flex items-start justify-between px-6 pt-7 pb-2">
@@ -323,10 +292,9 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
 
             {/* × Close */}
             <button
-              type="button"
               onClick={() => setIsMobileMenuOpen(false)}
               aria-label="Close menu"
-              className="text-[#3A3835] hover:text-[#B8834A] active:translate-y-px transition-colors duration-200 p-2 -mr-2 -mt-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#B8834A]"
+              className="text-[#3A3835] hover:text-[#B8834A] transition-colors duration-300 p-1 -mr-1 -mt-0.5"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -337,51 +305,31 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
           {/* ── Nav Links & Utilities (Vertically Centered) ── */}
           {isMobileMenuOpen && (
             <div className="flex-grow flex flex-col justify-center pb-16">
-              <nav className="flex flex-col px-5" aria-label="Primary navigation">
+              <nav className="flex flex-col px-5">
                 {[
-                  { num: '01', label: 'Home', href: '/', url: '/', active: pathname === '/' },
-                  { num: '02', label: 'Product', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop'), expandable: true },
-                  { num: '03', label: 'Idea & insights', href: '/journal', url: '/journal', active: isActive('/journal') },
-                  { num: '04', label: 'About', href: '/about', url: '/about', active: isActive('/about') },
-                  { num: '05', label: 'Contact', href: '/contact', url: '/contact', active: isActive('/contact') },
+                  { num: '01', label: 'Product', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop') },
+                  { num: '02', label: 'Idea & Gallary', href: '/journal', url: '/journal', active: isActive('/journal') },
+                  { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
+                  { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
                 ].map(({ num, label, href, url, active }) => (
                   <div key={num} className="mob-nav-item">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={href}
-                        prefetch={false}
-                        title={label}
-                        onClick={(e) => handleNavClick(e, url)}
-                        className="mob-nav-row flex min-w-0 flex-1 items-baseline gap-4 py-[14px] group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8834A]"
+                    <Link
+                      href={href}
+                      prefetch={false}
+                      title={label}
+                      onClick={(e) => handleNavClick(e, url)}
+                      className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
+                    >
+                      <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
+                        {num}
+                      </span>
+                      <span
+                        className={`mob-nav-label font-serif leading-tight transition-colors ${active ? 'text-[#B8834A] font-semibold' : 'text-[#3A3835] font-normal group-hover:text-[#B8834A]'}`}
+                        style={{ fontSize: 'clamp(26px, 6vw, 34px)' }}
                       >
-                        <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
-                          {num}
-                        </span>
-                        <span
-                          className={`mob-nav-label min-w-0 overflow-wrap-anywhere whitespace-nowrap font-serif leading-tight transition-colors ${active ? 'text-[#B8834A] font-semibold' : 'text-[#3A3835] font-normal group-hover:text-[#B8834A]'}`}
-                          style={{ fontSize: 'clamp(24px, 6vw, 34px)' }}
-                        >
-                          {label}
-                        </span>
-                      </Link>
-                      {label === 'Product' && (
-                        <button
-                          type="button"
-                          onClick={(e) => toggleGroup(e, 'mobile-home-decor')}
-                          aria-expanded={expandedGroups.includes('mobile-home-decor')}
-                          aria-label="Toggle Product submenu"
-                          className="flex h-11 w-11 shrink-0 items-center justify-center text-[#8C8A86] transition-colors duration-200 hover:text-[#B8834A] active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8834A]"
-                        >
-                          <span aria-hidden="true" className="text-xl font-light">{expandedGroups.includes('mobile-home-decor') ? '−' : '+'}</span>
-                        </button>
-                      )}
-                    </div>
-                    {label === 'Product' && expandedGroups.includes('mobile-home-decor') && (
-                      <div className="mob-nav-item ml-12 border-l border-[#C4B5A5]/60 pl-4 pb-3">
-                        <Link href={homeDecorMainUrl} prefetch={false} onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className="block py-2 text-[11px] uppercase tracking-[0.2em] text-[#6B645E] transition-colors duration-200 hover:text-[#B8834A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8834A]">Collections</Link>
-                        <Link href={homeDecorMainUrl} prefetch={false} onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className="block py-2 text-[11px] uppercase tracking-[0.2em] text-[#6B645E] transition-colors duration-200 hover:text-[#B8834A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8834A]">Product</Link>
-                      </div>
-                    )}
+                        {label}
+                      </span>
+                    </Link>
                   </div>
                 ))}
               </nav>
@@ -409,8 +357,8 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
                         <span className="font-sans uppercase text-[9px] tracking-[0.15em] text-[#8C8A86] group-hover:text-[#B8834A] transition-colors">profile</span>
                       </Link>
 
-                      <button type="button" onClick={handleSignOut} disabled={isLoading} aria-disabled={isLoading}
-                        className="mob-util-item flex flex-col items-center gap-2 group disabled:cursor-wait disabled:opacity-50"
+                      <button onClick={handleSignOut}
+                        className="mob-util-item flex flex-col items-center gap-2 group"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.4} stroke="currentColor" className="w-[18px] h-[18px] text-[#C0614A] flex-shrink-0 group-hover:text-red-600 transition-colors">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
@@ -436,34 +384,18 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
       </div>
 
       {/* 🛠️ ปรับ Flex Layout ใหม่ ถ่วงน้ำหนักซ้าย-ขวา ป้องกันการชนกัน 100% */}
-      <nav className={`left-0 right-0 z-50 px-6 md:px-8 xl:px-12 py-3 md:py-4 flex justify-between items-center w-full h-20 md:h-24 ${navContainerClass}`}>
+      <nav className={`left-0 right-0 z-50 px-6 md:px-8 xl:px-12 py-3 md:py-4 flex justify-between items-center w-full h-20 md:h-24 transition-all duration-300 ${navContainerClass}`}>
 
         {/* ---------------- 1. ฝั่งซ้าย (basis-0 min-w-0 คือเคล็ดลับกันจอแตก) ---------------- */}
-        <div className="flex flex-1 basis-0 min-w-0 items-center justify-start">
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen((open) => !open)}
-            disabled={isLoading}
-            aria-disabled={isLoading}
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="prop-site-menu"
-            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-busy={isLoading}
-            data-state={isLoading ? 'loading' : 'default'}
-            className={`prop-menu-control relative z-[10000] flex h-11 w-11 flex-col items-center justify-center gap-[6px] rounded-full p-2 transition-[opacity,transform,background-color] duration-200 hover:bg-white/20 active:translate-y-px disabled:cursor-wait disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#B8834A] ${isMobileMenuOpen ? 'text-[#3A3835]' : textColor}`}
-          >
-            <span className={`block h-[1.5px] w-[22px] transition-[opacity,transform,background-color] duration-200 ${isMobileMenuOpen ? 'bg-[#3A3835] rotate-45 translate-y-[7.5px]' : hamburgerLineColor}`}></span>
-            <span className={`block h-[1.5px] w-[22px] transition-[opacity,transform,background-color] duration-200 ${isMobileMenuOpen ? 'opacity-0' : hamburgerLineColor}`}></span>
-            <span className={`block h-[1.5px] w-[22px] transition-[opacity,transform,background-color] duration-200 ${isMobileMenuOpen ? 'bg-[#3A3835] -rotate-45 -translate-y-[7.5px]' : hamburgerLineColor}`}></span>
-          </button>
+        <div className="hidden lg:flex flex-1 basis-0 min-w-0 items-center justify-start">
           {/* 🌟 เติม whitespace-nowrap เข้าไปที่บรรทัดด้านล่างนี้ครับ */}
-          <div className="hidden">
+          <div className={`hidden lg:flex items-center space-x-4 lg:space-x-5 xl:space-x-10 whitespace-nowrap text-[9.5px] xl:text-[11px] tracking-[0.15em] xl:tracking-[0.25em] uppercase font-normal h-full ${textColor}`}>
             <Link href="/about" prefetch={false} title="About Us" onClick={(e) => handleNavClick(e, '/about')} className={`transition duration-300 ${isActive('/about') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               About
             </Link>
 
             <div className="relative group h-full flex items-center">
-              <Link href={homeDecorMainUrl} prefetch={false} title="Product" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href={homeDecorMainUrl} prefetch={false} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 Product
               </Link>
               <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
@@ -472,7 +404,7 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
                     Categories
                   </div>
                   <div className="flex flex-col gap-5">
-                    {structuredCategories.map((group) => {
+                    {structuredCategories.map((group, idx) => {
                       if (group.isSpecial) {
                         const item = group.items[0];
                         const targetUrl = createCategoryUrl(item.fullValue);
@@ -543,8 +475,8 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
               </div>
             </div>
 
-            <Link href="/journal" prefetch={false} title="Idea & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
-              Idea & insights
+            <Link href="/journal" prefetch={false} title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
+              Idea & Gallery
             </Link>
             <Link href="/contact" prefetch={false} title="Contact Us" onClick={(e) => handleNavClick(e, '/contact')} className={`transition duration-300 ${isActive('/contact') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
               Contact
@@ -640,6 +572,17 @@ export default function Navbar({ isLightMode = false }: { collections?: unknown[
               </Link>
             )}
           </div>
+
+          {/* เติม <button ตรงนี้ครับ */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]"
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] rotate-45 translate-y-[7.5px]' : hamburgerLineColor}`}></span>
+            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : hamburgerLineColor}`}></span>
+            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] -rotate-45 -translate-y-[7.5px]' : hamburgerLineColor}`}></span>
+          </button>
 
         </div>
 
