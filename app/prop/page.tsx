@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
-import Navbar from "../components/Navbar"
 import PropBanner from "./PropBanner"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"
@@ -268,10 +267,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
 
-      {/* 1. จัดตำแหน่ง Navbar */}
-      <Navbar isLightMode={!hasBanner} />
-
-      {/* 2. ตัวแบนเนอร์ด้านบน */}
+      {/* 1. ตัวแบนเนอร์ด้านบน — Navbar กลางอยู่ใน app/layout.tsx */}
       {hasBanner && (
         <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
           <PropBanner
@@ -282,7 +278,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {/* 3. โซนเนื้อหาสินค้าด้านล่าง */}
+      {/* 2. โซนเนื้อหาสินค้าด้านล่าง */}
       <div className={`max-w-[1600px] mx-auto w-full px-4 lg:py-16 pb-24 ${hasBanner ? 'pt-4 lg:pt-0' : 'pt-24 lg:pt-28'}`}>
         <PropFilterClient
           collections={orderedCollections}

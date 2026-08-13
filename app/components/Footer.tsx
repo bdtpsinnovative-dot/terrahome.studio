@@ -111,7 +111,7 @@ export default function Footer() {
                     </div>
 
                     <div className="flex flex-col space-y-2">
-                      <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" className="flex items-center gap-3.5 group/link w-fit">
+                      <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" data-analytics-event="call_phone" className="flex items-center gap-3.5 group/link w-fit">
                         <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                           <Phone />
                         </div>
@@ -120,7 +120,7 @@ export default function Footer() {
                         </p>
                       </a>
 
-                      <a href="mailto:info@tpsgardenfurniture.com" title="Send email to Terra Home Studio" className="flex items-center gap-3.5 group/link w-fit">
+                      <a href="mailto:info@tpsgardenfurniture.com" title="Send email to Terra Home Studio" data-analytics-event="send_email" className="flex items-center gap-3.5 group/link w-fit">
                         <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
                           <Mail />
                         </div>

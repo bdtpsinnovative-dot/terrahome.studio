@@ -6,6 +6,8 @@ import { isIP } from 'node:net'
 export const VISITOR_COOKIE_NAME = 'prop_visitor_id'
 export const SESSION_COOKIE_NAME = 'prop_session_id'
 export const LAST_PRODUCT_COOKIE_NAME = 'prop_last_product_id'
+export const FIRST_TOUCH_COOKIE_NAME = 'prop_first_touch'
+export const SESSION_SOURCE_COOKIE_NAME = 'prop_session_source'
 export const ALGORITHM_EVENT_TYPE = 'product_view'
 
 const BOT_USER_AGENT = /bot|crawler|spider|slurp|headless|prerender|facebookexternalhit|whatsapp/i
@@ -17,6 +19,18 @@ type LocationData = {
   city: string | null
   isp: string | null
   asn: string | null
+}
+
+export type AttributionData = {
+  sourcePlatform: string
+  firstTouchSource: string
+  sessionSource: string
+  referrerHost: string | null
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+  utmContent: string | null
+  utmTerm: string | null
 }
 
 const locationCache = new Map<string, { expiresAt: number; data: LocationData }>()
@@ -102,6 +116,84 @@ export function classifyTraffic(userAgent: string | null, internal: boolean) {
     trafficType,
     isCountable: !isBot && !internal,
   } as const
+}
+
+function cleanAttributionValue(value: string | null, maxLength = 200): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed.slice(0, maxLength) : null
+}
+
+export function getClientProfile(userAgent: string | null) {
+  const ua = userAgent || ''
+  const deviceType = /ipad|tablet|android(?!.*mobile)/i.test(ua)
+    ? 'tablet'
+    : /mobile|iphone|ipod|android/i.test(ua)
+      ? 'mobile'
+      : 'desktop'
+  const osName = /windows/i.test(ua)
+    ? 'Windows'
+    : /android/i.test(ua)
+      ? 'Android'
+      : /iphone|ipad|ipod/i.test(ua)
+        ? 'iOS'
+        : /mac os|macintosh/i.test(ua)
+          ? 'macOS'
+          : /linux/i.test(ua)
+            ? 'Linux'
+            : 'Other'
+  const browserName = /edg\//i.test(ua)
+    ? 'Edge'
+    : /chrome\//i.test(ua)
+      ? 'Chrome'
+      : /firefox\//i.test(ua)
+        ? 'Firefox'
+        : /safari\//i.test(ua) && !/chrome\//i.test(ua)
+          ? 'Safari'
+          : /opr\//i.test(ua)
+            ? 'Opera'
+            : 'Other'
+  return { deviceType, osName, browserName }
+}
+
+export function classifySource(value: string | null): string {
+  const source = (value || '').toLowerCase()
+  if (!source) return 'Direct'
+  if (/line|lineage|liff/.test(source)) return 'LINE'
+  if (/instagram/.test(source)) return 'Instagram'
+  if (/facebook|fb\./.test(source)) return 'Facebook'
+  if (/tiktok/.test(source)) return 'TikTok'
+  if (/youtube|youtu\.be/.test(source)) return 'YouTube'
+  if (/pinterest/.test(source)) return 'Pinterest'
+  if (/google/.test(source)) return 'Google'
+  return 'Referral'
+}
+
+export function getAttributionData(requestUrl: string, referrer: string | null, firstTouchCookie: string | null, sessionSourceCookie: string | null): AttributionData {
+  const url = new URL(requestUrl)
+  const params = url.searchParams
+  const utmSource = cleanAttributionValue(params.get('utm_source'))
+  const utmMedium = cleanAttributionValue(params.get('utm_medium'))
+  const utmCampaign = cleanAttributionValue(params.get('utm_campaign'))
+  const utmContent = cleanAttributionValue(params.get('utm_content'))
+  const utmTerm = cleanAttributionValue(params.get('utm_term'))
+  let referrerHost: string | null = null
+  try {
+    referrerHost = referrer ? new URL(referrer).hostname.slice(0, 200) : null
+  } catch {
+    referrerHost = null
+  }
+  const currentSource = classifySource(utmSource || referrerHost)
+  return {
+    sourcePlatform: currentSource,
+    firstTouchSource: firstTouchCookie || currentSource,
+    sessionSource: sessionSourceCookie || currentSource,
+    referrerHost,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmContent,
+    utmTerm,
+  }
 }
 
 export function getLocationHeaders(headers: Headers) {

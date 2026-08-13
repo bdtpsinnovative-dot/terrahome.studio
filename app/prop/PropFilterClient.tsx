@@ -139,25 +139,16 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
   const attributeOptions = useMemo(() => {
     const colorLabels = new Map<string, string>()
-    const materialLabels = new Map<string, string>()
-
     for (const group of collections) {
       for (const product of group.products || []) {
         for (const value of productAttributeValues(product, "color")) {
           if (!colorLabels.has(value)) colorLabels.set(value, value)
         }
-        for (const value of productAttributeValues(product, "material")) {
-          if (!materialLabels.has(value)) materialLabels.set(value, value)
-        }
       }
     }
 
     const colorOptions = Array.from(colorLabels.entries()).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
-    const materialOptions = Array.from(materialLabels.entries()).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
-
-    return colorOptions.length > 0
-      ? { mode: "color" as const, label: "COLOR", options: colorOptions }
-      : { mode: "material" as const, label: "MATERIAL", options: materialOptions }
+    return { mode: "color" as const, label: "COLOR", options: colorOptions }
   }, [collections])
 
   const handleAttributeChange = (value: string) => {

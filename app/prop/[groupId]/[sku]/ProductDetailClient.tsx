@@ -7,6 +7,7 @@ import dynamic from "next/dynamic"
 import { ArrowLeft, CheckCircle2, MapPin, Navigation } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
 import { createClient, getSafeSession } from '@/src/supabase/client'
+import { trackAnalyticsCta } from '@/app/components/AnalyticsTracker'
 
 const BranchMap = dynamic(() => import('./BranchMap'), { 
   ssr: false, 
@@ -30,6 +31,17 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 import CollectionCard from "../../CollectionCard" // ⚡ Import CollectionCard
+
+function analyticsTrackingUrl() {
+  const url = new URL(window.location.href)
+  const allowedKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'category', 'filter', 'branch']
+  const query = new URLSearchParams()
+  for (const key of allowedKeys) {
+    const value = url.searchParams.get(key)
+    if (value) query.set(key, value.slice(0, 200))
+  }
+  return `${url.origin}${url.pathname}${query.toString() ? `?${query.toString()}` : ''}`
+}
 
 export default function ProductDetailClient({
   groupProducts,
@@ -60,16 +72,26 @@ export default function ProductDetailClient({
   const [addedSuccess, setAddedSuccess] = useState(false)
   const trackedViewsRef = useRef<Set<number>>(new Set())
   const pendingViewsRef = useRef<Set<number>>(new Set())
+  const previousProductRef = useRef<number | null>(null)
 
   useEffect(() => {
     const productId = Number(activeProduct?.id)
     if (!Number.isSafeInteger(productId) || trackedViewsRef.current.has(productId) || pendingViewsRef.current.has(productId)) return
+
+    if (previousProductRef.current !== null && previousProductRef.current !== productId) {
+      window.dispatchEvent(new CustomEvent('prop-product-selected', { detail: { productId, sku: activeProduct?.sku || String(productId) } }))
+    }
+    previousProductRef.current = productId
 
     pendingViewsRef.current.add(productId)
     const payload = JSON.stringify({
       event_type: 'product_view',
       product_id: productId,
       collection_group_id: currentGroupId,
+      page_type: 'product',
+      page_path: window.location.pathname,
+      page_entity_id: activeProduct?.sku || String(productId),
+      tracking_url: analyticsTrackingUrl(),
       metadata: {
         path: window.location.pathname,
       },
@@ -104,7 +126,7 @@ export default function ProductDetailClient({
     }
 
     void sendViewEvent()
-  }, [activeProduct?.id, currentGroupId])
+  }, [activeProduct?.id, activeProduct?.sku, currentGroupId])
 
   const handleSelectProduct = (product: any) => {
     setActiveProduct(product)
@@ -141,6 +163,7 @@ export default function ProductDetailClient({
   // ⚡ 3. ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const handleAddToCart = async () => {
     try {
+      trackAnalyticsCta('add_to_cart', { product_id: activeProduct.id, price: activeProduct.price })
       setIsAddingToCart(true)
 
       // เช็คว่าล็อกอินหรือยัง
@@ -220,7 +243,7 @@ export default function ProductDetailClient({
   }
 
   return (
-    <div className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
+    <div data-prop-product-id={String(activeProduct.id)} className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       
       <nav className="w-full py-6 px-8 lg:px-12 flex items-center justify-between sticky top-0 bg-[#EAE7E0] z-[10000]">
         
@@ -292,7 +315,10 @@ export default function ProductDetailClient({
 
             <div className="mt-8 max-w-lg">
               <button 
-                onClick={() => setShowStock(!showStock)}
+                onClick={() => {
+                  trackAnalyticsCta(showStock ? 'close_stock_availability' : 'open_stock_availability', { product_id: activeProduct.id })
+                  setShowStock(!showStock)
+                }}
                 className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
               >
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
@@ -356,6 +382,7 @@ export default function ProductDetailClient({
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()} 
                             title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                            data-analytics-event="open_directions"
                             className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
                           >
                             <Navigation className="w-3.5 h-3.5" />
@@ -446,7 +473,7 @@ export default function ProductDetailClient({
 
           {/* ⚡ 4. เปลี่ยนปุ่ม CONTACT เป็น ADD TO CART พร้อม Logic เช็คสถานะ */}
           <div className="pt-2 max-w-lg mt-auto">
-            <button 
+                          <button
               onClick={handleAddToCart}
               disabled={isAddingToCart || outOfStock}
               className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${

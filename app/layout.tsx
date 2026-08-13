@@ -7,6 +7,7 @@ import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Suspense } from "react"; // 1. นำเข้า Suspense เพิ่มเข้ามาครับนาย
 import Script from "next/script";
+import AnalyticsTracker from "./components/AnalyticsTracker";
 
 // Cache Navbar category data for 1 hour; product categories rarely change.
 export const revalidate = 3600;
@@ -188,6 +189,10 @@ export default async function RootLayout({
         {/* 2. ห่อหุ้ม Navbar ด้วย Suspense เพื่อให้ฝั่ง Client สามารถดึง searchParams มาใช้ได้ตอน build */}
         <Suspense fallback={<div className="h-20 bg-[#F9F6F0] w-full animate-pulse" />}>
           <Navbar />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <AnalyticsTracker />
         </Suspense>
 
         <main className="flex-1 w-full">
