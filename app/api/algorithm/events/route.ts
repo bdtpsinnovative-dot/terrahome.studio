@@ -7,6 +7,10 @@ import {
   LAST_PRODUCT_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   SESSION_SOURCE_COOKIE_NAME,
+  SOURCE_CONFIDENCE_COOKIE_NAME,
+  SOURCE_DETAIL_COOKIE_NAME,
+  SOURCE_EVIDENCE_COOKIE_NAME,
+  SOURCE_REFERRER_COOKIE_NAME,
   VISITOR_COOKIE_NAME,
   classifyTraffic,
   getAttributionData,
@@ -176,6 +180,10 @@ export async function POST(request: Request) {
     referrer,
     cookieStore.get(FIRST_TOUCH_COOKIE_NAME)?.value || null,
     cookieStore.get(SESSION_SOURCE_COOKIE_NAME)?.value || null,
+    cookieStore.get(SOURCE_EVIDENCE_COOKIE_NAME)?.value || null,
+    cookieStore.get(SOURCE_CONFIDENCE_COOKIE_NAME)?.value || null,
+    cookieStore.get(SOURCE_DETAIL_COOKIE_NAME)?.value || null,
+    cookieStore.get(SOURCE_REFERRER_COOKIE_NAME)?.value || null,
   )
   const productSnapshot = relation ? getProductSnapshot(relation, Number.isSafeInteger(payload.product_id) ? payload.product_id! : null) : {}
 
@@ -211,7 +219,7 @@ export async function POST(request: Request) {
     isp: location.isp,
     asn: location.asn,
     user_agent: userAgent?.slice(0, 1000) || null,
-    referrer: referrer?.slice(0, 2000) || null,
+    referrer: attribution.referrerHost,
     traffic_type: traffic.trafficType,
     is_bot: traffic.isBot,
     is_internal: internal,
@@ -231,6 +239,9 @@ export async function POST(request: Request) {
     metadata: validMetadata({
       ...(payload.metadata || {}),
       ...(userId ? { linked_visitor_id: visitorId } : {}),
+      source_evidence: attribution.sourceEvidence,
+      source_confidence: attribution.sourceConfidence,
+      source_detail: attribution.sourceDetail,
     }),
     ...productSnapshot,
   }
@@ -246,8 +257,13 @@ export async function POST(request: Request) {
       identity_type: identityType, view_bucket: getViewBucket(), ip_hash: hashClientIp(clientIp),
       country_code: location.countryCode, country: location.country, region: location.region, city: location.city,
       isp: location.isp, asn: location.asn, user_agent: userAgent?.slice(0, 1000) || null,
-      referrer: referrer?.slice(0, 2000) || null, traffic_type: traffic.trafficType, is_bot: traffic.isBot,
-      is_internal: internal, is_countable: traffic.isCountable, metadata: validMetadata(payload.metadata),
+      referrer: attribution.referrerHost, traffic_type: traffic.trafficType, is_bot: traffic.isBot,
+      is_internal: internal, is_countable: traffic.isCountable, metadata: validMetadata({
+        ...(payload.metadata || {}),
+        source_evidence: attribution.sourceEvidence,
+        source_confidence: attribution.sourceConfidence,
+        source_detail: attribution.sourceDetail,
+      }),
       session_id: sessionId, previous_product_id: Number.isSafeInteger(previousProductId) ? previousProductId : null,
     })
     if (fallbackError) {
@@ -259,7 +275,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unable to record analytics event' }, { status: 500 })
   }
 
-  const response = NextResponse.json({ ok: true, event_id: eventId || null }, { status: 202 })
+  const response = NextResponse.json({
+    ok: true,
+    event_id: eventId || null,
+    attribution: {
+      source: attribution.sourcePlatform,
+      evidence: attribution.sourceEvidence,
+      confidence: attribution.sourceConfidence,
+      detail: attribution.sourceDetail,
+    },
+  }, { status: 202 })
   if (!userId) {
     response.cookies.set(VISITOR_COOKIE_NAME, visitorId, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 365, path: '/' })
   }
@@ -271,6 +296,14 @@ export async function POST(request: Request) {
     response.cookies.set(FIRST_TOUCH_COOKIE_NAME, attribution.firstTouchSource, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 365, path: '/' })
   }
   response.cookies.set(SESSION_SOURCE_COOKIE_NAME, attribution.sessionSource, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 30, path: '/' })
+  response.cookies.set(SOURCE_EVIDENCE_COOKIE_NAME, attribution.sourceEvidence, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 30, path: '/' })
+  response.cookies.set(SOURCE_CONFIDENCE_COOKIE_NAME, attribution.sourceConfidence, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 30, path: '/' })
+  if (attribution.sourceDetail) {
+    response.cookies.set(SOURCE_DETAIL_COOKIE_NAME, attribution.sourceDetail, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 30, path: '/' })
+  }
+  if (attribution.referrerHost) {
+    response.cookies.set(SOURCE_REFERRER_COOKIE_NAME, attribution.referrerHost, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 30, path: '/' })
+  }
   if (!hadSessionCookie && eventType !== 'session_start') {
     response.headers.set('x-prop-analytics-session-created', '1')
   }

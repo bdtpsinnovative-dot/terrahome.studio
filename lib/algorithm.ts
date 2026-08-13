@@ -2,12 +2,27 @@ import 'server-only'
 
 import { createHash, createHmac } from 'node:crypto'
 import { isIP } from 'node:net'
+import {
+  detectAttribution,
+  isSourceConfidence,
+  isSourceEvidence,
+  type SourceConfidence,
+  type SourceEvidence,
+} from '@/lib/attribution'
+
+export {
+  FIRST_TOUCH_COOKIE_NAME,
+  SESSION_SOURCE_COOKIE_NAME,
+  SOURCE_CONFIDENCE_COOKIE_NAME,
+  SOURCE_DETAIL_COOKIE_NAME,
+  SOURCE_EVIDENCE_COOKIE_NAME,
+  SOURCE_REFERRER_COOKIE_NAME,
+  classifySource,
+} from '@/lib/attribution'
 
 export const VISITOR_COOKIE_NAME = 'prop_visitor_id'
 export const SESSION_COOKIE_NAME = 'prop_session_id'
 export const LAST_PRODUCT_COOKIE_NAME = 'prop_last_product_id'
-export const FIRST_TOUCH_COOKIE_NAME = 'prop_first_touch'
-export const SESSION_SOURCE_COOKIE_NAME = 'prop_session_source'
 export const ALGORITHM_EVENT_TYPE = 'product_view'
 
 const BOT_USER_AGENT = /bot|crawler|spider|slurp|headless|prerender|facebookexternalhit|whatsapp/i
@@ -31,6 +46,9 @@ export type AttributionData = {
   utmCampaign: string | null
   utmContent: string | null
   utmTerm: string | null
+  sourceEvidence: SourceEvidence
+  sourceConfidence: SourceConfidence
+  sourceDetail: string | null
 }
 
 const locationCache = new Map<string, { expiresAt: number; data: LocationData }>()
@@ -40,11 +58,21 @@ function firstHeaderValue(value: string | null): string | null {
 }
 
 export function getTrustedClientIp(headers: Headers): string | null {
-  const candidates = [
-    headers.get('cf-connecting-ip'),
-    headers.get('x-real-ip'),
-    firstHeaderValue(headers.get('x-forwarded-for')),
-  ]
+  const candidates = []
+
+  // In production only consume headers that identify a known edge provider.
+  // A generic forwarded header can be supplied by a direct client request.
+  if (headers.get('cf-ray')) {
+    candidates.push(headers.get('cf-connecting-ip'))
+  }
+  if (headers.get('x-vercel-id') || headers.get('x-vercel-ip-country')) {
+    candidates.push(firstHeaderValue(headers.get('x-forwarded-for')))
+    candidates.push(headers.get('x-real-ip'))
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    candidates.push(headers.get('x-real-ip'))
+    candidates.push(firstHeaderValue(headers.get('x-forwarded-for')))
+  }
 
   return candidates.find((candidate) => candidate && isIP(candidate) > 0) || null
 }
@@ -155,20 +183,16 @@ export function getClientProfile(userAgent: string | null) {
   return { deviceType, osName, browserName }
 }
 
-export function classifySource(value: string | null): string {
-  const source = (value || '').toLowerCase()
-  if (!source) return 'Direct'
-  if (/line|lineage|liff/.test(source)) return 'LINE'
-  if (/instagram/.test(source)) return 'Instagram'
-  if (/facebook|fb\./.test(source)) return 'Facebook'
-  if (/tiktok/.test(source)) return 'TikTok'
-  if (/youtube|youtu\.be/.test(source)) return 'YouTube'
-  if (/pinterest/.test(source)) return 'Pinterest'
-  if (/google/.test(source)) return 'Google'
-  return 'Referral'
-}
-
-export function getAttributionData(requestUrl: string, referrer: string | null, firstTouchCookie: string | null, sessionSourceCookie: string | null): AttributionData {
+export function getAttributionData(
+  requestUrl: string,
+  referrer: string | null,
+  firstTouchCookie: string | null,
+  sessionSourceCookie: string | null,
+  evidenceCookie: string | null = null,
+  confidenceCookie: string | null = null,
+  detailCookie: string | null = null,
+  referrerHostCookie: string | null = null,
+): AttributionData {
   const url = new URL(requestUrl)
   const params = url.searchParams
   const utmSource = cleanAttributionValue(params.get('utm_source'))
@@ -176,27 +200,46 @@ export function getAttributionData(requestUrl: string, referrer: string | null, 
   const utmCampaign = cleanAttributionValue(params.get('utm_campaign'))
   const utmContent = cleanAttributionValue(params.get('utm_content'))
   const utmTerm = cleanAttributionValue(params.get('utm_term'))
-  let referrerHost: string | null = null
-  try {
-    referrerHost = referrer ? new URL(referrer).hostname.slice(0, 200) : null
-  } catch {
-    referrerHost = null
-  }
-  const currentSource = classifySource(utmSource || referrerHost)
+  const detected = detectAttribution(requestUrl, referrer)
+  const hasExplicitCurrentSource = detected.evidence !== 'direct'
+  const sourcePlatform = hasExplicitCurrentSource ? detected.sourcePlatform : sessionSourceCookie || detected.sourcePlatform
+  const sourceEvidence = hasExplicitCurrentSource
+    ? detected.evidence
+    : isSourceEvidence(evidenceCookie) ? evidenceCookie : detected.evidence
+  const sourceConfidence = hasExplicitCurrentSource
+    ? detected.confidence
+    : isSourceConfidence(confidenceCookie) ? confidenceCookie : detected.confidence
+  const sourceDetail = hasExplicitCurrentSource ? detected.detail : detailCookie || detected.detail
+  const referrerHost = hasExplicitCurrentSource ? detected.referrerHost : referrerHostCookie || detected.referrerHost
   return {
-    sourcePlatform: currentSource,
-    firstTouchSource: firstTouchCookie || currentSource,
-    sessionSource: sessionSourceCookie || currentSource,
+    sourcePlatform,
+    firstTouchSource: firstTouchCookie || sourcePlatform,
+    sessionSource: sourcePlatform,
     referrerHost,
     utmSource,
     utmMedium,
     utmCampaign,
     utmContent,
     utmTerm,
+    sourceEvidence,
+    sourceConfidence,
+    sourceDetail,
   }
 }
 
 export function getLocationHeaders(headers: Headers) {
+  const trustedEdge = process.env.NODE_ENV !== 'production'
+    || Boolean(headers.get('cf-ray') || headers.get('x-vercel-id'))
+  if (!trustedEdge) {
+    return {
+      country: null,
+      countryCode: null,
+      region: null,
+      city: null,
+      isp: null,
+      asn: null,
+    }
+  }
   const country = headers.get('cf-ipcountry') || headers.get('x-vercel-ip-country')
   return {
     country,

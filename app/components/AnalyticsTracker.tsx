@@ -93,6 +93,7 @@ export default function AnalyticsTracker() {
   const sendRef = useRef<(event: AnalyticsEvent) => void>(() => undefined)
   const activePageRef = useRef<ActivePage | null>(null)
   const startedSessionRef = useRef(false)
+  const pageCountRef = useRef(0)
 
   const send = useCallback((event: AnalyticsEvent) => {
     const body = {
@@ -127,6 +128,7 @@ export default function AnalyticsTracker() {
     pageStartedAtRef.current = now
     lastActivityAtRef.current = now
     activeSecondsRef.current = 0
+    pageCountRef.current += 1
 
     if (previousPage) {
       sendRef.current({
@@ -188,17 +190,19 @@ export default function AnalyticsTracker() {
     const handlePageHide = () => {
       if (!pageInstanceRef.current) return
       const { pageType } = classifyPage(window.location.pathname)
-      const duration = Math.max(0, Math.floor((Date.now() - pageStartedAtRef.current) / 1000))
+      const activeSeconds = Math.min(86400, Math.max(0, Math.floor(activeSecondsRef.current)))
+      const isSessionBounce = pageCountRef.current <= 1
       sendRef.current({
         event_type: 'session_end',
         page_type: pageType,
         page_path: window.location.pathname,
         page_instance_id: pageInstanceRef.current,
         product_id: currentProductId(),
-        duration_seconds: Math.min(duration, 86400),
+        active_seconds: activeSeconds,
+        duration_seconds: activeSeconds,
         exit_type: pageType === 'product' ? 'product_exit' : 'other_exit',
-        is_bounce: false,
-        is_quick_bounce: pageType === 'product' && duration < 15,
+        is_bounce: isSessionBounce,
+        is_quick_bounce: isSessionBounce && activeSeconds < 15,
       })
     }
     const handleTrackedClick = (event: MouseEvent) => {
@@ -241,6 +245,7 @@ export default function AnalyticsTracker() {
       lastActivityAtRef.current = now
       activeSecondsRef.current = 0
       activePageRef.current = { pageType: 'product', pagePath: window.location.pathname, pageInstanceId, pageEntityId: detail.sku || null, productId }
+      pageCountRef.current += 1
       sendRef.current({
         event_type: 'page_view',
         page_type: 'product',
