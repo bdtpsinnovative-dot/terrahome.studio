@@ -145,44 +145,59 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const initialPage = Number(searchParams.get('page')) || 1
   const initialSearch = searchParams.get('search') || "" // 🌟 1. ดึงค่าค้นหาเริ่มต้นจาก URL
   const initialAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
+  const initialFilterOpen = searchParams.get('filter') === "open"
 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [searchQuery, setSearchQuery] = useState(initialSearch) // 🌟 2. เพิ่ม State สำหรับเก็บบล็อกคำค้นหา
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(initialFilterOpen)
   const [isColorPanelOpen, setIsColorPanelOpen] = useState(false)
   const [colorFilterScope, setColorFilterScope] = useState<string | null>(null)
+  const isFilterOpen = isSidebarOpen || searchParams.get('filter') === 'open'
 
-  const closeSidebar = () => {
+  const closeSidebar = (clearUrl = true) => {
     setIsSidebarOpen(false)
     setIsColorPanelOpen(false)
     setColorFilterScope(null)
+    if (clearUrl && searchParams.get('filter') === 'open') {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('filter')
+      const query = params.toString()
+      router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
+    }
   }
 
   // 🌟 ล็อกไม่ให้หน้าจอหมุนหรือเลื่อนเมื่อเปิดเมนู Filter มือถือ
   useEffect(() => {
-    if (isSidebarOpen) {
+    if (isFilterOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => { document.body.style.overflow = 'unset' }
-  }, [isSidebarOpen])
+  }, [isFilterOpen])
 
   useEffect(() => {
-    if (!isSidebarOpen) return
+    if (!isFilterOpen) return
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
       setIsSidebarOpen(false)
       setIsColorPanelOpen(false)
+      setColorFilterScope(null)
+      if (searchParams.get('filter') === 'open') {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('filter')
+        const query = params.toString()
+        router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
+      }
     }
 
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
-  }, [isSidebarOpen])
+  }, [isFilterOpen])
 
   const initialExpandedGroups = useMemo(() => {
     const catLower = initialCategory.toLowerCase().trim()
@@ -237,6 +252,9 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     if (newAttribute && newAttribute !== "ALL_ATTRIBUTE") params.set('attribute', newAttribute)
     else params.delete('attribute')
 
+    // Choosing a filter is an in-page action; the explicit open state belongs only to the navbar/filter entry point.
+    params.delete('filter')
+
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
@@ -245,7 +263,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setCurrentPage(1)
     setAttributeFilter("ALL_ATTRIBUTE")
     updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
-    closeSidebar()
+    closeSidebar(false)
 
     const filterLower = filterValue.toLowerCase().trim()
     if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
@@ -264,7 +282,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setCurrentPage(1)
     setAttributeFilter("ALL_ATTRIBUTE")
     updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
-    closeSidebar()
+    closeSidebar(false)
 
     const filterLower = filterValue.toLowerCase().trim()
     if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
@@ -671,13 +689,13 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
-      <div className={`fixed inset-0 z-[9999] transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeSidebar} />
-        <div className={`absolute bottom-0 left-0 top-0 z-10 flex touch-manipulation shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isColorPanelOpen ? 'w-full sm:w-[620px]' : 'w-[85%] max-w-[340px]'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-0 z-[9999] transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isFilterOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => closeSidebar()} />
+        <div className={`absolute bottom-0 left-0 top-0 z-10 flex touch-manipulation shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isColorPanelOpen ? 'w-full sm:w-[620px]' : 'w-[85%] max-w-[340px]'} ${isFilterOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <aside id="filter-drawer" aria-label="Product filters" className={`flex h-full shrink-0 flex-col bg-[#EFE9E1] ${isColorPanelOpen ? 'w-[52%] sm:w-[340px]' : 'w-full'}`}>
           <div className="mb-4 flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 bg-[#EFE9E1] px-4 sm:px-8">
             <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-[#3A3835] sm:text-[11px] sm:tracking-[0.3em]">Filters</span>
-            <button type="button" onClick={closeSidebar} aria-label="Close filters" className="-mr-2 grid min-h-11 min-w-11 place-items-center text-[#3A3835] outline-none hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] touch-manipulation">
+            <button type="button" onClick={() => closeSidebar()} aria-label="Close filters" className="-mr-2 grid min-h-11 min-w-11 place-items-center text-[#3A3835] outline-none hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] touch-manipulation">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -740,8 +758,11 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                     setIsSidebarOpen(true)
                     setColorFilterScope(selectedColors.length > 0 ? activeFilter : null)
                     setIsColorPanelOpen(selectedColors.length > 0)
+                    const params = new URLSearchParams(searchParams.toString())
+                    params.set('filter', 'open')
+                    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
                   }}
-                  aria-expanded={isSidebarOpen}
+                  aria-expanded={isFilterOpen}
                   aria-controls="filter-drawer"
                   className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
                 >

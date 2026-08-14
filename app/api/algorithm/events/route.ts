@@ -141,7 +141,7 @@ export async function POST(request: Request) {
   if (Number.isSafeInteger(payload.product_id)) {
     let relationQuery = supabase
       .from('collection_groups')
-      .select('id, tag, product_sup, products!inner(id, category_id, name, sku, price, specs, collection_group_id)')
+      .select('id, tag, product_sup, products!inner(id, category_id, name, sku, price, color, material, materials, specs, collection_group_id)')
       .eq('products.id', payload.product_id)
       .eq('products.category_id', 'prop')
       .ilike('tag', '%prop%')
@@ -236,7 +236,7 @@ export async function POST(request: Request) {
     device_type: clientProfile.deviceType,
     os_name: clientProfile.osName,
     browser_name: clientProfile.browserName,
-    metadata: validMetadata({
+      metadata: validMetadata({
       ...(payload.metadata || {}),
       ...(userId ? { linked_visitor_id: visitorId } : {}),
       source_evidence: attribution.sourceEvidence,
@@ -265,6 +265,7 @@ export async function POST(request: Request) {
         source_detail: attribution.sourceDetail,
       }),
       session_id: sessionId, previous_product_id: Number.isSafeInteger(previousProductId) ? previousProductId : null,
+      ...getProductSnapshot(relation, Number.isSafeInteger(payload.product_id) ? payload.product_id! : null),
     })
     if (fallbackError) {
       console.error('[algorithm-events] insert failed', { code: fallbackError.code, message: fallbackError.message })

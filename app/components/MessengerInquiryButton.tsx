@@ -10,12 +10,12 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react'
-import { Facebook, Instagram, Messenger } from '@thesvg/react'
+import { Instagram, Line, Messenger } from '@thesvg/react'
 import styles from './MessengerInquiryButton.module.css'
 
 const MESSENGER_INBOX_URL = 'https://m.me/Terra.home.studio'
-const FACEBOOK_PAGE_URL = 'https://web.facebook.com/Terra.home.studio/'
 const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/terra.home.studio/'
+const LINE_PROFILE_URL = 'https://line.me/R/ti/p/@019iisag'
 
 export type MessengerInquiryState = 'default' | 'loading' | 'error' | 'success'
 export type MessengerInquiryPreviewState = 'default' | 'hover' | 'focus' | 'active'
@@ -162,7 +162,7 @@ export default function MessengerInquiryButton({
               </span>
               <div className={styles.channelInfo}>
                 <div className={styles.channelTitleRow}>
-                  <span className={styles.channelName}>Instagram DM</span>
+                  <span className={styles.channelName}>Instagram</span>
                 </div>
                 <span className={styles.channelDesc}>@terra.home.studio · ดูรูปและมุมจัดวาง</span>
               </div>
@@ -172,22 +172,22 @@ export default function MessengerInquiryButton({
             </a>
 
             <a
-              href={FACEBOOK_PAGE_URL}
+              href={LINE_PROFILE_URL}
               target="_blank"
               rel="noopener noreferrer"
               role="menuitem"
-              data-analytics-event={preview ? undefined : 'open_facebook_page'}
-              className={`${styles.channel} ${styles.channelFacebook}`}
+              data-analytics-event={preview ? undefined : 'open_line_contact'}
+              className={styles.channel}
               onClick={() => setOpen(false)}
             >
-              <span className={styles.channelIconWrap} data-channel="facebook">
-                <Facebook className={styles.brandIconTheSvg} />
+              <span className={styles.channelIconWrap} data-channel="line">
+                <Line className={styles.brandIconTheSvg} />
               </span>
               <div className={styles.channelInfo}>
                 <div className={styles.channelTitleRow}>
-                  <span className={styles.channelName}>Facebook Page</span>
+                  <span className={styles.channelName}>LINE</span>
                 </div>
-                <span className={styles.channelDesc}>Terra Home Studio · ติดตามคอลเลกชันใหม่</span>
+                <span className={styles.channelDesc}>สอบถามสินค้าโดยตรง</span>
               </div>
               <div className={styles.arrowWrap}>
                 <ArrowUpRight aria-hidden="true" className={styles.channelArrow} />
@@ -226,4 +226,3 @@ export default function MessengerInquiryButton({
     </div>
   )
 }
-

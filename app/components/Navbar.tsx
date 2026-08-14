@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient, getSafeSession } from '@/src/supabase/client';
-import { CATEGORY_DISPLAY_NAMES } from '@/app/constants/categories';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
@@ -14,10 +13,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
 
-  const currentCategory = searchParams.get('category');
   const isActive = (path: string) => pathname.startsWith(path);
 
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -97,70 +94,6 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     });
   };
 
-  const toggleGroup = (e: React.MouseEvent, groupLabel: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setExpandedGroups(prev =>
-      prev.includes(groupLabel) ? prev.filter(g => g !== groupLabel) : [...prev, groupLabel]
-    );
-  };
-
-  const structuredCategories = useMemo(() => {
-    const decorativeItems = [
-      { fullValue: "Decorative Bath", displayLabel: "Bath" },
-      { fullValue: "Decorative Box", displayLabel: "Box" },
-      { fullValue: "Decorative Toy", displayLabel: "Toy" },
-    ];
-
-    const dollItems = [
-      { fullValue: "Doll Animal", displayLabel: "Animal" },
-      { fullValue: "Doll Human", displayLabel: "Human" },
-      { fullValue: "Doll Object", displayLabel: "Object" },
-      { fullValue: "Doll Plant", displayLabel: "Plant" },
-    ];
-
-    const vaseItems = [
-      { fullValue: "Vase Ceramic 3D Printing", displayLabel: "Ceramic 3D Printing" },
-      { fullValue: "Vase Ceramic Handmade", displayLabel: "Ceramic Handmade" },
-      { fullValue: "Vase Glass Handmade", displayLabel: "Glass Handmade" },
-      { fullValue: "Vase Normal", displayLabel: "Normal" },
-    ];
-
-    const wallArtItems = [
-      { fullValue: "Wall Art 3D Material", displayLabel: "3D Material" },
-      { fullValue: "Wall Art 3D Physical Painting", displayLabel: "3D Physical Painting" },
-      { fullValue: "Wall Art Digital Print  ", displayLabel: "Digital Print" },
-      { fullValue: "Wall Art Hand Craft 100%", displayLabel: "Hand Craft 100%" },
-      { fullValue: "Wall Art Hand Craft 50%", displayLabel: "Hand Craft 50%" },
-      { fullValue: "Wall Art Hand Craft 80%", displayLabel: "Hand Craft 80%" },
-    ];
-
-    return [
-      { label: "All", isGroup: false, items: [{ fullValue: "All", displayLabel: "All" }] },
-      { label: "Art Object", displayLabel: CATEGORY_DISPLAY_NAMES["Art Object"], isGroup: false, items: [{ fullValue: "Art Object", displayLabel: CATEGORY_DISPLAY_NAMES["Art Object"] }] },
-      { label: "Book End", displayLabel: CATEGORY_DISPLAY_NAMES["Book End"], isGroup: false, items: [{ fullValue: "Book End", displayLabel: CATEGORY_DISPLAY_NAMES["Book End"] }] },
-      { label: "Candle Holder", displayLabel: CATEGORY_DISPLAY_NAMES["Candle Holder"], isGroup: false, items: [{ fullValue: "Candle Holder", displayLabel: CATEGORY_DISPLAY_NAMES["Candle Holder"] }] },
-      { label: "Decorative", displayLabel: CATEGORY_DISPLAY_NAMES["Decorative"], isGroup: true, items: decorativeItems },
-      { label: "Doll", displayLabel: CATEGORY_DISPLAY_NAMES["Doll"], isGroup: true, items: dollItems },
-      { label: "Kitchenware", displayLabel: CATEGORY_DISPLAY_NAMES["Kitchenware"], isGroup: false, items: [{ fullValue: "Kitchenware", displayLabel: CATEGORY_DISPLAY_NAMES["Kitchenware"] }] },
-      { label: "Tray", displayLabel: CATEGORY_DISPLAY_NAMES["Tray"], isGroup: false, items: [{ fullValue: "Tray", displayLabel: CATEGORY_DISPLAY_NAMES["Tray"] }] },
-      { label: "Vase", displayLabel: CATEGORY_DISPLAY_NAMES["Vase"], isGroup: true, items: vaseItems },
-      { label: "Wall Art", displayLabel: CATEGORY_DISPLAY_NAMES["Wall Art"], isGroup: true, items: wallArtItems },
-      {
-        label: "SALE OFFERS %",
-        isGroup: false,
-        items: [{ fullValue: "SPECIAL_DISCOUNT", displayLabel: "SALE OFFERS %" }],
-        isSpecial: true
-      },
-      {
-        label: "PRE-ORDER",
-        isGroup: false,
-        items: [{ fullValue: "PRE_ORDER", displayLabel: "PRE-ORDER" }],
-        isSpecial: true
-      }
-    ];
-  }, []);
-
   const darkBannerPages = ['/', '/prop', '/about'];
   const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop'));
 
@@ -193,33 +126,30 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     : (activeLightMode ? 'brightness-0 contrast-200' : '');
 
   const dropDownBg = "bg-[#F4EBE6]/60 backdrop-blur-2xl border border-[#84492C]/10 shadow-[0_20px_50px_rgba(132,73,44,0.1)]";
-  const innerTitleColor = 'text-[#3A3835] border-[#3A3835]/15';
-  const innerTextColor = 'text-[#6B645E]';
-  const innerActiveTextColor = 'text-[#3A3835]';
-  const innerTextHoverColor = 'hover:text-[#84492C]';
-  const innerDotBg = 'bg-[#3A3835]';
-  const innerPlusColor = 'text-[#8C8A86]';
-  const innerSubBorderColor = 'border-[#3A3835]/10';
-
   const navContainerClass = `fixed top-0 transition-all duration-500 ${isScrolled || isMobileMenuOpen
     ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
     : 'bg-transparent'
     }`;
 
-  const createCategoryUrl = (categoryValue: string) => {
+  const productNavUrl = '/prop?filter=open';
+
+  const handleProductClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setIsMobileMenuOpen(false);
+    setIsLoading(true);
+
     const params = new URLSearchParams(searchParams.toString());
-    if (categoryValue === 'All') {
-      params.delete('category');
+    if (pathname.startsWith('/prop') && params.get('filter') === 'open') {
+      params.delete('filter');
     } else {
-      params.set('category', categoryValue);
+      params.set('filter', 'open');
     }
-    params.delete('page');
 
     const query = params.toString();
-    return `/prop${query ? `?${query}` : ''}`;
+    startTransition(() => {
+      router.push(`/prop${query ? `?${query}` : ''}`);
+    });
   };
-
-  const homeDecorMainUrl = createCategoryUrl('All');
 
   return (
     <>
@@ -307,7 +237,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             <div className="flex-grow flex flex-col justify-center pb-16">
               <nav className="flex flex-col px-5">
                 {[
-                  { num: '01', label: 'Product', href: homeDecorMainUrl, url: homeDecorMainUrl, active: isActive('/prop') },
+                  { num: '01', label: 'Product', href: productNavUrl, url: productNavUrl, active: isActive('/prop') },
                   { num: '02', label: 'Idea & Gallary', href: '/journal', url: '/journal', active: isActive('/journal') },
                   { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
                   { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
@@ -317,7 +247,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                       href={href}
                       prefetch={false}
                       title={label}
-                      onClick={(e) => handleNavClick(e, url)}
+                      onClick={(e) => label === 'Product' ? handleProductClick(e) : handleNavClick(e, url)}
                       className="mob-nav-row flex items-baseline gap-4 py-[16px] w-full group"
                     >
                       <span className={`mob-nav-num text-[10px] tracking-[0.2em] font-light flex-shrink-0 transition-colors ${active ? 'text-[#B8834A]' : 'text-[#8C8A86] group-hover:text-[#B8834A]'}`}>
@@ -394,10 +324,11 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
               About
             </Link>
 
-            <div className="relative group h-full flex items-center">
-              <Link href={homeDecorMainUrl} prefetch={false} title="Home Decor" onClick={(e) => handleNavClick(e, homeDecorMainUrl)} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+            <div className="h-full flex items-center">
+              <Link href={productNavUrl} prefetch={false} title="Product" onClick={handleProductClick} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 Product
               </Link>
+              {/* Categories popup intentionally removed: Product now opens the page filter. */}{/*
               <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                 <div className={`${dropDownBg} w-[290px] p-8 text-left rounded-sm transition-colors duration-300`}>
                   <div className={`${innerTitleColor} text-[10.5px] uppercase font-bold tracking-[0.25em] mb-6 border-b pb-4`}>
@@ -473,6 +404,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
                   </div>
                 </div>
               </div>
+              */}
             </div>
 
             <Link href="/journal" prefetch={false} title="Art & Gallery" onClick={(e) => handleNavClick(e, '/journal')} className={`transition duration-300 ${isActive('/journal') ? `${textColor} border-b ${borderColor} pb-1` : `${textMutedColor} ${textHoverColor}`}`}>
