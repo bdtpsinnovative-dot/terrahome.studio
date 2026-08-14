@@ -76,7 +76,7 @@ export default function Footer() {
               {/* Col 1: Logo & Description */}
               <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 lg:-ml-4 xl:-ml-6">
                 <div className="mb-2 flex flex-col items-start w-full">
-                  <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/logo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
+                  <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/DarkLogo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
                 </div>
                 <p className="text-xs leading-relaxed text-[#2A231D] font-medium max-w-[240px] mb-2">
                   Thoughtful home decor and objects that bring warmth, balance, and quiet living into everyday spaces.

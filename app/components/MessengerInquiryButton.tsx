@@ -126,6 +126,29 @@ export default function MessengerInquiryButton({
           {/* Channel Cards */}
           <div className={styles.channelList}>
             <a
+              href={LINE_PROFILE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              role="menuitem"
+              data-analytics-event={preview ? undefined : 'open_line_contact'}
+              className={styles.channel}
+              onClick={() => setOpen(false)}
+            >
+              <span className={styles.channelIconWrap} data-channel="line">
+                <Line className={styles.brandIconTheSvg} />
+              </span>
+              <div className={styles.channelInfo}>
+                <div className={styles.channelTitleRow}>
+                  <span className={styles.channelName}>LINE</span>
+                </div>
+                <span className={styles.channelDesc}>สอบถามสินค้าโดยตรง</span>
+              </div>
+              <div className={styles.arrowWrap}>
+                <ArrowUpRight aria-hidden="true" className={styles.channelArrow} />
+              </div>
+            </a>
+
+            <a
               href={MESSENGER_INBOX_URL}
               target="_blank"
               rel="noopener noreferrer"
@@ -165,29 +188,6 @@ export default function MessengerInquiryButton({
                   <span className={styles.channelName}>Instagram</span>
                 </div>
                 <span className={styles.channelDesc}>@terra.home.studio · ดูรูปและมุมจัดวาง</span>
-              </div>
-              <div className={styles.arrowWrap}>
-                <ArrowUpRight aria-hidden="true" className={styles.channelArrow} />
-              </div>
-            </a>
-
-            <a
-              href={LINE_PROFILE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              role="menuitem"
-              data-analytics-event={preview ? undefined : 'open_line_contact'}
-              className={styles.channel}
-              onClick={() => setOpen(false)}
-            >
-              <span className={styles.channelIconWrap} data-channel="line">
-                <Line className={styles.brandIconTheSvg} />
-              </span>
-              <div className={styles.channelInfo}>
-                <div className={styles.channelTitleRow}>
-                  <span className={styles.channelName}>LINE</span>
-                </div>
-                <span className={styles.channelDesc}>สอบถามสินค้าโดยตรง</span>
               </div>
               <div className={styles.arrowWrap}>
                 <ArrowUpRight aria-hidden="true" className={styles.channelArrow} />
