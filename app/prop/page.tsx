@@ -106,7 +106,10 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   }
 
   // 2. ดึงข้อมูลสินค้าและกรองตามสาขา (เฉพาะส่วนเนื้อหาสินค้าด้านล่าง)
-  const productSelectStr = `id, sku, name, image_url, price, status, category_id, specs, stock ( branch_id, qty )`
+  // `products.color` is the catalog's source of truth for colour. Keep specs
+  // as a fallback for older rows, but always select the real column so the
+  // client-side filter cannot silently lose a colour that exists in the DB.
+  const productSelectStr = `id, sku, name, image_url, price, status, category_id, color, specs, stock ( branch_id, qty )`
 
   const collectionQuery = supabase
     .from("collection_groups")

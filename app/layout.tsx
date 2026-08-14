@@ -9,6 +9,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Suspense } from "react"; // 1. นำเข้า Suspense เพิ่มเข้ามาครับนาย
 import Script from "next/script";
 import AnalyticsTracker from "./components/AnalyticsTracker";
+import GlobalMessengerInquiryButton from "./components/GlobalMessengerInquiryButton";
 
 // Cache Navbar category data for 1 hour; product categories rarely change.
 export const revalidate = 3600;
@@ -206,6 +207,7 @@ export default async function RootLayout({
             {children}
           </Suspense>
         </main>
+        <GlobalMessengerInquiryButton />
       </body>
     </html>
   );

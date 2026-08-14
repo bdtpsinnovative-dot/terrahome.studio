@@ -175,6 +175,7 @@
    2. CONCIERGE PANEL (COMPACT BOUTIQUE POPOVER)
    -------------------------------------------------------------------------- */
 .panel {
+  --inquiry-text-color: rgb(132, 73, 44);
   position: absolute;
   z-index: 1;
   right: 0;
@@ -186,7 +187,7 @@
   background: rgba(253, 251, 248, 0.95);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  color: #2b2825;
+  color: var(--inquiry-text-color);
   box-shadow:
     0 18px 36px -8px rgba(45, 41, 38, 0.18),
     0 6px 12px -3px rgba(45, 41, 38, 0.06),
@@ -248,7 +249,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: #242220;
+  color: var(--inquiry-text-color);
 }
 
 .headerSubtitle {
@@ -259,7 +260,7 @@
   margin: 0;
   max-width: 100%;
   font-size: 0.6875rem;
-  color: #666059;
+  color: var(--inquiry-text-color);
 }
 
 .productTag {
@@ -269,7 +270,7 @@
   background: #ece8df;
   font-size: 0.625rem;
   font-weight: 600;
-  color: #4a453e;
+  color: var(--inquiry-text-color);
   flex-shrink: 0;
 }
 
@@ -278,7 +279,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
-  color: #2b2825;
+  color: var(--inquiry-text-color);
 }
 
 /* Channel Cards List */
@@ -298,7 +299,7 @@
   border: 1px solid rgba(220, 215, 206, 0.65);
   border-radius: 0.625rem;
   background: rgba(255, 255, 255, 0.6);
-  color: #2b2825;
+  color: var(--inquiry-text-color);
   text-decoration: none;
   transition:
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -368,13 +369,13 @@
 .channelName {
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #242220;
+  color: var(--inquiry-text-color);
   line-height: 1.2;
 }
 
 .channelDesc {
   font-size: 0.65625rem;
-  color: #736c63;
+  color: var(--inquiry-text-color);
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -419,7 +420,7 @@
   background: rgba(246, 243, 237, 0.6);
   font-size: 0.625rem;
   font-weight: 500;
-  color: #7a7268;
+  color: var(--inquiry-text-color);
 }
 
 .footerIcon {

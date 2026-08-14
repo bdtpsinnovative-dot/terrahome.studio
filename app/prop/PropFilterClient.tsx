@@ -6,14 +6,46 @@ import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
 import { CATEGORY_DISPLAY_NAMES } from "@/app/constants/categories"
 
-type AttributeMode = "color" | "material"
+type ColorOption = {
+  value: string
+  label: string
+  count: number
+  swatch: string | null
+}
+
+const COLOR_PRESENTATION: Record<string, { label: string; swatch: string }> = {
+  beige: { label: "Beige", swatch: "oklch(82% 0.035 78)" },
+  black: { label: "Black", swatch: "oklch(22% 0.012 65)" },
+  blue: { label: "Blue", swatch: "oklch(56% 0.13 250)" },
+  brown: { label: "Brown", swatch: "oklch(43% 0.07 58)" },
+  gold: { label: "Gold", swatch: "oklch(72% 0.115 78)" },
+  green: { label: "Green", swatch: "oklch(51% 0.1 145)" },
+  grey: { label: "Grey", swatch: "oklch(60% 0.012 70)" },
+  orange: { label: "Orange", swatch: "oklch(68% 0.16 52)" },
+  pink: { label: "Pink", swatch: "oklch(75% 0.09 8)" },
+  purple: { label: "Purple", swatch: "oklch(53% 0.13 305)" },
+  red: { label: "Red", swatch: "oklch(55% 0.18 28)" },
+  silver: { label: "Silver", swatch: "oklch(78% 0.012 245)" },
+  white: { label: "White", swatch: "oklch(97% 0.008 80)" },
+  yellow: { label: "Yellow", swatch: "oklch(84% 0.15 92)" },
+}
+
+const COLOR_ALIASES: Record<string, string> = {
+  gray: "grey",
+}
 
 function normalizeAttribute(value: string) {
-  return value.trim().replace(/\s+/g, " ").toLowerCase()
+  const normalized = value.trim().replace(/\s+/g, " ").toLowerCase()
+  return COLOR_ALIASES[normalized] || normalized
 }
 
 function attributeValues(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(attributeValues)
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>
+    const namedValue = record.name ?? record.label ?? record.value
+    return namedValue === undefined ? [] : attributeValues(namedValue)
+  }
   if (typeof value !== "string") return []
   return value
     .split(/[,/|]+/)
@@ -21,13 +53,87 @@ function attributeValues(value: unknown): string[] {
     .filter(Boolean)
 }
 
-function productAttributeValues(product: any, mode: AttributeMode): string[] {
+function productColorValues(product: any): string[] {
   const specs = product?.specs && typeof product.specs === "object" ? product.specs : {}
-  const rawValues = mode === "color"
-    ? [product?.color, product?.colour, product?.colors, product?.colours, specs.color, specs.colour, specs.colors, specs.colours]
-    : [product?.material, product?.materials, specs.material, specs.materials]
+  const rawValues = [
+    product?.color,
+    product?.colour,
+    product?.colors,
+    product?.colours,
+    specs.color,
+    specs.colour,
+    specs.colors,
+    specs.colours,
+    specs.tone,
+    specs.color_tone,
+    specs.colour_tone,
+    specs.colorTone,
+  ]
 
   return Array.from(new Set(rawValues.flatMap(attributeValues).map(normalizeAttribute)))
+}
+
+function colorLabel(value: string) {
+  if (COLOR_PRESENTATION[value]) return COLOR_PRESENTATION[value].label
+  return value.replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
+function selectedAttributeValues(value: string) {
+  if (!value || value === "ALL_ATTRIBUTE") return []
+  return Array.from(new Set(value.split(",").map(normalizeAttribute).filter(Boolean)))
+}
+
+function filterCollectionsByCategory(collections: any[], activeFilter: string, hotProductIds: number[]) {
+  const filterUpper = activeFilter.toUpperCase().trim()
+
+  if (activeFilter === "All") return collections
+
+  if (activeFilter === "HOT_ITEM") {
+    const hotIdSet = new Set(hotProductIds)
+    return collections
+      .filter((group) => group.products?.some((product: any) => hotIdSet.has(Number(product.id))))
+      .map((group) => ({
+        ...group,
+        products: group.products
+          .filter((product: any) => hotIdSet.has(Number(product.id)))
+          .sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity)),
+      }))
+  }
+
+  if (activeFilter === "SPECIAL_DISCOUNT") {
+    return collections.filter((group) => group.products?.some((product: any) => product.discount_value !== null))
+  }
+
+  if (activeFilter === "PRE_ORDER") {
+    return collections
+      .filter((group) => group.products?.some((product: any) => product.availability_status === "preorder"))
+      .map((group) => ({
+        ...group,
+        products: group.products.filter((product: any) => product.availability_status === "preorder"),
+      }))
+  }
+
+  if (filterUpper === "DECORATIVE") {
+    return collections.filter((group) => {
+      const sup = (group.product_sup || "").trim().toLowerCase()
+      return (sup.startsWith("decorative") || sup.startsWith("decotative")) && !sup.includes("candle holder")
+    })
+  }
+
+  if (filterUpper === "DOLL") {
+    return collections.filter((group) => (group.product_sup || "").trim().toLowerCase().startsWith("doll"))
+  }
+
+  if (filterUpper === "VASE") {
+    return collections.filter((group) => (group.product_sup || "").trim().toLowerCase().startsWith("vase"))
+  }
+
+  if (filterUpper === "WALL ART") {
+    return collections.filter((group) => (group.product_sup || "").trim().toLowerCase().startsWith("wall art"))
+  }
+
+  const targetTrimmed = activeFilter.trim().toLowerCase()
+  return collections.filter((group) => (group.product_sup || "").trim().toLowerCase() === targetTrimmed)
 }
 
 export default function PropFilterClient({ collections, branches, hotProductIds = [] }: { collections: any[], branches: any[], hotProductIds?: number[] }) {
@@ -46,6 +152,14 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isColorPanelOpen, setIsColorPanelOpen] = useState(false)
+  const [colorFilterScope, setColorFilterScope] = useState<string | null>(null)
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false)
+    setIsColorPanelOpen(false)
+    setColorFilterScope(null)
+  }
 
   // 🌟 ล็อกไม่ให้หน้าจอหมุนหรือเลื่อนเมื่อเปิดเมนู Filter มือถือ
   useEffect(() => {
@@ -55,6 +169,19 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
       document.body.style.overflow = 'unset'
     }
     return () => { document.body.style.overflow = 'unset' }
+  }, [isSidebarOpen])
+
+  useEffect(() => {
+    if (!isSidebarOpen) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      setIsSidebarOpen(false)
+      setIsColorPanelOpen(false)
+    }
+
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
   }, [isSidebarOpen])
 
   const initialExpandedGroups = useMemo(() => {
@@ -116,8 +243,51 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const handleFilterChange = (filterValue: string) => {
     setActiveFilter(filterValue)
     setCurrentPage(1)
-    updateURL(filterValue, 1, searchQuery)
-    setIsSidebarOpen(false)
+    setAttributeFilter("ALL_ATTRIBUTE")
+    updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
+    closeSidebar()
+
+    const filterLower = filterValue.toLowerCase().trim()
+    if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
+      setExpandedGroups(prev => prev.includes("DECORATIVE") ? prev : [...prev, "DECORATIVE"])
+    } else if (filterLower.startsWith("doll")) {
+      setExpandedGroups(prev => prev.includes("DOLL") ? prev : [...prev, "DOLL"])
+    } else if (filterLower.startsWith("vase")) {
+      setExpandedGroups(prev => prev.includes("VASE") ? prev : [...prev, "VASE"])
+    } else if (filterLower.startsWith("wall art")) {
+      setExpandedGroups(prev => prev.includes("WALL ART") ? prev : [...prev, "WALL ART"])
+    }
+  }
+
+  const handleCategoryChange = (filterValue: string) => {
+    setActiveFilter(filterValue)
+    setCurrentPage(1)
+    setAttributeFilter("ALL_ATTRIBUTE")
+    updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
+    closeSidebar()
+
+    const filterLower = filterValue.toLowerCase().trim()
+    if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
+      setExpandedGroups(prev => prev.includes("DECORATIVE") ? prev : [...prev, "DECORATIVE"])
+    } else if (filterLower.startsWith("doll")) {
+      setExpandedGroups(prev => prev.includes("DOLL") ? prev : [...prev, "DOLL"])
+    } else if (filterLower.startsWith("vase")) {
+      setExpandedGroups(prev => prev.includes("VASE") ? prev : [...prev, "VASE"])
+    } else if (filterLower.startsWith("wall art")) {
+      setExpandedGroups(prev => prev.includes("WALL ART") ? prev : [...prev, "WALL ART"])
+    }
+  }
+
+  const handleCategoryColor = (filterValue: string) => {
+    if (colorFilterScope === filterValue && isColorPanelOpen) {
+      setIsColorPanelOpen(false)
+      setColorFilterScope(null)
+      return
+    }
+
+    setColorFilterScope(filterValue)
+    setIsSidebarOpen(true)
+    setIsColorPanelOpen(true)
 
     const filterLower = filterValue.toLowerCase().trim()
     if (filterLower.startsWith("decorative") || filterLower.startsWith("decotative")) {
@@ -137,25 +307,48 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     updateURL(activeFilter, 1, val)
   }
 
-  const attributeOptions = useMemo(() => {
-    const colorLabels = new Map<string, string>()
-    for (const group of collections) {
+  const categoryFilteredCollections = useMemo(
+    () => filterCollectionsByCategory(collections, activeFilter, hotProductIds),
+    [activeFilter, collections, hotProductIds]
+  )
+
+  const colorOptions = useMemo<ColorOption[]>(() => {
+    const colors = new Map<string, number>()
+    const colorScopeCollections = filterCollectionsByCategory(collections, colorFilterScope || activeFilter, hotProductIds)
+    for (const group of colorScopeCollections) {
       for (const product of group.products || []) {
-        for (const value of productAttributeValues(product, "color")) {
-          if (!colorLabels.has(value)) colorLabels.set(value, value)
+        for (const value of productColorValues(product)) {
+          colors.set(value, (colors.get(value) || 0) + 1)
         }
       }
     }
 
-    const colorOptions = Array.from(colorLabels.entries()).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
-    return { mode: "color" as const, label: "COLOR", options: colorOptions }
-  }, [collections])
+    return Array.from(colors.entries())
+      .map(([value, count]) => ({
+        value,
+        label: colorLabel(value),
+        count,
+        swatch: COLOR_PRESENTATION[value]?.swatch || null,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [activeFilter, collections, colorFilterScope, hotProductIds])
+
+  const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
+  const scopedSelectedColors = colorFilterScope && colorFilterScope !== activeFilter ? [] : selectedColors
 
   const handleAttributeChange = (value: string) => {
-    setAttributeFilter(value)
+    const filterValue = colorFilterScope || activeFilter
+    const nextValues = value === "ALL_ATTRIBUTE"
+      ? []
+      : scopedSelectedColors.includes(value)
+        ? scopedSelectedColors.filter((selectedValue) => selectedValue !== value)
+        : [...scopedSelectedColors, value]
+    const nextAttribute = nextValues.length > 0 ? nextValues.join(",") : "ALL_ATTRIBUTE"
+
+    if (filterValue !== activeFilter) setActiveFilter(filterValue)
+    setAttributeFilter(nextAttribute)
     setCurrentPage(1)
-    updateURL(activeFilter, 1, searchQuery, value)
-    setIsSidebarOpen(false)
+    updateURL(filterValue, 1, searchQuery, nextAttribute)
   }
 
   const toggleGroup = (groupLabel: string) => {
@@ -170,65 +363,16 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   };
 
   const filteredCollections = useMemo(() => {
-    let result = collections
+    let result = categoryFilteredCollections
 
-    const filterUpper = activeFilter.toUpperCase().trim()
-
-    if (activeFilter === "All") {
-      result = collections
-    } else if (activeFilter === "HOT_ITEM") {
-      const hotIdSet = new Set(hotProductIds)
-      result = collections
-        .filter(group => group.products?.some((p: any) => hotIdSet.has(Number(p.id))))
-        .map(group => ({
-          ...group,
-          products: group.products
-            .filter((p: any) => hotIdSet.has(Number(p.id)))
-            .sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity)),
-        }))
-    } else if (activeFilter === "SPECIAL_DISCOUNT") {
-      result = collections.filter(group => group.products?.some((p: any) => p.discount_value !== null))
-    } else if (activeFilter === "PRE_ORDER") {
-      result = collections
-        .filter(group => group.products?.some((p: any) => p.availability_status === 'preorder'))
-        .map(group => ({
-          ...group,
-          products: group.products.filter((p: any) => p.availability_status === 'preorder'),
-        }))
-    } else if (filterUpper === "DECORATIVE") {
-      result = collections.filter(group => {
-        const sup = (group.product_sup || "").trim().toLowerCase()
-        return (sup.startsWith("decorative") || sup.startsWith("decotative")) && !sup.includes("candle holder")
-      })
-    } else if (filterUpper === "DOLL") {
-      result = collections.filter(group => {
-        const sup = (group.product_sup || "").trim().toLowerCase()
-        return sup.startsWith("doll")
-      })
-    } else if (filterUpper === "VASE") {
-      result = collections.filter(group => {
-        const sup = (group.product_sup || "").trim().toLowerCase()
-        return sup.startsWith("vase")
-      })
-    } else if (filterUpper === "WALL ART") {
-      result = collections.filter(group => {
-        const sup = (group.product_sup || "").trim().toLowerCase()
-        return sup.startsWith("wall art")
-      })
-    } else {
-      const targetTrimmed = activeFilter.trim().toLowerCase()
-      result = collections.filter(group => {
-        if (!group.product_sup) return false
-        const groupSupTrimmed = group.product_sup.trim().toLowerCase()
-        return groupSupTrimmed === targetTrimmed
-      })
-    }
-
-    if (attributeFilter !== "ALL_ATTRIBUTE") {
+    if (selectedColors.length > 0) {
+      const selectedColorSet = new Set(selectedColors)
       result = result
         .map((group) => ({
           ...group,
-          products: (group.products || []).filter((product: any) => productAttributeValues(product, attributeOptions.mode).includes(attributeFilter)),
+          products: (group.products || []).filter((product: any) =>
+            productColorValues(product).some((color) => selectedColorSet.has(color))
+          ),
         }))
         .filter((group) => group.products.length > 0)
     }
@@ -245,7 +389,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     }
 
     return result
-  }, [activeFilter, attributeFilter, attributeOptions.mode, collections, searchQuery])
+  }, [categoryFilteredCollections, searchQuery, selectedColors])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -334,16 +478,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   };
 
   const renderSidebarContent = () => (
-    <div className="flex flex-col w-full text-left pb-12 pt-2 px-6">
-      {attributeOptions.options.length > 0 && (
-        <div className="w-full border-b border-[#C4B5A5]/30 pb-6 mb-4">
-          <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.25em] text-[#8C8A86]">FILTER BY {attributeOptions.label}</p>
-          <button type="button" onClick={() => handleAttributeChange("ALL_ATTRIBUTE")} className={`min-h-10 w-full text-left text-[11px] uppercase tracking-[0.2em] transition-colors ${attributeFilter === "ALL_ATTRIBUTE" ? 'font-semibold text-[#84492C]' : 'font-light text-[#8C8A86] hover:text-[#3A3835]'}`}>ALL {attributeOptions.label}</button>
-          <div className="mt-1 max-h-64 overflow-y-auto pr-1">
-            {attributeOptions.options.map((option) => <button key={option.value} type="button" onClick={() => handleAttributeChange(option.value)} className={`block min-h-10 w-full text-left text-[11px] uppercase tracking-[0.18em] transition-colors ${attributeFilter === option.value ? 'font-semibold text-[#84492C]' : 'font-light text-[#8C8A86] hover:text-[#3A3835]'}`}>{option.label}</button>)}
-          </div>
-        </div>
-      )}
+    <div className="flex w-full flex-col px-3 pb-12 pt-2 text-left sm:px-6">
       {structuredCategories.map((menuItem, idx) => {
         if (menuItem.isSpecial) {
           const isActive = activeFilter === menuItem.fullValue
@@ -353,7 +488,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                 onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.fullValue); }}
                 className={`w-full flex items-center justify-between text-left group transition-all duration-300`}
               >
-                <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#84492C]/80 font-medium group-hover:text-[#84492C]'}`}>
+                <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#84492C]/80 font-medium group-hover:text-[#84492C]'}`}>
                   {menuItem.displayLabel || menuItem.label}
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#84492C]/60 group-hover:text-[#84492C]'}`}>
@@ -366,12 +501,34 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
         if (!menuItem.isGroup) {
           const isActive = activeFilter === menuItem.fullValue
+          const displayLabel = menuItem.displayLabel || menuItem.label
           return (
-            <button key={`${menuItem.label}-${idx}`} onClick={(e) => { e.preventDefault(); if (menuItem.fullValue && menuItem.fullValue !== "ART_OBJECT_EMPTY") handleFilterChange(menuItem.fullValue); }} className="text-left w-full group py-3 transition-all duration-300">
-              <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
-                {menuItem.displayLabel || menuItem.label}
-              </span>
-            </button>
+            <div key={`${menuItem.label}-${idx}`} className="flex w-full items-center gap-1 py-1">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); if (menuItem.fullValue && menuItem.fullValue !== "ART_OBJECT_EMPTY") handleCategoryChange(menuItem.fullValue); }}
+                className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]"
+              >
+                <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
+                  {displayLabel}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (menuItem.fullValue && menuItem.fullValue !== "ART_OBJECT_EMPTY") handleCategoryColor(menuItem.fullValue); }}
+                aria-label={`เลือกสีของ ${displayLabel}`}
+                title={`เลือกสีของ ${displayLabel}`}
+                aria-controls="color-filter-drawer"
+                className={`grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full outline-none transition-colors hover:bg-[#E4D8CB] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${isActive ? 'text-[#84492C]' : 'text-[#8C8A86]'}`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
+                  <circle cx="7" cy="8" r="2.2" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="6" r="2.2" fill="currentColor" stroke="none" opacity=".7" />
+                  <circle cx="17" cy="8" r="2.2" fill="currentColor" stroke="none" opacity=".45" />
+                  <path strokeLinecap="round" d="M5.5 14.5h13M7 18h10" />
+                </svg>
+              </button>
+            </div>
           )
         }
 
@@ -379,13 +536,32 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
         const hasActiveChild = menuItem.items?.some((child: any) => activeFilter === child.fullValue) || activeFilter === menuItem.label
         return (
           <div key={menuItem.label} className="w-full flex flex-col items-start text-left">
-            <div className="flex items-center justify-between w-full gap-2">
-              <button onClick={(e) => { e.preventDefault(); handleFilterChange(menuItem.label); }} className="text-left group py-3 flex-1">
-                <span className={`text-[11px] uppercase tracking-[0.25em] transition-colors ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
+            <div className="flex w-full items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); handleCategoryChange(menuItem.label); }}
+                className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]"
+              >
+                <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${hasActiveChild || isExpanded ? 'text-[#3A3835] font-medium' : 'text-[#8C8A86] font-light group-hover:text-[#3A3835]'}`}>
                   {menuItem.displayLabel || menuItem.label}
                 </span>
               </button>
-              <button type="button" onClick={(e) => { e.preventDefault(); toggleGroup(menuItem.label); }} className={`min-w-[32px] h-8 flex items-center justify-center text-[12px] font-light transition-transform duration-300 ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCategoryColor(menuItem.label); }}
+                aria-label={`เลือกสีของ ${menuItem.displayLabel || menuItem.label}`}
+                title={`เลือกสีของ ${menuItem.displayLabel || menuItem.label}`}
+                aria-controls="color-filter-drawer"
+                className={`grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full outline-none transition-colors hover:bg-[#E4D8CB] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${hasActiveChild ? 'text-[#84492C]' : 'text-[#8C8A86]'}`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
+                  <circle cx="7" cy="8" r="2.2" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="6" r="2.2" fill="currentColor" stroke="none" opacity=".7" />
+                  <circle cx="17" cy="8" r="2.2" fill="currentColor" stroke="none" opacity=".45" />
+                  <path strokeLinecap="round" d="M5.5 14.5h13M7 18h10" />
+                </svg>
+              </button>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleGroup(menuItem.label); }} aria-label={`${isExpanded ? 'ยุบ' : 'ขยาย'} ${menuItem.displayLabel || menuItem.label}`} className={`grid min-h-11 min-w-11 shrink-0 place-items-center text-[12px] font-light outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${isExpanded ? 'text-[#3A3835]' : 'text-[#8C8A86]/60'}`}>
                 {isExpanded ? '−' : '+'}
               </button>
             </div>
@@ -394,11 +570,32 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                 {menuItem.items?.map((childItem: any) => {
                   const isChildActive = activeFilter === childItem.fullValue
                   return (
-                    <button key={childItem.fullValue} onClick={(e) => { e.preventDefault(); handleFilterChange(childItem.fullValue); }} className="text-left w-full group py-2.5 transition-colors duration-300">
-                      <span className={`text-[10px] uppercase tracking-[0.2em] ${isChildActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86]/80 font-light group-hover:text-[#3A3835]'}`}>
-                        {childItem.displayLabel}
-                      </span>
-                    </button>
+                    <div key={childItem.fullValue} className="flex w-full items-center gap-1 py-1">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); handleCategoryChange(childItem.fullValue); }}
+                        className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]"
+                      >
+                        <span className={`min-w-0 truncate whitespace-nowrap text-[9px] uppercase tracking-[0.12em] sm:text-[10px] sm:tracking-[0.2em] ${isChildActive ? 'text-[#84492C] font-semibold' : 'text-[#8C8A86]/80 font-light group-hover:text-[#3A3835]'}`}>
+                          {childItem.displayLabel}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCategoryColor(childItem.fullValue); }}
+                        aria-label={`เลือกสีของ ${childItem.displayLabel}`}
+                        title={`เลือกสีของ ${childItem.displayLabel}`}
+                        aria-controls="color-filter-drawer"
+                        className={`grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full outline-none transition-colors hover:bg-[#E4D8CB] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${isChildActive ? 'text-[#84492C]' : 'text-[#8C8A86]'}`}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
+                          <circle cx="7" cy="8" r="2.2" fill="currentColor" stroke="none" />
+                          <circle cx="12" cy="6" r="2.2" fill="currentColor" stroke="none" opacity=".7" />
+                          <circle cx="17" cy="8" r="2.2" fill="currentColor" stroke="none" opacity=".45" />
+                          <path strokeLinecap="round" d="M5.5 14.5h13M7 18h10" />
+                        </svg>
+                      </button>
+                    </div>
                   )
                 })}
               </div>
@@ -409,14 +606,78 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     </div>
   );
 
+  const renderColorPanel = () => (
+    <aside
+      id="color-filter-drawer"
+      aria-label="Filter products by color"
+      className="flex h-full w-[48%] shrink-0 flex-col border-l border-[#C4B5A5]/45 bg-[#F5F0E9] sm:w-[280px]"
+    >
+      <div className="flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 px-3 sm:px-6">
+        <button
+          type="button"
+          onClick={() => { setIsColorPanelOpen(false); setColorFilterScope(null) }}
+          aria-label="Back to categories"
+          className="flex min-h-11 min-w-11 items-center justify-start text-[#3A3835] outline-none hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F5F0E9]"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-[#3A3835] sm:text-[11px] sm:tracking-[0.3em]">Color</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4">
+        <button
+          type="button"
+          onClick={() => handleAttributeChange("ALL_ATTRIBUTE")}
+          aria-pressed={scopedSelectedColors.length === 0}
+          disabled={scopedSelectedColors.length === 0}
+          className={`flex min-h-11 w-full items-center gap-2 px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F5F0E9] sm:gap-3 sm:px-2 ${scopedSelectedColors.length === 0 ? 'cursor-not-allowed font-semibold text-[#AFA399]' : 'font-light text-[#6F6861] hover:text-[#3A3835]'}`}
+        >
+          <span aria-hidden="true" className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[#AFA399] bg-[#EFE9E1] text-[9px] text-[#84492C]">×</span>
+          <span className="min-w-0 flex-1 whitespace-nowrap text-[9px] uppercase tracking-[0.1em] sm:text-[10px] sm:tracking-[0.16em]">Clear color filter</span>
+        </button>
+
+        {colorOptions.map((option) => {
+          const isSelected = scopedSelectedColors.includes(option.value)
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleAttributeChange(option.value)}
+              aria-pressed={isSelected}
+              className={`group flex min-h-11 w-full items-center gap-2 px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F5F0E9] sm:gap-3 sm:px-2 ${isSelected ? 'font-semibold text-[#84492C]' : 'font-light text-[#6F6861] hover:text-[#3A3835]'}`}
+            >
+              <span
+                aria-hidden="true"
+                className="h-5 w-5 shrink-0 rounded-full border border-[#8F857D]/45 shadow-[inset_0_0_0_1px_oklch(98%_0.006_80_/_0.45)]"
+                style={option.swatch ? { backgroundColor: option.swatch } : undefined}
+              >
+                {!option.swatch && <span className="grid h-full w-full place-items-center text-[8px] text-[#8C8A86]">?</span>}
+              </span>
+              <span className="min-w-0 flex-1 truncate whitespace-nowrap text-[9px] uppercase tracking-[0.1em] sm:text-[10px] sm:tracking-[0.16em]">{option.label}</span>
+              <span className="shrink-0 font-mono text-[8px] tabular-nums text-[#8C8A86] sm:text-[9px]">{option.count}</span>
+              <span aria-hidden="true" className={`grid h-4 w-4 shrink-0 place-items-center text-[#84492C] ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4 10 4 4 8-9" />
+                </svg>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </aside>
+  )
+
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
-      <div className={`fixed inset-0 z-[9999] transition-opacity duration-400 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-        <div id="filter-drawer" className={`absolute left-0 top-0 bottom-0 w-[85%] max-w-[340px] bg-[#EFE9E1] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col touch-manipulation z-10 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="px-8 pt-8 pb-6 flex justify-between items-center border-b border-[#C4B5A5]/30 mb-4 bg-[#EFE9E1]">
-            <span className="text-[11px] uppercase tracking-[0.3em] font-medium text-[#3A3835]">Filters</span>
-            <button type="button" onClick={() => setIsSidebarOpen(false)} className="text-[#3A3835] hover:text-[#B8834A] transition-colors p-1 -mr-2 touch-manipulation">
+      <div className={`fixed inset-0 z-[9999] transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeSidebar} />
+        <div className={`absolute bottom-0 left-0 top-0 z-10 flex touch-manipulation shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150 ${isColorPanelOpen ? 'w-full sm:w-[620px]' : 'w-[85%] max-w-[340px]'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <aside id="filter-drawer" aria-label="Product filters" className={`flex h-full shrink-0 flex-col bg-[#EFE9E1] ${isColorPanelOpen ? 'w-[52%] sm:w-[340px]' : 'w-full'}`}>
+          <div className="mb-4 flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 bg-[#EFE9E1] px-4 sm:px-8">
+            <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-[#3A3835] sm:text-[11px] sm:tracking-[0.3em]">Filters</span>
+            <button type="button" onClick={closeSidebar} aria-label="Close filters" className="-mr-2 grid min-h-11 min-w-11 place-items-center text-[#3A3835] outline-none hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] touch-manipulation">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -425,6 +686,8 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
           <div className="flex-1 overflow-y-auto no-scrollbar px-2">
             {renderSidebarContent()}
           </div>
+          </aside>
+          {isColorPanelOpen && renderColorPanel()}
         </div>
       </div>
 
@@ -473,7 +736,11 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
               <div className="flex min-w-0 items-center justify-between sm:justify-end gap-5 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
                 <button
                   type="button"
-                  onClick={() => setIsSidebarOpen(true)}
+                  onClick={() => {
+                    setIsSidebarOpen(true)
+                    setColorFilterScope(selectedColors.length > 0 ? activeFilter : null)
+                    setIsColorPanelOpen(selectedColors.length > 0)
+                  }}
                   aria-expanded={isSidebarOpen}
                   aria-controls="filter-drawer"
                   className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
