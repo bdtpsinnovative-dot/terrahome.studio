@@ -26,6 +26,31 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com';
 
+const getNavbarFilterCollections = unstable_cache(
+  async () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) return [];
+
+    const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await supabase
+      .from('collection_groups')
+      .select('product_sup, products!inner(id, category_id, color, specs)')
+      .ilike('tag', '%prop%')
+      .eq('products.category_id', 'prop');
+
+    if (error) {
+      console.error('[navbar-filter] Unable to load Prop colours', { code: error.code, message: error.message });
+      return [];
+    }
+    return data || [];
+  },
+  ['navbar-prop-filter-collections'],
+  { revalidate: 3600 },
+);
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -93,6 +118,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const navbarFilterCollections = await getNavbarFilterCollections();
 
   return (
     <html
@@ -190,7 +217,7 @@ export default async function RootLayout({
         />
         {/* 2. ห่อหุ้ม Navbar ด้วย Suspense เพื่อให้ฝั่ง Client สามารถดึง searchParams มาใช้ได้ตอน build */}
         <Suspense fallback={<div className="h-20 bg-[#F9F6F0] w-full animate-pulse" />}>
-          <Navbar />
+          <Navbar collections={navbarFilterCollections} />
         </Suspense>
 
         <Suspense fallback={null}>

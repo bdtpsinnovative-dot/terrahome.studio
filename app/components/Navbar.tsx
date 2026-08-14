@@ -4,6 +4,8 @@ import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient, getSafeSession } from '@/src/supabase/client';
+import ProductFilterDrawer from './ProductFilterDrawer';
+import { selectedAttributeValues } from '@/app/prop/productFilterModel';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
@@ -19,6 +21,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
 
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
@@ -72,7 +75,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
-  // ล็อกหน้าจอไม่ให้เลื่อนตอนเปิดเมนู 3 ขีด
+  // ล็อกหน้าจอเมื่อเปิดเมนูมือถือ; shared filter drawer ดูแลตัวเอง
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -131,24 +134,36 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     : 'bg-transparent'
     }`;
 
-  const productNavUrl = '/prop?filter=open';
-
   const handleProductClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setIsMobileMenuOpen(false);
+    setIsProductDrawerOpen(true);
+  };
+
+  const closeProductDrawer = () => {
+    setIsProductDrawerOpen(false);
+  };
+
+  const handleProductFilterSelect = (filterValue: string) => {
+    const targetUrl = filterValue === 'All'
+      ? '/prop'
+      : `/prop?category=${encodeURIComponent(filterValue)}`;
+    closeProductDrawer();
+    const currentCategory = searchParams.get('category') || 'All';
+    const hasAdditionalFilters = ['page', 'search', 'attribute', 'filter'].some((key) => searchParams.has(key));
+    if (pathname === '/prop' && currentCategory === filterValue && !hasAdditionalFilters) return;
     setIsLoading(true);
+    startTransition(() => router.push(targetUrl));
+  };
 
-    const params = new URLSearchParams(searchParams.toString());
-    if (pathname.startsWith('/prop') && params.get('filter') === 'open') {
-      params.delete('filter');
-    } else {
-      params.set('filter', 'open');
-    }
-
+  const handleProductColorsSelect = (category: string, colors: string[]) => {
+    const params = new URLSearchParams();
+    if (category !== 'All') params.set('category', category);
+    if (colors.length > 0) params.set('attribute', colors.join(','));
     const query = params.toString();
-    startTransition(() => {
-      router.push(`/prop${query ? `?${query}` : ''}`);
-    });
+    closeProductDrawer();
+    setIsLoading(true);
+    startTransition(() => router.push(`/prop${query ? `?${query}` : ''}`));
   };
 
   return (
@@ -165,6 +180,18 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
           </h2>
         </div>
       )}
+
+      <ProductFilterDrawer
+        open={isProductDrawerOpen}
+        collections={collections}
+        activeCategory={searchParams.get('category') || 'All'}
+        selectedColors={selectedAttributeValues(searchParams.get('attribute') || 'ALL_ATTRIBUTE')}
+        onClose={closeProductDrawer}
+        onCategoryChange={handleProductFilterSelect}
+        onColorsChange={handleProductColorsSelect}
+        idPrefix="navbar-product-filter"
+        zIndexClass="z-[10000]"
+      />
 
       {/* ─── Mobile Overlay Menu — Reference Match ─────────────────────── */}
       <style dangerouslySetInnerHTML={{
@@ -237,7 +264,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             <div className="flex-grow flex flex-col justify-center pb-16">
               <nav className="flex flex-col px-5">
                 {[
-                  { num: '01', label: 'Product', href: productNavUrl, url: productNavUrl, active: isActive('/prop') },
+                  { num: '01', label: 'Product', href: '/prop', url: '/prop', active: isActive('/prop') },
                   { num: '02', label: 'Idea & Gallary', href: '/journal', url: '/journal', active: isActive('/journal') },
                   { num: '03', label: 'ABOUT', href: '/about', url: '/about', active: isActive('/about') },
                   { num: '04', label: 'CONTACT', href: '/contact', url: '/contact', active: isActive('/contact') },
@@ -325,7 +352,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             </Link>
 
             <div className="h-full flex items-center">
-              <Link href={productNavUrl} prefetch={false} title="Product" onClick={handleProductClick} className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href="/prop" prefetch={false} title="Product" onClick={handleProductClick} aria-haspopup="dialog" aria-expanded={isProductDrawerOpen} aria-controls="navbar-product-filter-drawer" className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 Product
               </Link>
               {/* Categories popup intentionally removed: Product now opens the page filter. */}{/*
