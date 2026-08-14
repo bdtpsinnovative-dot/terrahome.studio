@@ -1,0 +1,39 @@
+/* Hallmark · component tokens: messenger-inquiry · genre: editorial · theme: Terra existing system
+ * palette: warm paper · charcoal ink · earthen accent
+ */
+:root {
+  --color-inquiry-surface: oklch(34% 0.012 65);
+  --color-inquiry-surface-hover: oklch(43% 0.075 52);
+  --color-inquiry-surface-active: oklch(29% 0.012 65);
+  --color-inquiry-ink: oklch(96% 0.009 82);
+  --color-inquiry-rule: oklch(78% 0.018 78);
+  --color-inquiry-focus: oklch(72% 0.145 62);
+  --color-inquiry-disabled: oklch(58% 0.012 72);
+  --color-inquiry-error: oklch(54% 0.17 28);
+  --color-inquiry-success: oklch(49% 0.095 145);
+  --color-inquiry-panel: oklch(96% 0.012 82);
+  --color-inquiry-panel-hover: oklch(92% 0.016 78);
+  --color-inquiry-panel-ink: oklch(29% 0.014 65);
+  --color-inquiry-panel-muted: oklch(48% 0.014 70);
+  --color-inquiry-messenger: oklch(57% 0.18 260);
+  --color-inquiry-facebook: oklch(50% 0.18 258);
+  --color-inquiry-instagram: oklch(56% 0.18 345);
+  --font-inquiry-body: 'LINE Seed Sans', ui-sans-serif, sans-serif;
+  --space-inquiry-2xs: 0.25rem;
+  --space-inquiry-xs: 0.5rem;
+  --space-inquiry-sm: 0.75rem;
+  --space-inquiry-md: 1rem;
+  --space-inquiry-edge: 1rem;
+  --text-inquiry-label: 0.75rem;
+  --text-inquiry-option: 0.875rem;
+  --text-inquiry-arrow: 1rem;
+  --ease-inquiry-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inquiry-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-inquiry-press: 100ms;
+  --dur-inquiry-hover: 180ms;
+  --rule-inquiry-width: 1px;
+  --radius-inquiry: 0.25rem;
+  --z-inquiry-floating: 500;
+  --shadow-inquiry-panel: 0 0.5rem 1.5rem oklch(22% 0.012 65 / 0.12);
+  --shadow-inquiry-trigger: 0 0.35rem 1rem oklch(22% 0.012 65 / 0.16);
+}

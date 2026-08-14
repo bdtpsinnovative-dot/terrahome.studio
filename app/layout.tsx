@@ -1,6 +1,7 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import "../tokens.css";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import { unstable_cache } from "next/cache";

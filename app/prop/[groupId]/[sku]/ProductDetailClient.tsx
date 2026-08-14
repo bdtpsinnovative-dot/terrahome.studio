@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle2, MapPin, Navigation } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
 import { createClient, getSafeSession } from '@/src/supabase/client'
 import { trackAnalyticsCta } from '@/app/components/AnalyticsTracker'
+import MessengerInquiryButton from '@/app/components/MessengerInquiryButton'
 
 const BranchMap = dynamic(() => import('./BranchMap'), { 
   ssr: false, 
@@ -533,6 +534,8 @@ export default function ProductDetailClient({
           </div>
         </div>
       )}
+
+      <MessengerInquiryButton productName={activeProduct.name || activeProduct.sku || 'สินค้านี้'} />
     </div>
   )
 }

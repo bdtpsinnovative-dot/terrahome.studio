@@ -4,10 +4,9 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
 
-const Mail = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>;
 const MapPin = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
-const Phone = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>;
-const Globe = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+const FacebookIcon = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 8.5V7.2c0-.8.5-1.2 1.4-1.2H18V2.2A22 22 0 0 0 14.9 2C11.8 2 10 3.8 10 7v1.5H7V13h3v9h4v-9h3.3l.7-4.5H14Z" /></svg>;
+const InstagramIcon = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none" /></svg>;
 
 type CategoryGroup = { label: string; items: string[] };
 
@@ -83,9 +82,6 @@ export default function Footer() {
                   Thoughtful home decor and objects that bring warmth, balance, and quiet living into everyday spaces.
                 </p>
                 <div className="w-8 h-[1px] bg-[#9C8C7A] mb-2"></div>
-                {/* Social Icons (Not linked yet per request) */}
-                <div className="flex justify-center lg:justify-start space-x-3.5 w-full">
-                </div>
               </div>
 
               {/* การ์ด คอนเท็น*/}
@@ -107,35 +103,37 @@ export default function Footer() {
                           Bangkok-Nonthaburi Road, Bang Sue,<br />
                           Bang Sue District, Bangkok 10800
                         </p>
-                      </div>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col space-y-2">
-                      <a href="tel:+6625871234" title="Call Terra Home Studio via telephone" data-analytics-event="call_phone" className="flex items-center gap-3.5 group/link w-fit">
-                        <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
-                          <Phone />
-                        </div>
-                        <p className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors duration-300 group-hover/link:text-black">
-                          +66 2 587 1234
-                        </p>
+                    <div className="mt-3 flex flex-col space-y-2">
+                      <a
+                        href="https://web.facebook.com/Terra.home.studio/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Facebook"
+                        className="flex items-center gap-3.5 group/link w-fit"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 border border-white/50 flex items-center justify-center text-[#7A695C] shadow-sm transition-colors group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F]">
+                          <FacebookIcon />
+                        </span>
+                        <span className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors group-hover/link:text-black">
+                          Facebook
+                        </span>
                       </a>
-
-                      <a href="mailto:info@tpsgardenfurniture.com" title="Send email to Terra Home Studio" data-analytics-event="send_email" className="flex items-center gap-3.5 group/link w-fit">
-                        <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
-                          <Mail />
-                        </div>
-                        <p className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors duration-300 group-hover/link:text-black">
-                          info@tpsgardenfurniture.com
-                        </p>
-                      </a>
-
-                      <a href="https://www.tpsgardenfurniture.com" target="_blank" rel="noreferrer" title="Visit TPS Garden Furniture website" className="flex items-center gap-3.5 group/link w-fit">
-                        <div className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 flex items-center justify-center text-[#7A695C] shrink-0 transition-all duration-300 group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F] shadow-sm border border-white/50">
-                          <Globe />
-                        </div>
-                        <p className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors duration-300 group-hover/link:text-black">
-                          www.tpsgardenfurniture.com
-                        </p>
+                      <a
+                        href="https://www.instagram.com/terra.home.studio/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                        className="flex items-center gap-3.5 group/link w-fit"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 border border-white/50 flex items-center justify-center text-[#7A695C] shadow-sm transition-colors group-hover/link:bg-[#DED5C8] group-hover/link:text-[#3A352F]">
+                          <InstagramIcon />
+                        </span>
+                        <span className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors group-hover/link:text-black">
+                          Instagram
+                        </span>
                       </a>
                     </div>
                   </div>
