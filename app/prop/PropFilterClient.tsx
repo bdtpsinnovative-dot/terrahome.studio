@@ -44,6 +44,26 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     }
   }
 
+  const handleOpenFilter = () => {
+    setOpenColorPanel(false)
+    setIsSidebarOpen(true)
+  }
+
+  const handleOpenColorPanel = () => {
+    setOpenColorPanel(true)
+    setIsSidebarOpen(true)
+  }
+
+  const handleClearFilters = () => {
+    setActiveFilter('All')
+    setSearchQuery('')
+    setAttributeFilter('ALL_ATTRIBUTE')
+    setCurrentPage(1)
+    setOpenColorPanel(false)
+    updateURL('All', 1, '', 'ALL_ATTRIBUTE', false)
+    closeSidebar()
+  }
+
   const itemsPerPage = 40
   const topRef = useRef<HTMLDivElement>(null)
 
@@ -89,6 +109,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setActiveFilter(filterValue)
     setCurrentPage(1)
     setAttributeFilter("ALL_ATTRIBUTE")
+    setOpenColorPanel(false)
     updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
     closeSidebar()
   }
@@ -105,6 +126,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   )
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
+  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || searchQuery.trim() !== '' || currentPage > 1
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
@@ -245,17 +267,15 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                 )}
               </div>
 
-              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-5 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
+              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsSidebarOpen(true)
-                  }}
-                  aria-expanded={isFilterOpen}
+                  onClick={handleOpenFilter}
+                  aria-expanded={isFilterOpen && !openColorPanel}
                   aria-controls="prop-product-filter-drawer"
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                  className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && !openColorPanel ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                   </svg>
                   <span>FILTER</span>
@@ -263,23 +283,32 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setOpenColorPanel(true)
-                    setIsSidebarOpen(true)
-                  }}
-                  aria-label="เปิดตัวกรองสี"
+                  onClick={handleClearFilters}
+                  disabled={!hasActiveFilters}
+                  className={`flex h-10 shrink-0 items-center justify-center border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 touch-manipulation select-none ${hasActiveFilters
+                    ? 'text-[#B5473C] hover:border-[#B5473C]/50 hover:text-[#8F2F29]'
+                    : 'cursor-not-allowed text-[#B7B0A8]/70'
+                    }`}
+                  aria-label="Clear filters"
+                >
+                  CLEAR
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenColorPanel}
+                  aria-label="Open color filter"
                   aria-expanded={isFilterOpen && openColorPanel}
                   aria-controls="prop-product-filter-color-drawer"
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                  className={`flex h-10 w-8 shrink-0 items-center justify-center border-b border-transparent text-[#6F6861] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : ''}`}
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
                     <circle cx="8" cy="9" r="1.15" fill="#C26E4B" stroke="none" />
                     <circle cx="12" cy="6.8" r="1.15" fill="#8EA6B8" stroke="none" />
                     <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
                     <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
                   </svg>
-                  <span>COLOR</span>
                 </button>
 
                 {branches && branches.length > 0 && (
@@ -298,18 +327,13 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
               <>
                 <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
-                    const slides = group.cover_image_url ? [
-                      {
-                        image_url: group.cover_image_url,
-                        price: null,
-                        sku: "",
-                        name: group.name || "",
-                        discount_value: null,
-                        discount_type: null,
-                        availability_status: group.products?.[0]?.availability_status,
-                      }
-                    ] : group.products
-                      ?.filter((p: any) => p.image_url !== null && p.image_url !== "")
+                    const preferredProducts = group.products?.filter((product: any) => {
+                      const stockQty = (product.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+                      return stockQty > 0
+                    }) || []
+
+                    const productSlides = (preferredProducts.length > 0 ? preferredProducts : group.products || [])
+                      .filter((p: any) => p.image_url !== null && p.image_url !== "")
                       .map((p: any) => ({
                         image_url: p.image_url,
                         price: p.price,
@@ -318,7 +342,19 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                         discount_value: p.discount_value,
                         discount_type: p.discount_type,
                         availability_status: p.availability_status,
-                      })) || []
+                      }))
+
+                    const slides = productSlides.length > 0 ? productSlides : (group.cover_image_url ? [
+                      {
+                        image_url: group.cover_image_url,
+                        price: null,
+                        sku: "",
+                        name: group.name || "",
+                        discount_value: null,
+                        discount_type: null,
+                        availability_status: preferredProducts[0]?.availability_status || group.products?.[0]?.availability_status,
+                      }
+                    ] : [])
 
                     return (
                       <div key={group.id} className="border-b border-r border-[#D5D2CA]/70 py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative">

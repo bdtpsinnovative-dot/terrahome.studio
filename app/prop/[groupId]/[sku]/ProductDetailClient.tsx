@@ -292,7 +292,7 @@ export default function ProductDetailClient({
               {activeProduct.name}
             </h1>
             <p className="mt-3 text-sm font-medium tracking-[0.15em] text-[#84492C]">
-              {activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : "POA"}
+              {outOfStock ? 'PRE-ORDER' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
             </p>
 
             <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
@@ -463,7 +463,7 @@ export default function ProductDetailClient({
                         {item.name}
                       </h3>
                       <p className={`text-[9px] mt-1 font-medium ${isActive ? 'text-[#3A3835]' : 'text-[#8C8A86]'}`}>
-                        {item.price > 0 ? `THB ${item.price.toLocaleString()}` : "POA"}
+                        {((item.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0) > 0) ? (item.price > 0 ? `THB ${item.price.toLocaleString()}` : 'POA') : 'PRE-ORDER'}
                       </p>
                     </div>
                   </div>

@@ -111,7 +111,7 @@ as $$
       and e.is_countable = true
       and e.traffic_type not in ('bot', 'internal')
       and e.created_at >= now() - interval '30 days'
-    order by e.product_id, e.identity_key, e.view_bucket, e.created_at desc
+    order by e.product_id, coalesce(l.user_key, e.identity_key), e.view_bucket, e.created_at desc
   ),
   category_product_events as (
     select e.product_id, count(*)::bigint as category_views,

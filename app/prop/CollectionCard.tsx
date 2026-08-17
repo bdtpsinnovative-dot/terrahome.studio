@@ -27,16 +27,30 @@ export default function CollectionCard({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isNavigating, setIsNavigating] = useState(false)
 
-  const currentSlide = slides[currentIndex] || { image_url: null, price: null, sku: "", name: "" }
+  const stockQtyForProduct = (product: any) =>
+    (product?.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+
+  const availableProducts = (group.products || []).filter((product: any) => stockQtyForProduct(product) > 0)
+
+  const preferredSlides = slides.filter((slide) => {
+    const matchedProduct = (group.products || []).find((product: any) => product?.sku === slide.sku)
+    if (!matchedProduct) return availableProducts.length === 0
+    return stockQtyForProduct(matchedProduct) > 0
+  })
+
+  const resolvedSlides = preferredSlides.length > 0 ? preferredSlides : slides
+  const currentSlide = resolvedSlides[currentIndex] || resolvedSlides[0] || { image_url: null, price: null, sku: "", name: "" }
   const displayPrice = currentSlide.price
-  const priceValues = (group.products || [])
+  const priceValues = availableProducts
     .map((product: any) => Number(product?.price))
     .filter((price: number) => Number.isFinite(price) && price > 0)
   const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : null
   const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) : null
   const hasPriceRange = minPrice !== null && maxPrice !== null && minPrice !== maxPrice
+  const hasAvailablePrice = availableProducts.length > 0
 
-  const firstProductSku = group.products?.[0]?.sku
+  const firstAvailableProduct = availableProducts[0] || group.products?.[0]
+  const firstProductSku = firstAvailableProduct?.sku
   const targetHref = firstProductSku
     ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(firstProductSku)}`
     : currentSlide.sku
@@ -50,12 +64,12 @@ export default function CollectionCard({
   }
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (resolvedSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length)
-    }, 3000) 
+      setCurrentIndex((prev) => (prev + 1) % resolvedSlides.length)
+    }, 3000)
     return () => clearInterval(timer)
-  }, [slides.length])
+  }, [resolvedSlides.length])
 
   return (
     <>
@@ -79,8 +93,8 @@ export default function CollectionCard({
           className="w-full aspect-square relative mb-5 flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
-          {slides.length > 0 ? (
-            slides.map((slide, idx) => (
+          {resolvedSlides.length > 0 ? (
+            resolvedSlides.map((slide, idx) => (
               <img 
                 key={idx}
                 src={slide.image_url || ""} 
@@ -104,7 +118,7 @@ export default function CollectionCard({
             {currentSlide.name ? currentSlide.name.substring(0, 25) : "PRODUCT"}
           </span>
           {(() => {
-            if (currentSlide.availability_status === 'preorder') {
+            if (!hasAvailablePrice) {
               return (
                 <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold mt-0.5">
                   PRE-ORDER

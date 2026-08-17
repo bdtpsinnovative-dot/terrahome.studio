@@ -56,14 +56,20 @@ export default function ProductFilterDrawer({
   }, [onClose])
 
   useEffect(() => {
-    if (open && openColorPanel) {
-      setColorScope(activeCategory)
-    } else if (open && !wasOpenRef.current) {
-      setColorScope(selectedColors.length > 0 ? activeCategory : null)
+    if (!open) {
+      setColorScope(null)
+      wasOpenRef.current = false
+      return
     }
-    if (!open) setColorScope(null)
-    wasOpenRef.current = open
-  }, [activeCategory, open, openColorPanel, selectedColors.length])
+
+    if (openColorPanel) {
+      setColorScope(activeCategory)
+    } else {
+      setColorScope(null)
+    }
+
+    wasOpenRef.current = true
+  }, [activeCategory, open, openColorPanel])
 
   useEffect(() => {
     if (!open) {
@@ -111,30 +117,6 @@ export default function ProductFilterDrawer({
     onColorsChange(colorScope, nextColors)
   }
 
-  const renderColorTrigger = (category: string, label: string, active: boolean) => (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        toggleColorPanel(category)
-      }}
-      aria-label={`เลือกสีของ ${label}`}
-      title={`เลือกสีของ ${label}`}
-      aria-expanded={colorScope === category}
-      aria-controls={colorDrawerId}
-      className={`grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full outline-none transition-colors hover:bg-[#E4D8CB] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${active ? "text-[#84492C]" : "text-[#6F6861]"}`}
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
-        <circle cx="8" cy="9" r="1.15" fill="#C26E4B" stroke="none" />
-        <circle cx="12" cy="6.8" r="1.15" fill="#8EA6B8" stroke="none" />
-        <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
-        <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
-      </svg>
-    </button>
-  )
-
   const renderMenuItem = (item: ProductFilterMenuItem, index: number) => {
     if (item.isSpecial && item.fullValue) {
       const isActive = activeCategory === item.fullValue
@@ -162,7 +144,6 @@ export default function ProductFilterDrawer({
               {label}
             </span>
           </button>
-          {renderColorTrigger(item.fullValue, label, isActive)}
         </div>
       )
     }
@@ -178,7 +159,6 @@ export default function ProductFilterDrawer({
               {label}
             </span>
           </button>
-          {renderColorTrigger(item.label, label, Boolean(hasActiveChild))}
           <button type="button" onClick={() => toggleGroup(item.label)} aria-label={`${isExpanded ? "ยุบ" : "ขยาย"} ${label}`} className={`grid min-h-11 min-w-11 shrink-0 place-items-center text-[12px] font-normal outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${isExpanded ? "text-[#3A3835]" : "text-[#6F6861]"}`}>
             {isExpanded ? "−" : "+"}
           </button>
@@ -194,7 +174,6 @@ export default function ProductFilterDrawer({
                       {child.displayLabel}
                     </span>
                   </button>
-                  {renderColorTrigger(child.fullValue, child.displayLabel, isActive)}
                 </div>
               )
             })}

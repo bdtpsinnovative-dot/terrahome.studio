@@ -148,12 +148,6 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     setIsProductDrawerOpen(true);
   };
 
-  const handleProductHover = () => {
-    if (window.matchMedia('(min-width: 1024px)').matches) {
-      setIsProductDrawerOpen(true);
-    }
-  };
-
   const closeProductDrawer = () => {
     setIsProductDrawerOpen(false);
   };
@@ -366,7 +360,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             </Link>
 
             <div className="h-full flex items-center">
-              <Link href="/prop" prefetch={false} title="Product" onMouseEnter={handleProductHover} onClick={handleProductClick} aria-haspopup="dialog" aria-expanded={isProductDrawerOpen} aria-controls="navbar-product-filter-drawer" className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href="/prop" prefetch={false} title="Product" onClick={handleProductClick} aria-haspopup="dialog" aria-expanded={isProductDrawerOpen} aria-controls="navbar-product-filter-drawer" className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 Product
               </Link>
               {/* Categories popup intentionally removed: Product now opens the page filter. */}{/*
