@@ -29,15 +29,18 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialFilterOpen)
-  const isFilterOpen = isSidebarOpen || searchParams.get('filter') === 'open'
+  const [openColorPanel, setOpenColorPanel] = useState(false)
+  const [isNavigationPending, setIsNavigationPending] = useState(false)
+  const isFilterOpen = isSidebarOpen
 
-  const closeSidebar = (clearUrl = true) => {
+  const closeSidebar = () => {
     setIsSidebarOpen(false)
-    if (clearUrl && searchParams.get('filter') === 'open') {
+    setOpenColorPanel(false)
+    if (searchParams.get('filter') === 'open') {
       const params = new URLSearchParams(searchParams.toString())
       params.delete('filter')
       const query = params.toString()
-      router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
+      window.history.replaceState(null, '', `${pathname}${query ? `?${query}` : ''}`)
     }
   }
 
@@ -45,6 +48,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const topRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    setIsNavigationPending(false)
     const urlCategory = searchParams.get('category') || "All"
     const urlPage = Number(searchParams.get('page')) || 1
     const urlSearch = searchParams.get('search') || ""
@@ -55,7 +59,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setAttributeFilter(urlAttribute)
   }, [searchParams])
 
-  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter) => {
+  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter, showLoading = true) => {
     const params = new URLSearchParams(searchParams.toString())
 
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
@@ -73,7 +77,12 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     // Choosing a filter is an in-page action; the explicit open state belongs only to the navbar/filter entry point.
     params.delete('filter')
 
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    const query = params.toString()
+    const targetPath = `${pathname}${query ? `?${query}` : ''}`
+    const currentPath = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    if (targetPath === currentPath) return
+    if (showLoading) setIsNavigationPending(true)
+    router.push(targetPath, { scroll: false })
   }
 
   const handleCategoryChange = (filterValue: string) => {
@@ -81,13 +90,13 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setCurrentPage(1)
     setAttributeFilter("ALL_ATTRIBUTE")
     updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
-    closeSidebar(false)
+    closeSidebar()
   }
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
     setCurrentPage(1)
-    updateURL(activeFilter, 1, val)
+    updateURL(activeFilter, 1, val, attributeFilter, false)
   }
 
   const categoryFilteredCollections = useMemo(
@@ -172,8 +181,18 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
   return (
     <div className="w-full scroll-mt-32" ref={topRef}>
+      {isNavigationPending && (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-[#EFE9E1]/65 backdrop-blur-[2px]" role="status" aria-live="polite">
+          <div className="flex min-w-[150px] flex-col items-center gap-3 rounded-sm border border-[#C4B5A5]/50 bg-[#F9F6F0]/95 px-8 py-6 shadow-[0_12px_40px_rgba(58,56,53,0.12)]">
+            <span className="h-9 w-9 animate-spin rounded-full border-2 border-[#84492C]/20 border-t-[#84492C]" aria-hidden="true" />
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#84492C]">Loading...</span>
+          </div>
+        </div>
+      )}
+
       <ProductFilterDrawer
         open={isFilterOpen}
+        openColorPanel={openColorPanel}
         collections={collections}
         activeCategory={activeFilter}
         selectedColors={selectedColors}
@@ -231,9 +250,6 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                   type="button"
                   onClick={() => {
                     setIsSidebarOpen(true)
-                    const params = new URLSearchParams(searchParams.toString())
-                    params.set('filter', 'open')
-                    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
                   }}
                   aria-expanded={isFilterOpen}
                   aria-controls="prop-product-filter-drawer"
@@ -243,6 +259,27 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                   </svg>
                   <span>FILTER</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenColorPanel(true)
+                    setIsSidebarOpen(true)
+                  }}
+                  aria-label="เปิดตัวกรองสี"
+                  aria-expanded={isFilterOpen && openColorPanel}
+                  aria-controls="prop-product-filter-color-drawer"
+                  className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-medium tracking-[0.25em] uppercase text-[#8C8A86] hover:text-[#3A3835] transition-colors duration-300 touch-manipulation select-none"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[18px] w-[18px]">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
+                    <circle cx="8" cy="9" r="1.15" fill="#C26E4B" stroke="none" />
+                    <circle cx="12" cy="6.8" r="1.15" fill="#8EA6B8" stroke="none" />
+                    <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
+                    <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
+                  </svg>
+                  <span>COLOR</span>
                 </button>
 
                 {branches && branches.length > 0 && (
@@ -292,9 +329,9 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-4 mt-12 pb-16 border-t border-[#D5D2CA]/30 pt-8">
+                  <div className="flex flex-wrap justify-center items-center gap-4 mt-12 pb-16 border-t border-[#D5D2CA]/30 pt-8 max-w-full overflow-hidden">
                     <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className={`text-[10px] uppercase tracking-[0.2em] ${currentPage === 1 ? 'opacity-20 cursor-not-allowed' : 'text-[#8C8A86] hover:text-[#3A3835]'}`}>Prev</button>
-                    <div className="flex items-center gap-1">{renderPagination()}</div>
+                    <div className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-1">{renderPagination()}</div>
                     <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className={`text-[10px] uppercase tracking-[0.2em] ${currentPage === totalPages ? 'opacity-20 cursor-not-allowed' : 'text-[#8C8A86] hover:text-[#3A3835]'}`}>Next</button>
                   </div>
                 )}

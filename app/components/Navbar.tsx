@@ -118,9 +118,9 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     ? 'border-[#84492C]'
     : (activeLightMode ? 'border-[#3A3835]' : 'border-white');
 
-  const hamburgerLineColor = isScrolled
-    ? 'bg-[#84492C]'
-    : (activeLightMode ? 'bg-[#3A3835]' : 'bg-white');
+  const hamburgerTextColor = isScrolled
+    ? 'text-[#84492C]'
+    : (activeLightMode ? 'text-[#3A3835]' : 'text-white');
 
   const logoPath = '/logo.png';
 
@@ -135,9 +135,23 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     }`;
 
   const handleProductClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
     setIsMobileMenuOpen(false);
+
+    // On touch-sized screens Product is a normal navigation item.
+    // Desktop keeps the filter drawer interaction instead.
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      handleNavClick(e, '/prop');
+      return;
+    }
+
+    e.preventDefault();
     setIsProductDrawerOpen(true);
+  };
+
+  const handleProductHover = () => {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      setIsProductDrawerOpen(true);
+    }
   };
 
   const closeProductDrawer = () => {
@@ -352,7 +366,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
             </Link>
 
             <div className="h-full flex items-center">
-              <Link href="/prop" prefetch={false} title="Product" onClick={handleProductClick} aria-haspopup="dialog" aria-expanded={isProductDrawerOpen} aria-controls="navbar-product-filter-drawer" className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
+              <Link href="/prop" prefetch={false} title="Product" onMouseEnter={handleProductHover} onClick={handleProductClick} aria-haspopup="dialog" aria-expanded={isProductDrawerOpen} aria-controls="navbar-product-filter-drawer" className={`transition duration-300 ${isActive('/prop') ? `${textColor} border-b ${borderColor} pb-1 font-medium` : `${textMutedColor} ${textHoverColor}`}`}>
                 Product
               </Link>
               {/* Categories popup intentionally removed: Product now opens the page filter. */}{/*
@@ -534,13 +548,27 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
           {/* เติม <button ตรงนี้ครับ */}
           <button
+            type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="hover:opacity-60 transition duration-300 flex flex-col justify-center items-center space-y-[6px] w-8 h-8 relative z-[110]"
+            className={`hover:opacity-60 transition duration-300 flex flex-shrink-0 justify-center items-center w-10 h-10 relative z-[110] ${isMobileMenuOpen ? 'text-[#3A3835]' : hamburgerTextColor}`}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
-            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] rotate-45 translate-y-[7.5px]' : hamburgerLineColor}`}></span>
-            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : hamburgerLineColor}`}></span>
-            <span className={`w-[22px] h-[1.5px] block transition-all duration-300 ${isMobileMenuOpen ? 'bg-[#3A3835] -rotate-45 -translate-y-[7.5px]' : hamburgerLineColor}`}></span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              className="w-6 h-6 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+              aria-hidden="true"
+            >
+              {isMobileMenuOpen ? (
+                <path d="M6 6l12 12M18 6L6 18" />
+              ) : (
+                <path d="M3 6h18M3 12h18M3 18h18" />
+              )}
+            </svg>
           </button>
 
         </div>

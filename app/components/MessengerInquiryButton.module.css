@@ -443,8 +443,14 @@
   }
 
   .trigger {
+    width: 2.625rem;
+    height: 2.625rem;
     min-height: 2.5rem;
-    padding: 0.45rem 0.875rem;
+    padding: 0;
+  }
+
+  .triggerLabel {
+    display: none;
   }
 
   .panel {

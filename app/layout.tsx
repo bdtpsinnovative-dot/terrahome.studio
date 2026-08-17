@@ -47,7 +47,9 @@ const getNavbarFilterCollections = unstable_cache(
     }
     return data || [];
   },
-  ['navbar-prop-filter-collections'],
+  // Bump the cache key when the filter payload changes so an older empty
+  // colour payload cannot keep the global Product drawer stale.
+  ['navbar-prop-filter-collections-v2'],
   { revalidate: 3600 },
 );
 

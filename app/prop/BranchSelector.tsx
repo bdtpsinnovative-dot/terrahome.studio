@@ -19,7 +19,12 @@ export default function BranchSelector({ branches, isLightPage = true }: { branc
   const currentBranchId = searchParams.get("branch") || "all"
 
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setIsLoading(false)
+  }, [searchParams])
 
   const allOption: Branch = {
     id: "all",
@@ -48,13 +53,26 @@ export default function BranchSelector({ branches, isLightPage = true }: { branc
     } else {
       params.set("branch", branchId.toString())
     }
-    router.push(`?${params.toString()}`, { scroll: false })
+    const nextQuery = params.toString()
+    const currentQuery = searchParams.toString()
+    if (nextQuery === currentQuery) return
+    setIsLoading(true)
+    router.push(`?${nextQuery}`, { scroll: false })
   }
 
   if (branches.length === 0) return null
 
   return (
-    <div className="relative flex items-center" ref={dropdownRef}>
+    <>
+      {isLoading && (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-[#EFE9E1]/65 backdrop-blur-[2px]" role="status" aria-live="polite">
+          <div className="flex min-w-[150px] flex-col items-center gap-3 rounded-sm border border-[#C4B5A5]/50 bg-[#F9F6F0]/95 px-8 py-6 shadow-[0_12px_40px_rgba(58,56,53,0.12)]">
+            <span className="h-9 w-9 animate-spin rounded-full border-2 border-[#84492C]/20 border-t-[#84492C]" aria-hidden="true" />
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#84492C]">Loading...</span>
+          </div>
+        </div>
+      )}
+      <div className="relative flex items-center" ref={dropdownRef}>
       {/* 🌟 ปุ่มหมุดปักพร้อมคำว่า ALL ชิดขวา */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -101,6 +119,7 @@ export default function BranchSelector({ branches, isLightPage = true }: { branc
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

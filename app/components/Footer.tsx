@@ -3,10 +3,12 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { HARDCODED_CATEGORIES } from '@/app/constants/categories';
+import { Line } from '@thesvg/react';
 
 const MapPin = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const FacebookIcon = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 8.5V7.2c0-.8.5-1.2 1.4-1.2H18V2.2A22 22 0 0 0 14.9 2C11.8 2 10 3.8 10 7v1.5H7V13h3v9h4v-9h3.3l.7-4.5H14Z" /></svg>;
 const InstagramIcon = () => <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none" /></svg>;
+const LINE_PROFILE_URL = 'https://line.me/R/ti/p/@019iisag';
 
 type CategoryGroup = { label: string; items: string[] };
 
@@ -71,10 +73,10 @@ export default function Footer() {
           <div className="max-w-[1380px] mx-auto">
 
             {/* Main Layout: Flex for better fluid wrapping on smaller screens */}
-            <div className="flex flex-col lg:flex-row justify-between gap-6 lg:gap-6 xl:gap-8 items-start">
+            <div className="flex flex-col lg:flex-row justify-start gap-8 lg:gap-10 xl:gap-16 items-start">
 
               {/* Col 1: Logo & Description */}
-              <div className="w-full lg:w-[20%] xl:w-[16%] flex flex-col items-start text-left shrink-0 lg:-ml-4 xl:-ml-6">
+              <div className="w-full lg:w-[30%] xl:w-[28%] flex flex-col items-start text-left shrink-0 lg:-ml-4 xl:-ml-6">
                 <div className="mb-2 flex flex-col items-start w-full">
                   <h2 className="font-serif text-[28px] tracking-[0.15em] text-[#6E4F32] flex justify-start items-center mb-1"><img src="/DarkLogo.png" alt="logo" title="Terra Home Studio Logo" className="w-[150px]" /></h2>
                 </div>
@@ -85,12 +87,12 @@ export default function Footer() {
               </div>
 
               {/* การ์ด คอนเท็น*/}
-              <div className="w-full lg:w-[35%] xl:w-[32%] flex justify-start relative z-20">
-                <div className="relative w-full max-w-[460px]">
+              <div className="w-full lg:flex-1 flex justify-start relative z-20">
+                <div className="relative w-full max-w-[720px]">
 
                   {/* Contact Content */}
-                  <div className="relative z-10 flex flex-col h-full justify-center">
-                    <div className="flex items-start gap-3.5 mb-2">
+                  <div className="relative z-10 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-start gap-8 lg:gap-12">
+                    <div className="flex items-start gap-3.5">
                       <div className="w-8 h-8 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center text-[#7A695C] shrink-0 mt-0.5 shadow-inner border border-white/60">
                         <MapPin />
                       </div>
@@ -106,7 +108,21 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    <div className="mt-3 flex flex-col space-y-2">
+                    <div className="flex flex-col gap-2 pt-1">
+                      <a
+                        href={LINE_PROFILE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="LINE"
+                        className="flex items-center gap-3.5 group/link w-fit"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-[#EAE3D9]/40 border border-white/50 flex items-center justify-center text-[#2AAE60] shadow-sm transition-colors group-hover/link:bg-[#D9EBDD] group-hover/link:text-[#168A45]">
+                          <Line className="w-[18px] h-[18px]" />
+                        </span>
+                        <span className="text-[11px] text-[#2A231D] font-medium tracking-wide transition-colors group-hover/link:text-black">
+                          LINE
+                        </span>
+                      </a>
                       <a
                         href="https://web.facebook.com/Terra.home.studio/"
                         target="_blank"
@@ -141,7 +157,7 @@ export default function Footer() {
               </div>
 
               {/* Col 3: Links & Hours (Remaining space) */}
-              <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-4">
+              <div className="hidden w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-4">
 
                 {/* GET IN TOUCH */}
                 <div className="flex flex-col">
@@ -229,8 +245,8 @@ export default function Footer() {
             </div>
 
             {/* Bottom Copyright Bar */}
-            <div className="relative border-t border-[#9C8C7A]/60 pt-2 flex flex-col md:flex-row items-center justify-between text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
-              <div className="flex items-center gap-6">
+            <div className="relative border-t border-[#9C8C7A]/60 pt-2 flex flex-col md:flex-row items-center justify-center text-[7px] md:text-[8px] tracking-[0.25em] uppercase text-[#3A352F] font-semibold gap-3">
+              <div className="hidden">
                 <div className="w-[3px] h-[3px] rounded-full bg-[#9C8C7A] hidden md:block"></div>
                 <p>© 2025 TERRA HOME STUDIO. ALL RIGHTS RESERVED.</p>
                 <div className="w-[3px] h-[3px] rounded-full bg-[#9C8C7A] hidden md:block"></div>

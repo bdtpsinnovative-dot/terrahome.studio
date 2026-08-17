@@ -97,7 +97,16 @@ function attributeValues(value: unknown): string[] {
     return namedValue === undefined ? [] : attributeValues(namedValue)
   }
   if (typeof value !== "string") return []
-  return value.split(/[,/|]+/).map((item) => item.trim()).filter(Boolean)
+  const normalizedValue = value.trim()
+  if (!normalizedValue) return []
+  if ((normalizedValue.startsWith("[") && normalizedValue.endsWith("]")) || (normalizedValue.startsWith("{") && normalizedValue.endsWith("}"))) {
+    try {
+      return attributeValues(JSON.parse(normalizedValue))
+    } catch {
+      // Fall back to the plain text parser for malformed legacy values.
+    }
+  }
+  return normalizedValue.split(/[,/|]+/).map((item) => item.trim()).filter(Boolean)
 }
 
 export function productColorValues(product: any): string[] {
@@ -126,7 +135,7 @@ export function selectedAttributeValues(value: string) {
 
 export function filterCollectionsByCategory(collections: any[], activeFilter: string, hotProductIds: number[] = []) {
   const filterUpper = activeFilter.toUpperCase().trim()
-  if (activeFilter === "All") return collections
+  if (filterUpper === "ALL") return collections
 
   if (activeFilter === "HOT_ITEM") {
     const hotIdSet = new Set(hotProductIds)

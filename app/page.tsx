@@ -132,6 +132,7 @@ function HomeContent() {
 
 export function HeroSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -143,8 +144,34 @@ export function HeroSection() {
   const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % heroSlides.length);
   const prevSlide = () => setCurrentIndex((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
 
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    const touch = event.changedTouches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const swipeThreshold = 50;
+
+    if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    if (deltaX < 0) nextSlide();
+    else prevSlide();
+  };
+
   return (
-    <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-[#2F2420]">
+    <section
+      className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-[#2F2420]"
+      style={{ touchAction: 'pan-y' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => { touchStartRef.current = null; }}
+    >
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }

@@ -29,6 +29,12 @@ export default function CollectionCard({
 
   const currentSlide = slides[currentIndex] || { image_url: null, price: null, sku: "", name: "" }
   const displayPrice = currentSlide.price
+  const priceValues = (group.products || [])
+    .map((product: any) => Number(product?.price))
+    .filter((price: number) => Number.isFinite(price) && price > 0)
+  const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : null
+  const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) : null
+  const hasPriceRange = minPrice !== null && maxPrice !== null && minPrice !== maxPrice
 
   const firstProductSku = group.products?.[0]?.sku
   const targetHref = firstProductSku
@@ -106,7 +112,15 @@ export default function CollectionCard({
               )
             }
 
-            if (displayPrice === null || displayPrice <= 0) {
+            if (hasPriceRange) {
+              return (
+                <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-0.5 opacity-95">
+                  THB {minPrice.toLocaleString()}–{maxPrice.toLocaleString()}
+                </p>
+              )
+            }
+
+            if (displayPrice === null || displayPrice <= 0 || minPrice === null || maxPrice === null) {
               return (
                 <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-0.5">
                   Price upon request
