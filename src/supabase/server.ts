@@ -9,6 +9,13 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Supabase requests include live stock and the Prop hot-item RPC. Do not
+      // let Next's patched fetch reuse an older response for these queries.
+      global: {
+        fetch(input, init) {
+          return globalThis.fetch(input, { ...init, cache: 'no-store' })
+        },
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll()

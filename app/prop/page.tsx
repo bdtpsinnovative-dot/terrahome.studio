@@ -1,11 +1,14 @@
 import Link from "next/link"
+import { connection } from "next/server"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import PropBanner from "./PropBanner"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"
 
-export const revalidate = 3600 // cache 1 ชั่วโมง แทน 0 ช่วยลด TTFB
+// Hot-item scores are time-sensitive. Keep this route fresh so the RPC result
+// is not cached for an hour while the catalog query remains optimized.
+export const revalidate = 0
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
 
@@ -66,6 +69,9 @@ interface PageProps {
 }
 
 export default async function PropCollectionsPage({ searchParams }: PageProps) {
+  // The hot-item RPC depends on recent events and must not be served from a
+  // previously prerendered route response.
+  await connection()
   const supabase = await createClient()
 
   const resolvedParams = await searchParams
@@ -109,16 +115,83 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   // `products.color` is the catalog's source of truth for colour. Keep specs
   // as a fallback for older rows, but always select the real column so the
   // client-side filter cannot silently lose a colour that exists in the DB.
-  const productSelectStr = `id, sku, name, image_url, price, status, category_id, color, specs, stock ( branch_id, qty )`
+  const productSelectStr = `id, collection_group_id, sku, name, image_url, price, status, category_id, color, specs, stock ( branch_id, qty )`
 
-  const collectionQuery = supabase
-    .from("collection_groups")
-    .select(`*, products!inner ( ${productSelectStr} )`)
-    .ilike("tag", "%prop%")
-    .eq("products.category_id", "prop")
-    .order("created_at", { ascending: false })
+  let collections: any[] | null = null
+  let error = null
 
-  const { data: collections, error } = await collectionQuery
+  // Start from the shared catalog's canonical boundary. This avoids scanning
+  // every collection group with `%prop%` and also lets us page past PostgREST's
+  // default 1,000-row response limit.
+  const productPageSize = 500
+  const propProducts: any[] = []
+  for (let from = 0; ; from += productPageSize) {
+    const { data: productPage, error: pageError } = await supabase
+      .from("products")
+      .select(productSelectStr)
+      .eq("category_id", "prop")
+      .order("id", { ascending: true })
+      .range(from, from + productPageSize - 1)
+
+    if (pageError) {
+      error = pageError
+      break
+    }
+
+    propProducts.push(...(productPage || []))
+    if (!productPage || productPage.length < productPageSize) break
+  }
+
+  if (!error && propProducts.length > 0) {
+    const groupIds = Array.from(new Set(
+      propProducts
+        .map((product: any) => product.collection_group_id)
+        .filter((id: unknown): id is string | number => typeof id === "string" || typeof id === "number")
+        .map((id) => String(id))
+    ))
+    const propGroups: any[] = []
+    const groupChunkSize = 500
+
+    // Fetch only groups referenced by Prop products. The tag check remains a
+    // defense-in-depth boundary for the shared collection_groups table.
+    for (let from = 0; from < groupIds.length; from += groupChunkSize) {
+      const groupChunk = groupIds.slice(from, from + groupChunkSize)
+      const { data: groupPage, error: pageError } = await supabase
+        .from("collection_groups")
+        .select("*")
+        .in("id", groupChunk)
+        .ilike("tag", "%prop%")
+
+      if (pageError) {
+        error = pageError
+        break
+      }
+
+      propGroups.push(...(groupPage || []))
+    }
+
+    if (!error) {
+      const productsByGroup = new Map<string, any[]>()
+      for (const product of propProducts) {
+        const groupKey = String(product.collection_group_id)
+        const groupProducts = productsByGroup.get(groupKey) || []
+        groupProducts.push(product)
+        productsByGroup.set(groupKey, groupProducts)
+      }
+
+      collections = propGroups
+        .sort((a: any, b: any) => {
+          const createdDiff = String(b.created_at || "").localeCompare(String(a.created_at || ""))
+          return createdDiff !== 0 ? createdDiff : String(b.id).localeCompare(String(a.id))
+        })
+        .map((group: any) => ({
+          ...group,
+          products: productsByGroup.get(String(group.id)) || [],
+        }))
+    }
+  } else if (!error) {
+    collections = []
+  }
 
   if (error) {
     console.error("[PropCollectionsPage] Supabase collection fetch error:", error)
@@ -232,9 +305,9 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     }
   })
 
-  // Match the product-ordering design: Hot Item first, then Vase, Doll/
-  // Decorative, Ornament and the remaining categories. Within each category,
-  // use the sub-order Hot+stock -> stock -> Hot+preorder -> preorder.
+  // Apply availability tiers globally so every preorder-only collection stays
+  // after every collection with available stock. Categories are used only as
+  // the secondary order inside the available and preorder sections.
   const shuffleCollections = (items: any[]) => {
     for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -246,9 +319,21 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   mappedCollections.forEach((collection: any) => {
     const categoryOrder = getCategoryOrder(collection.product_sup)
     const subOrder = getCollectionSubOrder(collection)
-    const bucket = collection.hot_rank !== null && subOrder === 0
+    const hasHotAvailable = subOrder === 0
+    const hasAvailableProducts = collection.has_available_products === true
+    const hasHotPreorder = collection.products?.some((product: any) =>
+      product.hot_rank !== null && product.availability_status === 'preorder'
+    )
+
+    // 0: hot + available (global), 1: available by category,
+    // 2: hot + preorder (global), 3: preorder by category.
+    const bucket = hasHotAvailable
       ? 0
-      : (categoryOrder * 10) + subOrder
+      : hasAvailableProducts
+        ? 100 + categoryOrder
+        : hasHotPreorder
+          ? 200
+          : 300 + categoryOrder
     const items = collectionBuckets.get(bucket) || []
     items.push(collection)
     collectionBuckets.set(bucket, items)
@@ -258,7 +343,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     .sort((a, b) => a - b)
     .flatMap((bucket) => {
       const items = collectionBuckets.get(bucket) || []
-      if (bucket === 0) {
+      if (bucket === 0 || bucket === 200) {
         return items.sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity))
       }
       return shuffleCollections(items)

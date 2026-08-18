@@ -52,7 +52,8 @@ export async function GET() {
           )
         )
       `)
-      .ilike('tag', '%prop%');
+      .ilike('tag', '%prop%')
+      .eq('products.category_id', 'prop');
 
     if (productsError) {
       console.error('Error fetching products for Facebook feed:', productsError);

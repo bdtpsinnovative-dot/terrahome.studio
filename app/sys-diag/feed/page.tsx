@@ -36,7 +36,8 @@ export default async function FeedDiagPage() {
         )
       )
     `)
-    .ilike('tag', '%prop%');
+    .ilike('tag', '%prop%')
+    .eq('products.category_id', 'prop');
 
   // ดึงโปรโมชันส่วนลดที่กำลังใช้งาน
   const { data: activeDiscounts } = await supabase

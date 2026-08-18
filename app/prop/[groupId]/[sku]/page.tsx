@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from("products")
     .select("name, image_url, price, description")
     .eq("sku", currentSku)
+    .eq("category_id", "prop")
     .single()
 
   const productName = product?.name || "Decorative Object"
@@ -85,7 +86,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     .select(`
       id,
       product_sup,
-      products (
+      products!inner (
         *,
         stock (
           qty,
@@ -99,6 +100,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
       )
     `)
     .eq("id", currentGroupId)
+    .eq("products.category_id", "prop")
     .single()
 
   const groupProducts = (groupData?.products || []).filter((p: any) =>

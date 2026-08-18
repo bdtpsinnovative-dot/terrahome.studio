@@ -35,17 +35,42 @@ const getNavbarFilterCollections = unstable_cache(
     const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data, error } = await supabase
+    const { data: propGroups, error: groupsError } = await supabase
       .from('collection_groups')
-      .select('product_sup, products!inner(id, category_id, color, specs)')
-      .ilike('tag', '%prop%')
-      .eq('products.category_id', 'prop');
+      .select('id, product_sup')
+      .ilike('tag', '%prop%');
 
-    if (error) {
-      console.error('[navbar-filter] Unable to load Prop colours', { code: error.code, message: error.message });
+    if (groupsError) {
+      console.error('[navbar-filter] Unable to load Prop groups', { code: groupsError.code, message: groupsError.message });
       return [];
     }
-    return data || [];
+
+    const groupIds = (propGroups || []).map((group) => group.id).filter(Boolean);
+    if (groupIds.length === 0) return [];
+
+    const { data: propProducts, error: productsError } = await supabase
+      .from('products')
+      .select('collection_group_id, id, color, specs, category_id')
+      .eq('category_id', 'prop')
+      .in('collection_group_id', groupIds);
+
+    if (productsError) {
+      console.error('[navbar-filter] Unable to load Prop colours', { code: productsError.code, message: productsError.message });
+      return [];
+    }
+
+    const productsByGroup = new Map<string, typeof propProducts>();
+    for (const product of propProducts || []) {
+      const key = String(product.collection_group_id);
+      const groupProducts = productsByGroup.get(key) || [];
+      groupProducts.push(product);
+      productsByGroup.set(key, groupProducts);
+    }
+
+    return (propGroups || []).map((group) => ({
+      ...group,
+      products: productsByGroup.get(String(group.id)) || [],
+    }));
   },
   // Bump the cache key when the filter payload changes so an older empty
   // colour payload cannot keep the global Product drawer stale.

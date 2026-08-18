@@ -48,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: products } = await supabase
       .from('products')
       .select('collection_group_id, sku, updated_at')
+      .eq('category_id', 'prop')
       .not('collection_group_id', 'is', null) // ✅ กรอง null ออก — ป้องกัน /prop/null/... URLs
       .order('id', { ascending: false });
 
