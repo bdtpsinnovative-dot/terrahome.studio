@@ -64,8 +64,6 @@ type ProductSnapshotRow = {
   colour?: unknown
   colors?: unknown
   colours?: unknown
-  material?: unknown
-  materials?: unknown
 }
 
 type ProductRelation = {
@@ -94,7 +92,7 @@ function getProductSnapshot(relation: ProductRelation, productId: number | null)
   const specs = product?.specs && typeof product.specs === 'object' ? product.specs : {}
   const color = product?.color ?? product?.colour ?? product?.colors ?? product?.colours
     ?? specs.color ?? specs.colour ?? specs.colors ?? specs.colours ?? specs.tone ?? null
-  const material = product?.material ?? product?.materials ?? specs.material ?? specs.materials ?? null
+  const material = specs.material ?? specs.materials ?? null
   return {
     collection_group_id: String(relation.id),
     product_category_snapshot: relation?.product_sup || null,
@@ -141,7 +139,7 @@ export async function POST(request: Request) {
   if (Number.isSafeInteger(payload.product_id)) {
     let relationQuery = supabase
       .from('collection_groups')
-      .select('id, tag, product_sup, products!inner(id, category_id, name, sku, price, color, material, materials, specs, collection_group_id)')
+      .select('id, tag, product_sup, products!inner(id, category_id, name, sku, price, color, specs, collection_group_id)')
       .eq('products.id', payload.product_id)
       .eq('products.category_id', 'prop')
       .ilike('tag', '%prop%')
@@ -149,6 +147,9 @@ export async function POST(request: Request) {
     const { data, error } = await relationQuery.maybeSingle()
 
     if (error || !data) {
+      if (error && process.env.NODE_ENV !== 'production') {
+        console.error('[algorithm-events] relation query error:', error)
+      }
       return NextResponse.json({ error: 'Product is not a Prop product' }, { status: 404 })
     }
     relation = data as unknown as ProductRelation
