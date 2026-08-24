@@ -15,55 +15,138 @@ export type ProductColorOption = {
 
 export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
   { label: "ALL", fullValue: "All" },
-  { label: "ART OBJECT", displayLabel: "ORNAMENT", fullValue: "Art Object" },
-  { label: "BOOK END", displayLabel: "BOOKENDS", fullValue: "Book End" },
-  { label: "CANDLE HOLDER", displayLabel: "CANDLE HOLDERS", fullValue: "Candle Holder" },
   {
-    label: "DECORATIVE",
-    displayLabel: "DECORATIVE OBJECTS",
+    label: "VASE & VESSELS",
+    displayLabel: "VASE & VESSELS",
     items: [
-      { fullValue: "Decorative Bath", displayLabel: "BATH" },
-      { fullValue: "Decorative Box", displayLabel: "BOX" },
-      { fullValue: "Decorative Toy", displayLabel: "TOY" },
+      { fullValue: "Ceramic Vases", displayLabel: "CERAMIC VASES" },
+      { fullValue: "Glass Vases", displayLabel: "GLASS VASES" },
+      { fullValue: "Vessels", displayLabel: "VESSELS" },
+      { fullValue: "Others Vase", displayLabel: "OTHERS VASE" },
     ],
   },
   {
-    label: "DOLL",
-    displayLabel: "DOLLS & TOYS",
+    label: "FIGURE",
+    displayLabel: "FIGURE",
     items: [
-      { fullValue: "Doll Animal", displayLabel: "ANIMAL" },
-      { fullValue: "Doll Human", displayLabel: "HUMAN" },
-      { fullValue: "Doll Object", displayLabel: "OBJECT" },
-      { fullValue: "Doll Plant", displayLabel: "PLANT" },
+      { fullValue: "Animal Figure", displayLabel: "ANIMAL FIGURE" },
+      { fullValue: "Human Figure", displayLabel: "HUMAN FIGURE" },
+      { fullValue: "Plant Figure", displayLabel: "PLANT FIGURE" },
+      { fullValue: "Others Figure", displayLabel: "OTHERS FIGURE" },
     ],
   },
-  { label: "KITCHENWARE", displayLabel: "TABLEWARE", fullValue: "Kitchenware" },
-  { label: "TRAY", displayLabel: "TRAYS", fullValue: "Tray" },
+  { label: "SCULPTURE", displayLabel: "SCULPTURE", fullValue: "Sculpture" },
+  { label: "BOOKED", displayLabel: "BOOKED", fullValue: "BOOKED" },
+  { label: "CANDLE HOLDERS", displayLabel: "CANDLE HOLDERS", fullValue: "CANDLE HOLDERS" },
   {
-    label: "VASE",
-    displayLabel: "VESSELS",
+    label: "ACCESSORIES",
+    displayLabel: "ACCESSORIES",
     items: [
-      { fullValue: "Vase Ceramic 3D Printing", displayLabel: "CERAMIC 3D PRINTING" },
-      { fullValue: "Vase Ceramic Handmade", displayLabel: "CERAMIC HANDMADE" },
-      { fullValue: "Vase Glass Handmade", displayLabel: "GLASS HANDMADE" },
-      { fullValue: "Vase Normal", displayLabel: "NORMAL" },
+      { fullValue: "Box", displayLabel: "BOX" },
+      { fullValue: "Trays", displayLabel: "TRAYS" },
+      { fullValue: "Toy", displayLabel: "TOY" },
     ],
   },
   {
-    label: "WALL ART",
+    label: "DINING & TABLEWARE",
+    displayLabel: "DINING & TABLEWARE",
+    items: [
+      { fullValue: "Plates & Dishes", displayLabel: "PLATES & DISHES" },
+      { fullValue: "Bowls", displayLabel: "BOWLS" },
+      { fullValue: "Glassware", displayLabel: "GLASSWARE" },
+      { fullValue: "Cups & Mugs", displayLabel: "CUPS & MUGS" },
+      { fullValue: "Trays & Servingware", displayLabel: "TRAYS & SERVINGWARE" },
+      { fullValue: "Other Dining & Tableware", displayLabel: "OTHER DINING & TABLEWARE" },
+    ],
+  },
+  {
+    label: "DRESSING & BATH",
+    displayLabel: "DRESSING & BATH",
+    items: [
+      { fullValue: "Bath Room", displayLabel: "BATH ROOM" },
+      { fullValue: "Dressing Room", displayLabel: "DRESSING ROOM" },
+    ],
+  },
+  {
+    label: "ART & WALL DECOR",
     displayLabel: "ART & WALL DECOR",
     items: [
-      { fullValue: "Wall Art 3D Material", displayLabel: "3D MATERIAL" },
-      { fullValue: "Wall Art 3D Physical Painting", displayLabel: "3D PHYSICAL PAINTING" },
-      { fullValue: "Wall Art Digital Print  ", displayLabel: "DIGITAL PRINT" },
-      { fullValue: "Wall Art Hand Craft 100%", displayLabel: "HAND CRAFT 100%" },
-      { fullValue: "Wall Art Hand Craft 50%", displayLabel: "HAND CRAFT 50%" },
-      { fullValue: "Wall Art Hand Craft 80%", displayLabel: "HAND CRAFT 80%" },
+      { fullValue: "Handmade", displayLabel: "HANDMADE" },
+      { fullValue: "3D Handmade", displayLabel: "3D HANDMADE" },
+      { fullValue: "Digital print", displayLabel: "DIGITAL PRINT" },
+      { fullValue: "Mixed Media Art", displayLabel: "MIXED MEDIA ART" },
+      { fullValue: "Photo Frame", displayLabel: "PHOTO FRAME" },
     ],
   },
+  { label: "IN STOCK", displayLabel: "IN STOCK", fullValue: "IN_STOCK", isSpecial: true },
   { label: "PRE-ORDER", fullValue: "PRE_ORDER", isSpecial: true },
   { label: "SALE OFFERS %", fullValue: "SPECIAL_DISCOUNT", isSpecial: true },
 ]
+
+export const CATEGORY_MAP: Record<string, string[]> = {
+  // 1. Vase & Vessels
+  "VASE & VESSELS": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "Ceramic Vases": ["ceramic handmade", "ceramic 3d"],
+  "Glass Vases": ["glass handmade", "vase glass handmade"],
+  "Vessels": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "Others Vase": ["vase", "vase normal"],
+
+  // 2. Figure
+  "FIGURE": ["doll animal", "animal", "doll human", "human", "doll plant", "plant", "doll object", "figure", "art object"],
+  "Animal Figure": ["doll animal", "animal"],
+  "Human Figure": ["doll human", "human"],
+  "Plant Figure": ["doll plant", "plant"],
+  "Others Figure": ["doll object", "figure", "art object"],
+
+  // 3. Sculpture
+  "Sculpture": ["sculpture"],
+  "SCULPTURE": ["sculpture"],
+
+  // 4. BOOKED
+  "BOOKED": ["book end", "booked"],
+  "Book End": ["book end", "booked"],
+
+  // 5. CANDLE HOLDERS
+  "CANDLE HOLDERS": ["candle holder", "candle holders"],
+  "Candle Holder": ["candle holder", "candle holders"],
+
+  // 6. Accessories
+  "ACCESSORIES": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "others"],
+  "Box": ["decorative box", "box"],
+  "Trays": ["tray", "trays"],
+  "Toy": ["decorative toy", "toy"],
+
+  // 7. Dining & Tableware
+  "DINING & TABLEWARE": ["plates & dishes", "bowls", "glassware", "cups & mugs", "trays & servingware", "kitchenware"],
+  "Plates & Dishes": ["plates & dishes"],
+  "Bowls": ["bowls"],
+  "Glassware": ["glassware"],
+  "Cups & Mugs": ["cups & mugs"],
+  "Trays & Servingware": ["trays & servingware"],
+  "Other Dining & Tableware": ["kitchenware"],
+
+  // 8. Dressing & Bath
+  "DRESSING & BATH": ["decorative bath", "bath"],
+  "Bath Room": ["decorative bath", "bath"],
+  "Dressing Room": ["decorative bath", "bath"],
+
+  // 9. Art & walldecor
+  "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame"],
+  "Handmade": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%"],
+  "3D Handmade": ["3d handmade", "wall art 3d material", "wall art 3d physical painting"],
+  "Digital print": ["wall art digital print", "digital print"],
+  "Mixed Media Art": ["mixed media art"],
+  "Photo Frame": ["frame"],
+
+  // Legacy mappings for backwards compatibility
+  "Art Object": ["art object"],
+  "Decorative": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "decorative bath", "bath"],
+  "Doll": ["doll animal", "animal", "doll human", "human", "doll plant", "plant", "doll object", "figure"],
+  "Kitchenware": ["kitchenware", "plates & dishes", "bowls", "glassware", "cups & mugs", "trays & servingware"],
+  "Tray": ["tray", "trays"],
+  "Vase": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "Wall Art": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame"],
+}
 
 const COLOR_PRESENTATION: Record<string, { label: string; swatch: string }> = {
   beige: { label: "Beige", swatch: "oklch(82% 0.035 78)" },
@@ -160,17 +243,22 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
         products: group.products.filter((product: any) => product.availability_status === "preorder"),
       }))
   }
-  if (filterUpper === "DECORATIVE") {
-    return collections.filter((group) => {
-      const sup = String(group.product_sup || "").trim().toLowerCase()
-      return (sup.startsWith("decorative") || sup.startsWith("decotative")) && !sup.includes("candle holder")
-    })
+  if (activeFilter === "IN_STOCK" || activeFilter === "AVAILABLE" || activeFilter === "READY_TO_SHIP") {
+    return collections
+      .filter((group) => group.products?.some((product: any) => product.availability_status === "available"))
+      .map((group) => ({
+        ...group,
+        products: group.products.filter((product: any) => product.availability_status === "available"),
+      }))
   }
-  if (["DOLL", "VASE", "WALL ART"].includes(filterUpper)) {
-    return collections.filter((group) => String(group.product_sup || "").trim().toUpperCase().startsWith(filterUpper))
-  }
-  const target = activeFilter.trim().toLowerCase()
-  return collections.filter((group) => String(group.product_sup || "").trim().toLowerCase() === target)
+
+  const target = activeFilter.trim()
+  const allowed = CATEGORY_MAP[target] || CATEGORY_MAP[filterUpper] || [target.toLowerCase()]
+
+  return collections.filter((group) => {
+    const sup = String(group.product_sup || "").trim().toLowerCase()
+    return allowed.includes(sup)
+  })
 }
 
 export function getColorOptions(

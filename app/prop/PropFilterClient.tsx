@@ -175,30 +175,54 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
   const renderPagination = () => {
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(
+    const pageItems: Array<number | 'ellipsis-left' | 'ellipsis-right'> = []
+
+    if (totalPages <= 7) {
+      for (let page = 1; page <= totalPages; page += 1) pageItems.push(page)
+    } else {
+      pageItems.push(1)
+
+      const startPage = Math.max(2, currentPage - 1)
+      const endPage = Math.min(totalPages - 1, currentPage + 1)
+
+      if (startPage > 2) pageItems.push('ellipsis-left')
+      for (let page = startPage; page <= endPage; page += 1) pageItems.push(page)
+      if (endPage < totalPages - 1) pageItems.push('ellipsis-right')
+
+      pageItems.push(totalPages)
+    }
+
+    return pageItems.map((item) => {
+      if (typeof item !== 'number') {
+        return (
+          <span key={item} className="flex h-8 w-8 items-center justify-center text-[11px] text-[#8C8A86]" aria-hidden="true">
+            …
+          </span>
+        )
+      }
+
+      return (
         <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`w-8 h-8 text-[11px] font-mono transition-all duration-300 ${currentPage === i
+          key={item}
+          onClick={() => handlePageChange(item)}
+          className={`w-8 h-8 text-[11px] font-mono transition-all duration-300 ${currentPage === item
             ? 'text-[#3A3835] border-b border-[#3A3835] font-bold'
             : 'text-[#8C8A86] hover:text-[#3A3835]'
             }`}
         >
-          {i}
+          {item}
         </button>
-      );
-    }
-    return pages;
+      )
+    })
   };
 
   const getDisplayTitle = () => {
     if (activeFilter === "All") return "Product"
     if (activeFilter === "SPECIAL_DISCOUNT") return "SPECIAL OFFERS"
     if (activeFilter === "PRE_ORDER") return "PRE-ORDER"
-    if (CATEGORY_DISPLAY_NAMES[activeFilter]) return CATEGORY_DISPLAY_NAMES[activeFilter]
-    return activeFilter.replace(/^(Decorative|Doll|Wall Art|Decotative)\s+/i, '').toUpperCase()
+    if (activeFilter === "IN_STOCK" || activeFilter === "READY_TO_SHIP") return "IN STOCK"
+    if (CATEGORY_DISPLAY_NAMES[activeFilter]) return CATEGORY_DISPLAY_NAMES[activeFilter].toUpperCase()
+    return activeFilter.toUpperCase()
   };
 
   return (
@@ -300,7 +324,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                   aria-label="Open color filter"
                   aria-expanded={isFilterOpen && openColorPanel}
                   aria-controls="prop-product-filter-color-drawer"
-                  className={`flex h-10 w-8 shrink-0 items-center justify-center border-b border-transparent text-[#6F6861] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : ''}`}
+                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] text-[#6F6861] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : ''}`}
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
@@ -309,6 +333,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                     <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
                     <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
                   </svg>
+                  <span>COLOR</span>
                 </button>
 
                 {branches && branches.length > 0 && (

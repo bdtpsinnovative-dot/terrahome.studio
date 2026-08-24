@@ -8,17 +8,17 @@ interface ProductSlide {
   image_url: string
   price: number | null
   sku: string
-  name?: string 
-  discount_value?: number | null 
+  name?: string
+  discount_value?: number | null
   discount_type?: 'PERCENT' | 'FIXED' | null
   availability_status?: 'available' | 'preorder'
 }
 
-export default function CollectionCard({ 
-  group, 
+export default function CollectionCard({
+  group,
   slides,
   bgColor = "#EBE8E1" // 🌟 ส่งเป็น hex color แทน tailwind class เพื่อป้องกันปัญหา class โดน purge
-}: { 
+}: {
   group: any
   slides: ProductSlide[]
   bgColor?: string
@@ -81,25 +81,25 @@ export default function CollectionCard({
           </div>
         </div>
       )}
-      <Link 
-        href={targetHref} 
+      <Link
+        href={targetHref}
         prefetch={false}
         title={`View details of ${group.name || group.id}`}
         onClick={handleNavigate}
         className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
       >
         {/* 🌟 ใช้ style={{ backgroundColor }} แทน Tailwind class เพื่อการันตีว่าสีไม่หายชัวร์ๆ */}
-        <div 
+        <div
           className="w-full aspect-square relative mb-5 flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
           {resolvedSlides.length > 0 ? (
             resolvedSlides.map((slide, idx) => (
-              <img 
+              <img
                 key={idx}
-                src={slide.image_url || ""} 
-                alt={group.name || group.id} 
-                title={group.name || group.id} 
+                src={slide.image_url || ""}
+                alt={group.name || group.id}
+                title={group.name || group.id}
                 // 🌟 ให้รูปภาพใช้ mix-blend-multiply เพื่อละลายพื้นหลังขาวเข้ากับสีของกล่องด้านบน
                 className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
                   ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
@@ -120,9 +120,14 @@ export default function CollectionCard({
           {(() => {
             if (!hasAvailablePrice) {
               return (
-                <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold mt-0.5">
-                  PRE-ORDER
-                </p>
+                <div className="mt-1 flex flex-col items-center">
+                  <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold">
+                    PRE-ORDER
+                  </p>
+                  <p className="text-[#84492C] text-[9px] tracking-normal font-semibold mt-0.5">
+                    (รอสินค้า 45-60 วัน)
+                  </p>
+                </div>
               )
             }
 

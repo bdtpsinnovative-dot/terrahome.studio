@@ -292,7 +292,7 @@ export default function ProductDetailClient({
               {activeProduct.name}
             </h1>
             <p className="mt-3 text-sm font-medium tracking-[0.15em] text-[#84492C]">
-              {outOfStock ? 'PRE-ORDER' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
+              {outOfStock ? 'PRE-ORDER (รอสินค้า 45-60 วัน)' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
             </p>
 
             <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
@@ -392,8 +392,9 @@ export default function ProductDetailClient({
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-[9px] text-[#8C8A86] uppercase tracking-[0.2em] py-5">
-                      PRE-ORDER AVAILABLE
+                    <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                      <span>PRE-ORDER AVAILABLE</span>
+                      <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
                     </div>
                   )}
                 </div>
@@ -462,9 +463,20 @@ export default function ProductDetailClient({
                       <h3 className={`text-[9px] uppercase font-bold tracking-[0.1em] truncate w-full transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#5A544F] group-hover:text-[#84492C]'}`}>
                         {item.name}
                       </h3>
-                      <p className={`text-[9px] mt-1 font-medium ${isActive ? 'text-[#3A3835]' : 'text-[#8C8A86]'}`}>
-                        {((item.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0) > 0) ? (item.price > 0 ? `THB ${item.price.toLocaleString()}` : 'POA') : 'PRE-ORDER'}
-                      </p>
+                      {((item.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0) > 0) ? (
+                        <p className={`text-[9px] mt-1 font-medium ${isActive ? 'text-[#3A3835]' : 'text-[#8C8A86]'}`}>
+                          {item.price > 0 ? `THB ${item.price.toLocaleString()}` : 'POA'}
+                        </p>
+                      ) : (
+                        <div className="mt-1 flex flex-col items-center">
+                          <p className="text-[#84492C] text-[9px] tracking-wider font-semibold">
+                            PRE-ORDER
+                          </p>
+                          <p className="text-[#84492C] text-[9px] tracking-normal font-semibold mt-0.5">
+                            (รอสินค้า 45-60 วัน)
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -491,7 +503,7 @@ export default function ProductDetailClient({
                   ADDING...
                 </>
               ) : outOfStock ? (
-                'PRE-ORDER'
+                'PRE-ORDER (รอสินค้า 45-60 วัน)'
               ) : addedSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />

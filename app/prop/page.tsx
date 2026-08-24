@@ -3,6 +3,7 @@ import { connection } from "next/server"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import PropBanner from "./PropBanner"
+import { CATEGORY_MAP } from "./productFilterModel"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"
 
@@ -98,8 +99,11 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
 
   if (bannerGroups) {
     if (categoryParam && categoryParam !== "All" && categoryParam !== "SPECIAL_DISCOUNT") {
-      // ถ้าเลือกหมวดหมู่ ให้ค้นหารูปแบนเนอร์จากหมวดหมู่นั้นตรงๆ (ไม่ต้องแคร์สต็อก)
-      const matchedGroup = bannerGroups.find(c => c.product_sup === categoryParam && c.image_url);
+      const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());
+      const matchedGroup = bannerGroups.find(c => {
+        const sup = (c.product_sup || "").trim().toLowerCase();
+        return allowedSups.includes(sup) && !!c.image_url;
+      });
       if (matchedGroup) {
         activeBannerImage = matchedGroup.image_url;
       }

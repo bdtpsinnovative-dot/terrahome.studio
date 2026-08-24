@@ -22,11 +22,13 @@ type ProductFilterDrawerProps = {
 }
 
 function groupForCategory(category: string) {
-  const value = category.trim().toLowerCase()
-  if (value.startsWith("decorative") || value.startsWith("decotative")) return "DECORATIVE"
-  if (value.startsWith("doll")) return "DOLL"
-  if (value.startsWith("vase")) return "VASE"
-  if (value.startsWith("wall art")) return "WALL ART"
+  const value = category.trim().toUpperCase()
+  if (value === "VASE & VESSELS" || value === "CERAMIC VASES" || value === "GLASS VASES" || value === "VESSELS" || value === "OTHERS VASE" || value.startsWith("VASE")) return "VASE & VESSELS"
+  if (value === "FIGURE" || value === "ANIMAL FIGURE" || value === "HUMAN FIGURE" || value === "PLANT FIGURE" || value === "OTHERS FIGURE" || value.startsWith("DOLL")) return "FIGURE"
+  if (value === "ACCESSORIES" || value === "BOX" || value === "TRAYS" || value === "TOY" || value.startsWith("DECORATIVE")) return "ACCESSORIES"
+  if (value === "DINING & TABLEWARE" || value === "PLATES & DISHES" || value === "BOWLS" || value === "GLASSWARE" || value === "CUPS & MUGS" || value === "TRAYS & SERVINGWARE" || value === "OTHER DINING & TABLEWARE" || value === "KITCHENWARE") return "DINING & TABLEWARE"
+  if (value === "DRESSING & BATH" || value === "BATH ROOM" || value === "DRESSING ROOM" || value.includes("BATH")) return "DRESSING & BATH"
+  if (value === "ART & WALL DECOR" || value === "HANDMADE" || value === "3D HANDMADE" || value === "DIGITAL PRINT" || value === "MIXED MEDIA ART" || value === "PHOTO FRAME" || value.startsWith("WALL ART")) return "ART & WALL DECOR"
   return null
 }
 
@@ -120,9 +122,10 @@ export default function ProductFilterDrawer({
   const renderMenuItem = (item: ProductFilterMenuItem, index: number) => {
     if (item.isSpecial && item.fullValue) {
       const isActive = activeCategory === item.fullValue
+      const isFirstSpecial = index > 0 && !PRODUCT_FILTER_ITEMS[index - 1]?.isSpecial
       return (
-        <div key={item.fullValue} className="mt-6 w-full border-t border-[#C4B5A5]/30 pt-6">
-          <button type="button" onClick={() => onCategoryChange(item.fullValue!)} className="group flex min-h-11 w-full items-center justify-between text-left">
+        <div key={item.fullValue} className={`w-full ${isFirstSpecial ? "mt-5 border-t border-[#C4B5A5]/30 pt-3" : "py-0.5"}`}>
+          <button type="button" onClick={() => onCategoryChange(item.fullValue!)} className="group flex min-h-10 w-full items-center justify-between text-left">
             <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-semibold text-[#84492C]" : "font-medium text-[#84492C]/80 group-hover:text-[#84492C]"}`}>
               {item.displayLabel || item.label}
             </span>
