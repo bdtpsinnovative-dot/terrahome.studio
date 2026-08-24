@@ -4,6 +4,7 @@ import { useState } from "react";
 // 🌟 1. นำเข้า Variants เพิ่มเข้ามาตรงนี้ครับ
 import { motion, Variants } from "framer-motion"; 
 import { Mail, Phone, MapPin, ArrowRight } from "lucide-react";
+import Footer from "@/app/components/Footer";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
@@ -33,13 +34,14 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f1eb] text-[#1c1b19] font-sans antialiased py-28 px-4 sm:px-8 lg:px-16">
-      <motion.div 
-        className="max-w-7xl mx-auto"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+    <div className="min-h-screen bg-[#f4f1eb] text-[#1c1b19] font-sans antialiased flex flex-col justify-between">
+      <div className="pt-28 pb-20 px-4 sm:px-8 lg:px-16 flex-1">
+        <motion.div 
+          className="max-w-7xl mx-auto"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
         {/* Header Title สไตล์นิตยสาร */}
         <div className="border-b border-[#e1ded7] pb-12 mb-16">
           <motion.p variants={itemVariants} className="text-xs uppercase tracking-[0.25em] text-[#767167] mb-3">
@@ -139,6 +141,8 @@ export default function ContactPage() {
           </motion.div>
         </div>
       </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 }

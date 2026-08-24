@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import Footer from "@/app/components/Footer";
 
 const HERO_BANNERS = [
   "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781170108353-289.webp",
@@ -184,17 +186,21 @@ const JOURNAL_SECTIONS: JournalSection[] = [
   },
 ];
 
-// Interactive Category Slider Component (สไตล์เดียวกับหน้ารวมสินค้า CollectionCard)
+// Interactive Category Slider Component (รองรับทั้งการคลิกปุ่ม, เลื่อนอัตโนมัติ และใช้เมาส์ลาก / ปัด Swipe)
 function SectionImageSlider({ section }: { section: JournalSection }) {
+  const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [direction, setDirection] = useState(0);
+  const isDraggingRef = useRef(false);
 
   const images = section.images && section.images.length > 0 ? section.images : [];
 
   // Subtle auto-slide every 5 seconds when not hovered
   useEffect(() => {
-    if (isHovered || images.length <= 1) return;
+    if (isHovered || isDraggingRef.current || images.length <= 1) return;
     const timer = setInterval(() => {
+      setDirection(1);
       setActiveIndex((prev) => (prev + 1) % images.length);
     }, 5000);
     return () => clearInterval(timer);
@@ -203,47 +209,88 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
   const handlePrev = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDirection(-1);
     setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   const handleNext = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDirection(1);
     setActiveIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handleDragEnd = (
+    _e: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    const swipeThreshold = 25;
+    const velocityThreshold = 150;
+
+    if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+      setDirection(1);
+      setActiveIndex((prev) => (prev + 1) % images.length);
+    } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+      setDirection(-1);
+      setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+
+    // Delay reset so onClick doesn't immediately fire navigation on drag release
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 120);
+  };
+
+  const handleCardClick = () => {
+    if (!isDraggingRef.current) {
+      router.push(`/prop?category=${encodeURIComponent(section.categoryQuery)}`);
+    }
   };
 
   return (
     <div
-      className="group relative aspect-square w-full max-w-[520px] mx-auto rounded-3xl overflow-hidden bg-[#F2EDE6] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-[#E5DFD5]/60 flex items-center justify-center p-8 sm:p-12 select-none transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)]"
+      className="group relative aspect-square w-full max-w-[520px] mx-auto rounded-3xl overflow-hidden bg-[#F2EDE6] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-[#E5DFD5]/60 flex items-center justify-center p-8 sm:p-12 select-none transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] cursor-grab active:cursor-grabbing touch-pan-y"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
-      <Link
-        href={`/prop?category=${encodeURIComponent(section.categoryQuery)}`}
-        className="relative w-full h-full flex items-center justify-center"
-      >
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={images[activeIndex]}
-            src={images[activeIndex]}
-            alt={`${section.imageAlt} - Photo ${activeIndex + 1}`}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.45, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-contain mix-blend-multiply drop-shadow-sm transform group-hover:scale-105 transition-transform duration-700"
-          />
+      <div className="relative w-full h-full flex items-center justify-center pointer-events-none">
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={activeIndex}
+            custom={direction}
+            drag={images.length > 1 ? "x" : false}
+            dragDirectionLock={true}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.25}
+            onDragStart={() => {
+              isDraggingRef.current = true;
+            }}
+            onDragEnd={handleDragEnd}
+            initial={{ opacity: 0, x: direction > 0 ? 30 : direction < 0 ? -30 : 0, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: direction > 0 ? -30 : direction < 0 ? 30 : 0, scale: 0.96 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-auto"
+          >
+            <img
+              src={images[activeIndex]}
+              alt={`${section.imageAlt} - Photo ${activeIndex + 1}`}
+              draggable={false}
+              className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm pointer-events-none select-none transform group-hover:scale-105 transition-transform duration-700"
+            />
+          </motion.div>
         </AnimatePresence>
-      </Link>
+      </div>
 
       {/* Navigation Arrows (ปรากฏเมื่อมีรูปมากกว่า 1 รูป) */}
       {images.length > 1 && (
-        <>
+        <div onClick={(e) => e.stopPropagation()} className="contents">
           <button
             type="button"
             onClick={handlePrev}
             aria-label="Previous Image"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -251,16 +298,19 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
             type="button"
             onClick={handleNext}
             aria-label="Next Image"
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-        </>
+        </div>
       )}
 
       {/* Slide Indicator Dots (กดเพื่อเปลี่ยนรูปได้) */}
       {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/25 backdrop-blur-md z-10 pointer-events-auto">
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/25 backdrop-blur-md z-10 pointer-events-auto"
+        >
           {images.map((_, idx) => (
             <button
               key={idx}
@@ -268,10 +318,11 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                setDirection(idx > activeIndex ? 1 : -1);
                 setActiveIndex(idx);
               }}
               aria-label={`View Image ${idx + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/50 hover:bg-white/80"
               }`}
             />
@@ -420,6 +471,7 @@ export default function JournalPage() {
           })}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
