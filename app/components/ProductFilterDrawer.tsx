@@ -124,25 +124,25 @@ export default function ProductFilterDrawer({
       const isActive = activeCategory === item.fullValue
       const isFirstSpecial = index > 0 && !PRODUCT_FILTER_ITEMS[index - 1]?.isSpecial
       return (
-        <div key={item.fullValue} className={`w-full ${isFirstSpecial ? "mt-6 border-t-2 border-[#C4B5A5]/60 pt-4" : "py-1"}`}>
+        <div key={item.fullValue} className={`w-full ${isFirstSpecial ? "mt-6 border-t border-[#C4B5A5]/35 pt-4" : "py-1"}`}>
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.fullValue!)} 
-            className={`group flex min-h-16 w-full items-center justify-between px-4 py-3 rounded-2xl transition-all text-left ${isActive ? "bg-[#84492C]/20 text-[#84492C] shadow-sm ring-1 ring-[#84492C]/30" : "text-[#84492C] hover:bg-[#84492C]/10"}`}
+            className={`group flex min-h-12 w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-left ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#84492C] hover:bg-[#84492C]/5"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className="text-[14px] uppercase tracking-[0.14em] sm:text-[15px] sm:tracking-[0.16em] font-bold text-[#84492C]">
+              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#84492C]"}`}>
                 {item.displayLabel || item.label}
               </span>
               {item.thaiLabel && (
-                <span className="text-[13px] sm:text-[14px] tracking-normal mt-1 font-semibold text-[#84492C]">
+                <span className="text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 text-[#84492C]/80 font-normal">
                   {item.thaiLabel}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2.5 shrink-0 ml-2">
-              {isActive && <span className="h-3 w-3 rounded-full bg-[#84492C] shrink-0" />}
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-[#84492C]" aria-hidden="true">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#84492C]" aria-hidden="true">
                 <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5Z" clipRule="evenodd" />
               </svg>
             </div>
@@ -155,23 +155,23 @@ export default function ProductFilterDrawer({
       const isActive = activeCategory === item.fullValue
       const label = item.displayLabel || item.label
       return (
-        <div key={`${item.label}-${index}`} className="flex w-full items-center gap-1 py-1">
+        <div key={`${item.label}-${index}`} className="flex w-full items-center py-0.5">
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.fullValue!)} 
-            className={`group flex min-h-15 min-w-0 w-full items-center justify-between px-4 py-2.5 rounded-2xl transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/20 text-[#84492C] shadow-sm ring-1 ring-[#84492C]/30" : "text-[#181614] hover:bg-black/[0.05]"}`}
+            className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-left outline-none ${isActive ? "border-l-2 border-[#84492C] bg-[#84492C]/[0.06] text-[#84492C]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className={`text-[14px] uppercase tracking-[0.14em] sm:text-[15px] sm:tracking-[0.16em] ${isActive ? "font-bold text-[#84492C]" : "font-bold text-[#181614]"}`}>
+              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#3A3835]"}`}>
                 {label}
               </span>
               {item.thaiLabel && (
-                <span className={`text-[13px] sm:text-[14px] tracking-normal mt-0.5 ${isActive ? "text-[#84492C] font-semibold" : "text-[#423E3A] font-medium"}`}>
+                <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${isActive ? "text-[#84492C] font-medium" : "text-[#807971] font-normal"}`}>
                   {item.thaiLabel}
                 </span>
               )}
             </div>
-            {isActive && <span className="h-3 w-3 rounded-full bg-[#84492C] shrink-0 ml-2" />}
+            {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
           </button>
         </div>
       )
@@ -182,56 +182,56 @@ export default function ProductFilterDrawer({
     const hasActiveChild = item.items?.some((child) => activeCategory === child.fullValue)
     const label = item.displayLabel || item.label
     return (
-      <div key={item.label} className="flex w-full flex-col items-start text-left py-1">
+      <div key={item.label} className="flex w-full flex-col items-start text-left py-0.5">
         <div className="flex w-full items-center gap-1">
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.label)} 
-            className={`group flex min-h-15 min-w-0 flex-1 items-center justify-between px-4 py-2.5 rounded-2xl transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isParentActive ? "bg-[#84492C]/20 text-[#84492C] shadow-sm ring-1 ring-[#84492C]/30" : hasActiveChild ? "text-[#181614] font-bold" : "text-[#181614] hover:bg-black/[0.05]"}`}
+            className={`group flex min-h-12 min-w-0 flex-1 items-center justify-between px-3 py-2 rounded-lg transition-all text-left outline-none ${isParentActive ? "border-l-2 border-[#84492C] bg-[#84492C]/[0.06] text-[#84492C]" : hasActiveChild ? "text-[#1C1A18]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className={`text-[14px] uppercase tracking-[0.14em] sm:text-[15px] sm:tracking-[0.16em] ${isParentActive ? "font-bold text-[#84492C]" : "font-bold text-[#181614]"}`}>
+              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#1C1A18]" : isExpanded ? "font-medium text-[#1C1A18]" : "font-medium text-[#3A3835]"}`}>
                 {label}
               </span>
               {item.thaiLabel && (
-                <span className={`text-[13px] sm:text-[14px] tracking-normal mt-0.5 ${isParentActive ? "text-[#84492C] font-semibold" : "text-[#423E3A] font-medium"}`}>
+                <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${isParentActive ? "text-[#84492C] font-medium" : "text-[#807971] font-normal"}`}>
                   {item.thaiLabel}
                 </span>
               )}
             </div>
-            {isParentActive && <span className="h-3 w-3 rounded-full bg-[#84492C] shrink-0 ml-2" />}
+            {isParentActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
           </button>
           <button 
             type="button" 
             onClick={() => toggleGroup(item.label)} 
             aria-label={`${isExpanded ? "ยุบ" : "ขยาย"} ${label}`} 
-            className={`grid min-h-12 min-w-12 shrink-0 place-items-center text-[20px] font-bold rounded-2xl outline-none hover:bg-black/[0.08] transition-colors ${isExpanded ? "text-[#181614]" : "text-[#5C564F]"}`}
+            className={`grid min-h-10 min-w-10 shrink-0 place-items-center text-[16px] font-medium rounded-lg outline-none hover:bg-black/[0.04] transition-colors ${isExpanded ? "text-[#1C1A18]" : "text-[#807971]"}`}
           >
             {isExpanded ? "−" : "+"}
           </button>
         </div>
-        <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="flex flex-col items-start pb-2 pl-5 pr-1 pt-1.5 text-left w-full space-y-1">
+        <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className="flex flex-col items-start pb-2 pl-4 pr-1 pt-1 text-left w-full space-y-0.5 border-l border-[#C4B5A5]/30 ml-4 my-1">
             {item.items?.map((child) => {
               const isActive = activeCategory === child.fullValue
               return (
-                <div key={child.fullValue} className="flex w-full items-center gap-1 py-0.5">
+                <div key={child.fullValue} className="flex w-full items-center py-0.5">
                   <button 
                     type="button" 
                     onClick={() => onCategoryChange(child.fullValue)} 
-                    className={`group flex min-h-13 min-w-0 w-full items-center justify-between px-3.5 py-2 rounded-xl transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/20 text-[#84492C] shadow-sm ring-1 ring-[#84492C]/30" : "text-[#181614] hover:bg-black/[0.05]"}`}
+                    className={`group flex min-h-10 min-w-0 w-full items-center justify-between px-3 py-1.5 rounded-lg transition-all text-left outline-none ${isActive ? "bg-[#84492C]/[0.08] text-[#84492C] font-semibold" : "text-[#504A44] hover:bg-black/[0.02]"}`}
                   >
                     <div className="flex flex-col items-start min-w-0 text-left">
-                      <span className={`text-[13px] uppercase tracking-[0.12em] sm:text-[14px] sm:tracking-[0.14em] ${isActive ? "font-bold text-[#84492C]" : "font-bold text-[#181614]"}`}>
+                      <span className={`text-[12px] uppercase tracking-[0.18em] sm:text-[12.5px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-normal text-[#504A44]"}`}>
                         {child.displayLabel}
                       </span>
                       {child.thaiLabel && (
-                        <span className={`text-[12px] sm:text-[13px] tracking-normal mt-0.5 ${isActive ? "text-[#84492C] font-semibold" : "text-[#423E3A] font-medium"}`}>
+                        <span className={`text-[11px] sm:text-[11.5px] tracking-normal transition-colors mt-0.5 ${isActive ? "text-[#84492C] font-medium" : "text-[#807971] font-normal"}`}>
                           {child.thaiLabel}
                         </span>
                       )}
                     </div>
-                    {isActive && <span className="h-2.5 w-2.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
+                    {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
                   </button>
                 </div>
               )
