@@ -56,7 +56,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   useEffect(() => {
     const handleScroll = () => {
-      const triggerHeight = pathname.startsWith('/prop') ? window.innerHeight * 0.45 : 20;
+      const triggerHeight = (pathname.startsWith('/prop') || pathname.startsWith('/journal')) ? window.innerHeight * 0.45 : 20;
       setIsScrolled(window.scrollY > triggerHeight);
     };
 
@@ -97,8 +97,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     });
   };
 
-  const darkBannerPages = ['/', '/prop', '/about'];
-  const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop'));
+  const darkBannerPages = ['/', '/prop', '/about', '/journal'];
+  const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop') || pathname.startsWith('/journal'));
 
   const activeLightMode = !isDarkBannerPage || isLightMode;
 
