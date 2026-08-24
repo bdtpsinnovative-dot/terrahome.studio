@@ -159,7 +159,7 @@ export default function ProductFilterDrawer({
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.fullValue!)} 
-            className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-left outline-none ${isActive ? "border-l-2 border-[#84492C] bg-[#84492C]/[0.06] text-[#84492C]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
+            className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
               <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#3A3835]"}`}>
@@ -187,7 +187,7 @@ export default function ProductFilterDrawer({
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.label)} 
-            className={`group flex min-h-12 min-w-0 flex-1 items-center justify-between px-3 py-2 rounded-lg transition-all text-left outline-none ${isParentActive ? "border-l-2 border-[#84492C] bg-[#84492C]/[0.06] text-[#84492C]" : hasActiveChild ? "text-[#1C1A18]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
+            className={`group flex min-h-12 min-w-0 flex-1 items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${isParentActive ? "bg-[#84492C]/10 text-[#84492C]" : hasActiveChild ? "text-[#1C1A18]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
               <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#1C1A18]" : isExpanded ? "font-medium text-[#1C1A18]" : "font-medium text-[#3A3835]"}`}>
