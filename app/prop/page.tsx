@@ -87,18 +87,34 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     .not("longitude", "is", null)
     .order("branch_name", { ascending: true })
 
-  // 🌟 [ไม้ตายแก้บั๊กแบนเนอร์หาย!] ดึงข้อมูลเฉพาะรูปแบนเนอร์แยกต่างหาก 
+  // 🌟 [ไม้ตายแก้บั๊กแบนเนอร์หาย!] ดึงข้อมูลเฉพาะรูปแบนเนอร์แยกต่างหาก (ดึงครบทุกแถวด้วย Pagination)
   // เพื่อให้มั่นใจว่ารูปจะไม่โดนตัดทิ้ง แม้สินค้านั้นจะไม่มีสต็อกในสาขาที่เลือกก็ตาม!
-  const { data: bannerGroups } = await supabase
-    .from("collection_groups")
-    .select("product_sup, image_url")
-    .ilike("tag", "%prop%");
+  const bannerGroups: any[] = [];
+  const bannerPageSize = 1000;
+  for (let from = 0; ; from += bannerPageSize) {
+    const { data: pageData } = await supabase
+      .from("collection_groups")
+      .select("product_sup, image_url")
+      .ilike("tag", "%prop%")
+      .not("image_url", "is", null)
+      .range(from, from + bannerPageSize - 1);
+
+    bannerGroups.push(...(pageData || []));
+    if (!pageData || pageData.length < bannerPageSize) break;
+  }
 
   let activeBannerImage = null;
   let allBannerImages: string[] = [];
 
-  if (bannerGroups) {
-    if (categoryParam && categoryParam !== "All" && categoryParam !== "SPECIAL_DISCOUNT") {
+  if (bannerGroups && bannerGroups.length > 0) {
+    // 🌟 รวบรวมรูปแบนเนอร์ทั้งหมดไว้เสมอ สำหรับเล่นสไลด์โชว์แบบ ALL เมื่อกด IN STOCK, PRE-ORDER หรือหมวดรวม
+    allBannerImages = Array.from(new Set(
+      bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
+    ));
+
+    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT";
+
+    if (!isSpecialFilter) {
       const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());
       const matchedGroup = bannerGroups.find(c => {
         const sup = (c.product_sup || "").trim().toLowerCase();
@@ -107,11 +123,6 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       if (matchedGroup) {
         activeBannerImage = matchedGroup.image_url;
       }
-    } else {
-      // ถ้าเลือก All ให้ดึงรูปทั้งหมดมาเล่นสไลด์โชว์
-      allBannerImages = Array.from(new Set(
-        bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
-      ));
     }
   }
 

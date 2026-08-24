@@ -125,13 +125,20 @@ export default function ProductFilterDrawer({
       const isFirstSpecial = index > 0 && !PRODUCT_FILTER_ITEMS[index - 1]?.isSpecial
       return (
         <div key={item.fullValue} className={`w-full ${isFirstSpecial ? "mt-5 border-t border-[#C4B5A5]/30 pt-3" : "py-0.5"}`}>
-          <button type="button" onClick={() => onCategoryChange(item.fullValue!)} className="group flex min-h-10 w-full items-center justify-between text-left">
-            <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-semibold text-[#84492C]" : "font-medium text-[#84492C]/80 group-hover:text-[#84492C]"}`}>
+          <button 
+            type="button" 
+            onClick={() => onCategoryChange(item.fullValue!)} 
+            className={`group flex min-h-10 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#84492C]/80 hover:text-[#84492C] hover:bg-[#84492C]/5"}`}
+          >
+            <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-bold text-[#84492C]" : "font-medium"}`}>
               {item.displayLabel || item.label}
             </span>
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#84492C]/60" aria-hidden="true">
-              <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5Z" clipRule="evenodd" />
-            </svg>
+            <div className="flex items-center gap-2">
+              {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
+              <svg viewBox="0 0 20 20" fill="currentColor" className={`h-3.5 w-3.5 ${isActive ? "text-[#84492C]" : "text-[#84492C]/60"}`} aria-hidden="true">
+                <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5Z" clipRule="evenodd" />
+              </svg>
+            </div>
           </button>
         </div>
       )
@@ -141,41 +148,62 @@ export default function ProductFilterDrawer({
       const isActive = activeCategory === item.fullValue
       const label = item.displayLabel || item.label
       return (
-        <div key={`${item.label}-${index}`} className="flex w-full items-center gap-1 py-1">
-          <button type="button" onClick={() => onCategoryChange(item.fullValue!)} className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]">
-            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-semibold text-[#84492C]" : "font-normal text-[#6F6861] group-hover:text-[#3A3835]"}`}>
+        <div key={`${item.label}-${index}`} className="flex w-full items-center gap-1 py-0.5">
+          <button 
+            type="button" 
+            onClick={() => onCategoryChange(item.fullValue!)} 
+            className={`group flex min-h-10 min-w-0 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+          >
+            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
               {label}
             </span>
+            {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
           </button>
         </div>
       )
     }
 
     const isExpanded = expandedGroups.includes(item.label)
-    const hasActiveChild = item.items?.some((child) => activeCategory === child.fullValue) || activeCategory === item.label
+    const isParentActive = activeCategory === item.label
+    const hasActiveChild = item.items?.some((child) => activeCategory === child.fullValue)
     const label = item.displayLabel || item.label
     return (
-      <div key={item.label} className="flex w-full flex-col items-start text-left">
+      <div key={item.label} className="flex w-full flex-col items-start text-left py-0.5">
         <div className="flex w-full items-center gap-1">
-          <button type="button" onClick={() => onCategoryChange(item.label)} className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]">
-            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${hasActiveChild || isExpanded ? "font-medium text-[#3A3835]" : "font-normal text-[#6F6861] group-hover:text-[#3A3835]"}`}>
+          <button 
+            type="button" 
+            onClick={() => onCategoryChange(item.label)} 
+            className={`group flex min-h-10 min-w-0 flex-1 items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isParentActive ? "bg-[#84492C]/10 text-[#84492C]" : hasActiveChild ? "text-[#3A3835] font-semibold" : isExpanded ? "text-[#3A3835] font-medium" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+          >
+            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#3A3835]" : isExpanded ? "font-medium text-[#3A3835]" : "font-normal"}`}>
               {label}
             </span>
+            {isParentActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
           </button>
-          <button type="button" onClick={() => toggleGroup(item.label)} aria-label={`${isExpanded ? "ยุบ" : "ขยาย"} ${label}`} className={`grid min-h-11 min-w-11 shrink-0 place-items-center text-[12px] font-normal outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] ${isExpanded ? "text-[#3A3835]" : "text-[#6F6861]"}`}>
+          <button 
+            type="button" 
+            onClick={() => toggleGroup(item.label)} 
+            aria-label={`${isExpanded ? "ยุบ" : "ขยาย"} ${label}`} 
+            className={`grid min-h-10 min-w-10 shrink-0 place-items-center text-[12px] font-medium rounded-lg outline-none hover:bg-black/[0.03] transition-colors ${isExpanded ? "text-[#3A3835]" : "text-[#6F6861]"}`}
+          >
             {isExpanded ? "−" : "+"}
           </button>
         </div>
         <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="flex flex-col items-start pb-2 pl-4 pt-1 text-left">
+          <div className="flex flex-col items-start pb-2 pl-4 pr-1 pt-1 text-left w-full">
             {item.items?.map((child) => {
               const isActive = activeCategory === child.fullValue
               return (
-                <div key={child.fullValue} className="flex w-full items-center gap-1 py-1">
-                  <button type="button" onClick={() => onCategoryChange(child.fullValue)} className="group flex min-h-11 min-w-0 flex-1 items-center text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]">
-                    <span className={`min-w-0 truncate whitespace-nowrap text-[9px] uppercase tracking-[0.12em] sm:text-[10px] sm:tracking-[0.2em] ${isActive ? "font-semibold text-[#84492C]" : "font-normal text-[#6F6861] group-hover:text-[#3A3835]"}`}>
+                <div key={child.fullValue} className="flex w-full items-center gap-1 py-0.5">
+                  <button 
+                    type="button" 
+                    onClick={() => onCategoryChange(child.fullValue)} 
+                    className={`group flex min-h-9 min-w-0 w-full items-center justify-between px-2.5 py-1 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+                  >
+                    <span className={`min-w-0 truncate whitespace-nowrap text-[9px] uppercase tracking-[0.12em] sm:text-[10px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
                       {child.displayLabel}
                     </span>
+                    {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
                   </button>
                 </div>
               )
