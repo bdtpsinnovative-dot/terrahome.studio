@@ -131,7 +131,7 @@ export default function ProductFilterDrawer({
             className={`group flex min-h-12 w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-left ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#84492C] hover:bg-[#84492C]/5"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#84492C]"}`}>
+              <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#84492C]"}`}>
                 {item.displayLabel || item.label}
               </span>
               {item.thaiLabel && (
@@ -162,7 +162,7 @@ export default function ProductFilterDrawer({
             className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#3A3835]"}`}>
+              <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${isActive ? "font-bold text-[#84492C]" : "font-medium text-[#3A3835]"}`}>
                 {label}
               </span>
               {item.thaiLabel && (
@@ -190,7 +190,7 @@ export default function ProductFilterDrawer({
             className={`group flex min-h-12 min-w-0 flex-1 items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${isParentActive ? "bg-[#84492C]/10 text-[#84492C]" : hasActiveChild ? "text-[#1C1A18]" : "text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
             <div className="flex flex-col items-start min-w-0 text-left">
-              <span className={`text-[13px] uppercase tracking-[0.22em] transition-colors sm:text-[14px] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#1C1A18]" : isExpanded ? "font-medium text-[#1C1A18]" : "font-medium text-[#3A3835]"}`}>
+              <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#1C1A18]" : isExpanded ? "font-medium text-[#1C1A18]" : "font-medium text-[#3A3835]"}`}>
                 {label}
               </span>
               {item.thaiLabel && (
@@ -222,7 +222,7 @@ export default function ProductFilterDrawer({
                     className={`group flex min-h-10 min-w-0 w-full items-center justify-between px-3 py-1.5 rounded-lg transition-all text-left outline-none ${isActive ? "bg-[#84492C]/[0.08] text-[#84492C] font-semibold" : "text-[#504A44] hover:bg-black/[0.02]"}`}
                   >
                     <div className="flex flex-col items-start min-w-0 text-left">
-                      <span className={`text-[12px] uppercase tracking-[0.18em] sm:text-[12.5px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-normal text-[#504A44]"}`}>
+                      <span className={`text-[12px] uppercase tracking-wider sm:text-[12.5px] ${isActive ? "font-bold text-[#84492C]" : "font-normal text-[#504A44]"}`}>
                         {child.displayLabel}
                       </span>
                       {child.thaiLabel && (

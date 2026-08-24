@@ -34,8 +34,9 @@ const JOURNAL_SECTIONS: JournalSection[] = [
     images: [
       "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075153365-143.webp?v=1779075154654",
       "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075136272-330.webp?v=1779075137565",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075109315-184.webp?v=1779075110531",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075122152-475.webp?v=1779075123447",
+      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781494014928-487.webp",
+      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350021339-69.webp?v=1786350020719",
+      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350023530-371.webp?v=1786350022988",
     ],
     imageAlt: "Terra Studio Ornament Collection",
   },
@@ -391,22 +392,12 @@ export default function JournalPage() {
                     </h2>
                   </div>
 
-                  {/* English Paragraph */}
-                  <div className="mb-4">
-                    <span className="text-[10px] font-semibold tracking-[0.2em] text-[#8C847A] uppercase block mb-1.5">
-                      English
-                    </span>
-                    <p className="text-[#3A3632] text-sm sm:text-[15px] leading-relaxed font-normal">
+                  {/* Editorial Text (English & Thai) */}
+                  <div className="space-y-4 mb-8">
+                    <p className="text-[#2C2723] text-sm sm:text-[15px] leading-relaxed font-normal">
                       {section.englishText}
                     </p>
-                  </div>
-
-                  {/* Thai Paragraph */}
-                  <div className="mb-8">
-                    <span className="text-[10px] font-semibold tracking-[0.2em] text-[#8C847A] uppercase block mb-1.5">
-                      ไทย
-                    </span>
-                    <p className="text-[#524C45] text-sm sm:text-[15px] leading-relaxed font-normal">
+                    <p className="text-[#736B63] text-sm sm:text-[14.5px] leading-relaxed font-normal">
                       {section.thaiText}
                     </p>
                   </div>
