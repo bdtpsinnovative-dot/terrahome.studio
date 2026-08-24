@@ -128,12 +128,19 @@ export default function ProductFilterDrawer({
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.fullValue!)} 
-            className={`group flex min-h-10 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#84492C]/80 hover:text-[#84492C] hover:bg-[#84492C]/5"}`}
+            className={`group flex min-h-11 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#84492C]/80 hover:text-[#84492C] hover:bg-[#84492C]/5"}`}
           >
-            <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-bold text-[#84492C]" : "font-medium"}`}>
-              {item.displayLabel || item.label}
-            </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-start min-w-0 text-left">
+              <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-medium"}`}>
+                {item.displayLabel || item.label}
+              </span>
+              {item.thaiLabel && (
+                <span className={`text-[9px] sm:text-[10px] tracking-normal transition-colors mt-0.5 ${isActive ? "text-[#84492C]/90 font-medium" : "text-[#8C8A86]"}`}>
+                  {item.thaiLabel}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
               <svg viewBox="0 0 20 20" fill="currentColor" className={`h-3.5 w-3.5 ${isActive ? "text-[#84492C]" : "text-[#84492C]/60"}`} aria-hidden="true">
                 <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5Z" clipRule="evenodd" />
@@ -152,12 +159,19 @@ export default function ProductFilterDrawer({
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.fullValue!)} 
-            className={`group flex min-h-10 min-w-0 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+            className={`group flex min-h-11 min-w-0 w-full items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/10 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
-            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
-              {label}
-            </span>
-            {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
+            <div className="flex flex-col items-start min-w-0 text-left">
+              <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
+                {label}
+              </span>
+              {item.thaiLabel && (
+                <span className={`text-[9px] sm:text-[10px] tracking-normal transition-colors mt-0.5 ${isActive ? "text-[#84492C]/90 font-medium" : "text-[#8C8A86]"}`}>
+                  {item.thaiLabel}
+                </span>
+              )}
+            </div>
+            {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
           </button>
         </div>
       )
@@ -173,24 +187,31 @@ export default function ProductFilterDrawer({
           <button 
             type="button" 
             onClick={() => onCategoryChange(item.label)} 
-            className={`group flex min-h-10 min-w-0 flex-1 items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isParentActive ? "bg-[#84492C]/10 text-[#84492C]" : hasActiveChild ? "text-[#3A3835] font-semibold" : isExpanded ? "text-[#3A3835] font-medium" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+            className={`group flex min-h-11 min-w-0 flex-1 items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isParentActive ? "bg-[#84492C]/10 text-[#84492C]" : hasActiveChild ? "text-[#3A3835] font-semibold" : isExpanded ? "text-[#3A3835] font-medium" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
           >
-            <span className={`min-w-0 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.25em] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#3A3835]" : isExpanded ? "font-medium text-[#3A3835]" : "font-normal"}`}>
-              {label}
-            </span>
-            {isParentActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
+            <div className="flex flex-col items-start min-w-0 text-left">
+              <span className={`text-[10px] uppercase tracking-[0.16em] transition-colors sm:text-[11px] sm:tracking-[0.2em] ${isParentActive ? "font-bold text-[#84492C]" : hasActiveChild ? "font-semibold text-[#3A3835]" : isExpanded ? "font-medium text-[#3A3835]" : "font-normal"}`}>
+                {label}
+              </span>
+              {item.thaiLabel && (
+                <span className={`text-[9px] sm:text-[10px] tracking-normal transition-colors mt-0.5 ${isParentActive ? "text-[#84492C]/90 font-medium" : "text-[#8C8A86]"}`}>
+                  {item.thaiLabel}
+                </span>
+              )}
+            </div>
+            {isParentActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
           </button>
           <button 
             type="button" 
             onClick={() => toggleGroup(item.label)} 
             aria-label={`${isExpanded ? "ยุบ" : "ขยาย"} ${label}`} 
-            className={`grid min-h-10 min-w-10 shrink-0 place-items-center text-[12px] font-medium rounded-lg outline-none hover:bg-black/[0.03] transition-colors ${isExpanded ? "text-[#3A3835]" : "text-[#6F6861]"}`}
+            className={`grid min-h-11 min-w-11 shrink-0 place-items-center text-[13px] font-medium rounded-lg outline-none hover:bg-black/[0.03] transition-colors ${isExpanded ? "text-[#3A3835]" : "text-[#6F6861]"}`}
           >
             {isExpanded ? "−" : "+"}
           </button>
         </div>
-        <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="flex flex-col items-start pb-2 pl-4 pr-1 pt-1 text-left w-full">
+        <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className="flex flex-col items-start pb-2 pl-4 pr-1 pt-1 text-left w-full space-y-0.5">
             {item.items?.map((child) => {
               const isActive = activeCategory === child.fullValue
               return (
@@ -198,12 +219,19 @@ export default function ProductFilterDrawer({
                   <button 
                     type="button" 
                     onClick={() => onCategoryChange(child.fullValue)} 
-                    className={`group flex min-h-9 min-w-0 w-full items-center justify-between px-2.5 py-1 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
+                    className={`group flex min-h-10 min-w-0 w-full items-center justify-between px-2.5 py-1 rounded-lg transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] ${isActive ? "bg-[#84492C]/12 text-[#84492C]" : "text-[#6F6861] hover:text-[#3A3835] hover:bg-black/[0.02]"}`}
                   >
-                    <span className={`min-w-0 truncate whitespace-nowrap text-[9px] uppercase tracking-[0.12em] sm:text-[10px] sm:tracking-[0.2em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
-                      {child.displayLabel}
-                    </span>
-                    {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0" />}
+                    <div className="flex flex-col items-start min-w-0 text-left">
+                      <span className={`text-[9px] uppercase tracking-[0.12em] sm:text-[10px] sm:tracking-[0.16em] ${isActive ? "font-bold text-[#84492C]" : "font-normal"}`}>
+                        {child.displayLabel}
+                      </span>
+                      {child.thaiLabel && (
+                        <span className={`text-[8.5px] sm:text-[9.5px] tracking-normal transition-colors mt-0.5 ${isActive ? "text-[#84492C]/90 font-medium" : "text-[#8C8A86]"}`}>
+                          {child.thaiLabel}
+                        </span>
+                      )}
+                    </div>
+                    {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />}
                   </button>
                 </div>
               )
@@ -217,23 +245,34 @@ export default function ProductFilterDrawer({
   return (
     <div className={`fixed inset-0 ${zIndexClass} transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150 ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}>
       <button type="button" aria-label="Close product filters" tabIndex={open ? 0 : -1} className="absolute inset-0 h-full w-full bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`absolute bottom-0 left-0 top-0 flex w-[85%] max-w-[340px] touch-manipulation overflow-hidden shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:duration-150 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+      <div className={`absolute bottom-0 left-0 top-0 flex w-[90%] max-w-[360px] touch-manipulation overflow-hidden shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:duration-150 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <aside id={categoryDrawerId} aria-label={colorScope ? "เลือกสีสินค้า" : "Product filters"} aria-hidden={!open} className="flex h-full w-full shrink-0 flex-col bg-[#EFE9E1]">
-          <div className="mb-4 flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 px-4 sm:px-8">
-            {colorScope ? (
-              <button type="button" onClick={() => setColorScope(null)} aria-label="กลับไปตัวกรองหมวดหมู่" className="-ml-2 flex min-h-11 items-center gap-1.5 text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-5 w-5" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
+          <div className="relative mb-4 flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 px-4 sm:px-8">
+            <div className="flex items-center z-10">
+              {colorScope && (
+                <button type="button" onClick={() => setColorScope(null)} aria-label="กลับไปตัวกรองหมวดหมู่" className="-ml-2 flex min-h-11 items-center gap-1.5 text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-5 w-5" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
+                  </svg>
+                  <span className="text-[9px] uppercase tracking-[0.16em]">Back</span>
+                </button>
+              )}
+            </div>
+
+            {/* 🌟 จัดตำแหน่งกึ่งกลาง 100% ด้วย Absolute Center */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
+              <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.25em] text-[#3A3835] sm:text-[12px] sm:tracking-[0.3em]">
+                {colorScope ? "Color" : "Filters"}
+              </span>
+            </div>
+
+            <div className="flex items-center z-10">
+              <button type="button" onClick={onClose} aria-label="Close filters" className="-mr-2 flex min-h-11 min-w-11 items-center justify-center text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className="h-5 w-5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
-                <span className="text-[9px] uppercase tracking-[0.16em]">Back</span>
               </button>
-            ) : <span className="w-[58px]" aria-hidden="true" />}
-            <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-[#3A3835] sm:text-[11px] sm:tracking-[0.3em]">{colorScope ? "Color" : "Filters"}</span>
-            <button type="button" onClick={onClose} aria-label="Close filters" className="-mr-2 flex min-h-11 items-center gap-1.5 text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className="h-5 w-5" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto px-5 pb-12 pt-2 text-left sm:px-8">
             {colorScope ? (

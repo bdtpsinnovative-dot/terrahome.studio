@@ -31,6 +31,7 @@ export default function CollectionCard({
     (product?.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
 
   const availableProducts = (group.products || []).filter((product: any) => stockQtyForProduct(product) > 0)
+  const isPreOrderGroup = availableProducts.length === 0
 
   const preferredSlides = slides.filter((slide) => {
     const matchedProduct = (group.products || []).find((product: any) => product?.sku === slide.sku)
@@ -40,14 +41,21 @@ export default function CollectionCard({
 
   const resolvedSlides = preferredSlides.length > 0 ? preferredSlides : slides
   const currentSlide = resolvedSlides[currentIndex] || resolvedSlides[0] || { image_url: null, price: null, sku: "", name: "" }
-  const displayPrice = currentSlide.price
-  const priceValues = availableProducts
+  
+  // 🌟 ถ้ามีรูปปกกลุ่ม cover_image_url ให้ใช้รูปนี้เป็นหลักเดี่ยวๆ
+  const groupCoverImage = group?.cover_image_url && String(group.cover_image_url).trim() !== "" ? String(group.cover_image_url).trim() : null
+
+  // คำนวณราคาสำหรับสินค้าทุกประเภท (ทั้งพร้อมส่งและพรีออเดอร์)
+  const allGroupProducts = group.products || []
+  const targetProducts = availableProducts.length > 0 ? availableProducts : allGroupProducts
+  const priceValues = targetProducts
     .map((product: any) => Number(product?.price))
     .filter((price: number) => Number.isFinite(price) && price > 0)
-  const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : null
-  const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) : null
+
+  const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : (currentSlide.price || null)
+  const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) : (currentSlide.price || null)
   const hasPriceRange = minPrice !== null && maxPrice !== null && minPrice !== maxPrice
-  const hasAvailablePrice = availableProducts.length > 0
+  const displayPrice = currentSlide.price || minPrice
 
   const firstAvailableProduct = availableProducts[0] || group.products?.[0]
   const firstProductSku = firstAvailableProduct?.sku
@@ -64,12 +72,12 @@ export default function CollectionCard({
   }
 
   useEffect(() => {
-    if (resolvedSlides.length <= 1) return;
+    if (groupCoverImage || resolvedSlides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % resolvedSlides.length)
     }, 3000)
     return () => clearInterval(timer)
-  }, [resolvedSlides.length])
+  }, [groupCoverImage, resolvedSlides.length])
 
   return (
     <>
@@ -93,7 +101,14 @@ export default function CollectionCard({
           className="w-full aspect-square relative mb-5 flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
-          {resolvedSlides.length > 0 ? (
+          {groupCoverImage ? (
+            <img
+              src={groupCoverImage}
+              alt={group.name || group.id}
+              title={group.name || group.id}
+              className="absolute inset-0 object-contain w-full h-full p-2 mix-blend-multiply"
+            />
+          ) : resolvedSlides.length > 0 ? (
             resolvedSlides.map((slide, idx) => (
               <img
                 key={idx}
@@ -111,27 +126,41 @@ export default function CollectionCard({
           )}
         </div>
 
-        {/* ส่วนรายละเอียดสินค้า: ปรับขนาดตัวอักษรและราคาให้ใหญ่และคมชัดขึ้นตามบรีฟ */}
+        {/* ส่วนรายละเอียดสินค้า: แสดงชื่อ ป้ายสถานะ และราคาเสมอ */}
         <div className="flex flex-col items-center text-center mt-auto px-2">
-          {/* 🌟 ปรับชื่อสินค้าให้ใหญ่ขึ้นจาก 8px เป็น 10px/11px และปรับเป็น font-medium เพื่อความคมชัด */}
           <span className="text-[#3A3835] text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-medium text-center mb-1.5">
-            {currentSlide.name ? currentSlide.name.substring(0, 25) : "PRODUCT"}
+            {group.name || currentSlide.name ? (group.name || currentSlide.name).substring(0, 25) : "PRODUCT"}
           </span>
           {(() => {
-            if (!hasAvailablePrice) {
+            if (isPreOrderGroup) {
               return (
-                <div className="mt-1 flex flex-col items-center">
+                <div className="mt-0.5 flex flex-col items-center">
                   <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold">
                     PRE-ORDER
                   </p>
-                  <p className="text-[#84492C] text-[9px] tracking-normal font-semibold mt-0.5">
+                  <p className="text-[#84492C] text-[9px] tracking-normal font-semibold">
                     (รอสินค้า 45-60 วัน)
                   </p>
+                  {minPrice !== null && minPrice > 0 ? (
+                    hasPriceRange ? (
+                      <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-1 opacity-95">
+                        THB {minPrice.toLocaleString()}–{maxPrice?.toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-1 opacity-95">
+                        THB {minPrice.toLocaleString()}
+                      </p>
+                    )
+                  ) : (
+                    <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-1">
+                      Price upon request
+                    </p>
+                  )}
                 </div>
               )
             }
 
-            if (hasPriceRange) {
+            if (hasPriceRange && minPrice !== null && maxPrice !== null) {
               return (
                 <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-0.5 opacity-95">
                   THB {minPrice.toLocaleString()}–{maxPrice.toLocaleString()}
@@ -139,7 +168,7 @@ export default function CollectionCard({
               )
             }
 
-            if (displayPrice === null || displayPrice <= 0 || minPrice === null || maxPrice === null) {
+            if (displayPrice === null || displayPrice <= 0 || minPrice === null) {
               return (
                 <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-0.5">
                   Price upon request
