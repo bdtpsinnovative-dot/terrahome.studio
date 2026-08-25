@@ -176,25 +176,26 @@ export default function CollectionCard({
               )
             }
 
-            const originalPrice = displayPrice
+            const originalPrice = Number(displayPrice)
             let finalPrice = originalPrice
             let isDiscounted = false
             let discountLabel = ""
 
-            if (currentSlide.discount_value && currentSlide.discount_type) {
+            const discountValue = Number(currentSlide.discount_value)
+            if (Number.isFinite(discountValue) && discountValue > 0 && currentSlide.discount_type) {
               isDiscounted = true
               if (currentSlide.discount_type === 'PERCENT') {
-                finalPrice = originalPrice - (originalPrice * (currentSlide.discount_value / 100))
-                discountLabel = `-${currentSlide.discount_value}%`
+                finalPrice = originalPrice * (1 - (discountValue / 100))
+                discountLabel = `-${discountValue}%`
               } else if (currentSlide.discount_type === 'FIXED') {
-                finalPrice = originalPrice - currentSlide.discount_value
-                discountLabel = `-฿${currentSlide.discount_value}`
+                finalPrice = Math.max(0, originalPrice - discountValue)
+                discountLabel = `-฿${discountValue}`
               }
             }
 
             return isDiscounted ? (
               <div className="flex flex-col items-center gap-0.5 mt-0.5">
-                <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider">
+                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-[0.12em]">
                   <span className="text-[#8C8A86] line-through opacity-60">
                     THB {originalPrice.toLocaleString()}
                   </span>
@@ -202,7 +203,7 @@ export default function CollectionCard({
                     {discountLabel}
                   </span>
                 </div>
-                <p className="text-[#3A3835] text-[12px] font-semibold tracking-widest font-mono">
+                <p className="text-[#3A3835] text-[11px] font-semibold tracking-[0.14em] font-mono">
                   THB {finalPrice.toLocaleString()}
                 </p>
               </div>

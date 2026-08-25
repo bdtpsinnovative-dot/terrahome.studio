@@ -29,7 +29,7 @@ const heroSlides = [
 ];
 
 const heroActions = [
-  { label: "Collections", href: "/prop" },
+  { label: "Collections", href: "/collections" },
   { label: "Product", href: "/prop#products" },
 ];
 

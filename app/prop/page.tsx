@@ -270,6 +270,12 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
           return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
         })
       }
+
+      const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
+        ? Number(applicableDiscount.value)
+        : null
+      const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
+
       return {
         ...product,
         stock: stockItems,
@@ -277,7 +283,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
         availability_status: totalStock > 0 ? 'available' : 'preorder',
         hot_rank: hotRankByProductId.get(Number(product.id)) || null,
         hot_score: hotScoreByProductId.get(Number(product.id)) || null,
-        discount_value: applicableDiscount ? applicableDiscount.value : null,
+        discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
         discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
       }
     })

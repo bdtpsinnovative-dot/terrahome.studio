@@ -81,6 +81,11 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
 
   const supabase = await createClient()
 
+  const { data: activeDiscounts } = await supabase
+    .from("discounts")
+    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
+    .eq("active", true)
+
   const { data: groupData, error } = await supabase
     .from("collection_groups")
     .select(`
@@ -103,9 +108,31 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     .eq("products.category_id", "prop")
     .single()
 
-  const groupProducts = (groupData?.products || []).filter((p: any) =>
-    p.category_id === 'prop' && (p.status === 'active' || !p.status)
-  )
+  const now = new Date()
+  const groupProducts = (groupData?.products || [])
+    .filter((p: any) => p.category_id === 'prop' && (p.status === 'active' || !p.status))
+    .map((product: any) => {
+      let applicableDiscount = null
+      if (activeDiscounts && activeDiscounts.length > 0) {
+        applicableDiscount = activeDiscounts.find((discount: any) => {
+          const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+          const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+          if (!isStarted || !isNotEnded) return false
+          return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
+        })
+      }
+
+      const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
+        ? Number(applicableDiscount.value)
+        : null
+      const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
+
+      return {
+        ...product,
+        discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
+        discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+      }
+    })
 
   if (error || !groupData || !groupProducts || groupProducts.length === 0) {
     return (

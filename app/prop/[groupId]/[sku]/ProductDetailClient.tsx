@@ -62,6 +62,19 @@ export default function ProductDetailClient({
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
   })
 
+  const getDiscountedPrice = (product: any) => {
+    const originalPrice = Number(product?.price || 0)
+    const discountValue = Number(product?.discount_value)
+    const discountType = product?.discount_type
+
+    if (!Number.isFinite(originalPrice) || originalPrice <= 0) return null
+    if (!Number.isFinite(discountValue) || discountValue <= 0 || !discountType) return originalPrice
+
+    if (discountType === 'PERCENT') return originalPrice * (1 - (discountValue / 100))
+    if (discountType === 'FIXED') return Math.max(0, originalPrice - discountValue)
+    return originalPrice
+  }
+
   const [showStock, setShowStock] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [loadingLocation, setLoadingLocation] = useState(false)
@@ -160,6 +173,10 @@ export default function ProductDetailClient({
   // คำนวณสต็อกรวมทั้งหมดของสินค้าชิ้นที่เปิดดูอยู่
   const totalStock = activeProduct.stock?.reduce((sum: number, s: any) => sum + Number(s.qty), 0) || 0
   const outOfStock = totalStock <= 0
+  const activeDiscountValue = Number(activeProduct?.discount_value)
+  const activeDiscountType = activeProduct?.discount_type
+  const activeDiscountedPrice = getDiscountedPrice(activeProduct)
+  const hasActiveDiscount = Number.isFinite(activeDiscountValue) && activeDiscountValue > 0 && activeDiscountType
 
   // ⚡ 3. ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const handleAddToCart = async () => {
@@ -246,7 +263,7 @@ export default function ProductDetailClient({
   return (
     <div data-prop-product-id={String(activeProduct.id)} className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       
-      <nav className="w-full py-6 px-8 lg:px-12 flex items-center justify-between sticky top-0 bg-[#EAE7E0] z-[10000]">
+      <nav className="w-full py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 bg-[#EAE7E0] z-[10000]">
         
         <button 
           onClick={() => router.back()} 
@@ -265,9 +282,9 @@ export default function ProductDetailClient({
         </div>
       </nav>
 
-      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-4 lg:py-8">
+      <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        <div className="lg:col-span-5 p-6 lg:p-10 flex flex-col">
+        <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
             {activeProduct.image_url ? (
               <img 
@@ -285,15 +302,29 @@ export default function ProductDetailClient({
           </div>
         </div>
 
-        <div className="lg:col-span-7 p-6 lg:p-10 xl:p-16 flex flex-col gap-10">
+        <div className="lg:col-span-7 p-4 lg:p-6 xl:p-8 flex flex-col gap-6">
           
           <div>
-            <h1 className="font-serif text-2xl lg:text-3xl uppercase tracking-wide leading-snug text-[#3A3835]">
+            <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
               {activeProduct.name}
             </h1>
-            <p className="mt-3 text-sm font-medium tracking-[0.15em] text-[#84492C]">
-              {outOfStock ? 'PRE-ORDER (รอสินค้า 45-60 วัน)' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
-            </p>
+            {hasActiveDiscount && activeDiscountedPrice !== null ? (
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
+                  {activeDiscountType === 'PERCENT' ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+                </span>
+                <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                  THB {Number(activeProduct.price).toLocaleString()}
+                </span>
+                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
+                  THB {Number(activeDiscountedPrice).toLocaleString()}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
+                {outOfStock ? 'PRE-ORDER (รอสินค้า 45-60 วัน)' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
+              </p>
+            )}
 
             <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
               <div>

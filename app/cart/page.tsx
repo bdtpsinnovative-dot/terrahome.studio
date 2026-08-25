@@ -18,6 +18,8 @@ type CartItem = {
     price: number;
     image_url: string;
     collection_group_id: string;
+    discount_value?: number | null;
+    discount_type?: 'PERCENT' | 'FIXED' | null;
     collection_groups?: {
       name: string;
       product_sup: string;
@@ -38,6 +40,19 @@ export default function CartPage() {
   const [userAuth, setUserAuth] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  const getDiscountedPrice = (item: CartItem) => {
+    const originalPrice = Number(item.products.price || 0)
+    const discountValue = Number(item.products.discount_value || 0)
+    const discountType = item.products.discount_type
+
+    if (!Number.isFinite(originalPrice) || originalPrice <= 0) return null
+    if (!Number.isFinite(discountValue) || discountValue <= 0 || !discountType) return originalPrice
+
+    if (discountType === 'PERCENT') return originalPrice * (1 - (discountValue / 100))
+    if (discountType === 'FIXED') return Math.max(0, originalPrice - discountValue)
+    return originalPrice
+  }
+
   useEffect(() => {
     const loadCart = async () => {
       const session = await getSafeSession();
@@ -48,6 +63,11 @@ export default function CartPage() {
       }
 
       setUserAuth(session.user);
+
+      const { data: activeDiscounts } = await supabase
+        .from('discounts')
+        .select('id, discount_type, value, start_date, end_date, discount_rules ( product_id )')
+        .eq('active', true)
 
       // ⚡ ดึงข้อมูล Cart + Products + Collection Groups + Stock ครบทุกตาราง
       const { data, error } = await supabase
@@ -75,8 +95,35 @@ export default function CartPage() {
       if (error) {
         console.error("Error fetching cart:", error);
       } else {
+        const now = new Date()
+        const normalizedCartItems = (data || []).map((item: any) => {
+          let applicableDiscount = null
+          if (activeDiscounts && activeDiscounts.length > 0) {
+            applicableDiscount = activeDiscounts.find((discount: any) => {
+              const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+              const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+              if (!isStarted || !isNotEnded) return false
+              return discount.discount_rules.some((rule: any) => rule.product_id === item.product_id || rule.product_id === null)
+            })
+          }
+
+          const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
+            ? Number(applicableDiscount.value)
+            : null
+          const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
+
+          return {
+            ...item,
+            products: {
+              ...item.products,
+              discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
+              discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+            }
+          }
+        })
+
         // @ts-ignore
-        setCartItems(data || []);
+        setCartItems(normalizedCartItems)
       }
       
       setLoading(false);
@@ -146,7 +193,9 @@ export default function CartPage() {
   };
 
   const subtotal = cartItems.reduce((acc, item) => {
-    return acc + (item.products.price * item.quantity);
+    const discountedUnitPrice = getDiscountedPrice(item)
+    const effectiveUnitPrice = discountedUnitPrice !== null ? discountedUnitPrice : item.products.price
+    return acc + (effectiveUnitPrice * item.quantity)
   }, 0);
 
   if (loading) {
@@ -159,18 +208,18 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans flex flex-col selection:bg-[#C8A97E]/20 pb-12 pt-24 md:pt-32">
-      <div className="max-w-6xl w-full mx-auto px-6">
+    <div className="min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans flex flex-col selection:bg-[#C8A97E]/20 pb-12 pt-16 md:pt-24">
+      <div className="max-w-[1200px] w-full mx-auto px-4 sm:px-6">
         
         <button 
           onClick={() => router.back()} 
-          className="mb-8 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#8C8A86] hover:text-[#84492C] flex items-center gap-2 transition-colors group cursor-pointer w-fit"
+          className="mb-6 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#8C8A86] hover:text-[#84492C] flex items-center gap-2 transition-colors group cursor-pointer w-fit"
         >
           <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> 
           <span>CONTINUE SHOPPING</span>
         </button>
 
-        <div className="mb-10 border-b border-[#3A3835]/10 pb-6 flex items-end justify-between">
+        <div className="mb-8 border-b border-[#3A3835]/10 pb-4 flex items-end justify-between">
           <div>
             <h1 className="font-serif text-3xl uppercase tracking-widest text-[#3A3835]">
               YOUR CART
@@ -302,14 +351,29 @@ export default function CartPage() {
                         </div>
 
                         <div className="text-left sm:text-right">
-                          <p className="text-[12px] font-bold text-[#3A3835] tracking-wide">
-                            THB {(item.products.price * item.quantity).toLocaleString()}
-                          </p>
-                          {item.quantity > 1 && (
-                            <p className="text-[9px] text-[#8C8A86] tracking-wider mt-0.5">
-                              THB {item.products.price.toLocaleString()} each
-                            </p>
-                          )}
+                          {(() => {
+                            const discountedUnitPrice = getDiscountedPrice(item)
+                            const hasDiscount = discountedUnitPrice !== null && discountedUnitPrice < item.products.price
+                            const finalTotal = (discountedUnitPrice !== null ? discountedUnitPrice : item.products.price) * item.quantity
+
+                            return (
+                              <>
+                                {hasDiscount && (
+                                  <p className="text-[9px] text-[#8C8A86] line-through tracking-[0.12em] uppercase mb-1">
+                                    THB {(item.products.price * item.quantity).toLocaleString()}
+                                  </p>
+                                )}
+                                <p className="text-[11px] font-bold text-[#3A3835] tracking-wide">
+                                  THB {finalTotal.toLocaleString()}
+                                </p>
+                                {item.quantity > 1 && (
+                                  <p className="text-[9px] text-[#8C8A86] tracking-wider mt-0.5">
+                                    THB {Number(discountedUnitPrice ?? item.products.price).toLocaleString()} each
+                                  </p>
+                                )}
+                              </>
+                            )
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -319,7 +383,7 @@ export default function CartPage() {
               })}
             </div>
 
-            <div className="lg:col-span-4 sticky top-32">
+            <div className="lg:col-span-4 sticky top-20">
               <div className="bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)] rounded-[2px] border border-[#3A3835]/5">
                 <h2 className="font-serif text-lg uppercase tracking-widest text-[#3A3835] mb-6 border-b border-[#3A3835]/10 pb-4">
                   ORDER SUMMARY
@@ -338,7 +402,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between items-end border-t border-[#3A3835]/10 pt-6 mb-8">
                   <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#3A3835]">TOTAL</span>
-                  <span className="text-xl font-bold text-[#84492C]">THB {subtotal.toLocaleString()}</span>
+                  <span className="text-lg font-bold text-[#84492C]">THB {subtotal.toLocaleString()}</span>
                 </div>
 
                 <button 
