@@ -274,7 +274,7 @@ export default function ProductFilterDrawer({
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto px-5 pb-12 pt-2 text-left sm:px-8">
+          <div className="product-filter-scroll flex-1 overflow-y-auto px-5 pb-12 pt-2 text-left sm:px-8">
             {colorScope ? (
               <div id={colorDrawerId} aria-label="Filter products by color">
                 {colorOptions.length > 0 ? colorOptions.map((option) => {
