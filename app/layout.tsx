@@ -155,6 +155,7 @@ export default async function RootLayout({
     >
       <head>
         <link rel="preload" href="/LINESeedSans_W_Rg.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/LINESeedSansTH_W_Rg.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/OPTIMA.TTF" as="font" type="font/ttf" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col">

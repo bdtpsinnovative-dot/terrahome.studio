@@ -54,6 +54,47 @@
   font-display: swap;
 }
 
+/* Thai glyphs live in LINE Seed Sans TH, not the Latin LINE Seed files above. */
+@font-face {
+  font-family: 'LINE Seed Sans TH';
+  src: url('/LINESeedSansTH_W_Th.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LINE Seed Sans TH';
+  src: url('/LINESeedSansTH_W_Rg.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LINE Seed Sans TH';
+  src: url('/LINESeedSansTH_W_Bd.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LINE Seed Sans TH';
+  src: url('/LINESeedSansTH_W_XBd.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LINE Seed Sans TH';
+  src: url('/LINESeedSansTH_W_He.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 
 /* ==========================================================================
    2. ลงทะเบียนฟอนต์ Optima (อ้างอิงไฟล์ .ttf ในรูป image_5b9208.png)
@@ -101,7 +142,7 @@
    ========================================================================== */
 
 @theme {
-  --font-sans: 'LINE Seed Sans', system-ui, sans-serif;
+  --font-sans: 'LINE Seed Sans', 'LINE Seed Sans TH', system-ui, sans-serif;
   --font-serif: 'Optima', 'Georgia', serif;
 }
 
