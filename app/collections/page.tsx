@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Footer from "@/app/components/Footer";
+import { createClient } from "@/src/supabase/client";
 
 const HERO_BANNERS = [
   "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781170108353-289.webp",
@@ -13,6 +14,7 @@ const HERO_BANNERS = [
 ];
 
 interface JournalSection {
+  id?: string;
   number: string;
   title: string;
   thaiTitle: string;
@@ -23,177 +25,14 @@ interface JournalSection {
   imageAlt: string;
 }
 
-const JOURNAL_SECTIONS: JournalSection[] = [
-  {
-    number: "01",
-    title: "ORNAMENT",
-    thaiTitle: "ของประดับตกแต่ง",
-    categoryQuery: "Sculpture",
-    englishText:
-      "Ornaments that bring a quiet sense of character to the home. Thoughtfully chosen forms, textures, and details add a refined finishing touch to spaces designed to be lived in and admired.",
-    thaiText:
-      "ของประดับที่เติมเสน่ห์อย่างเรียบสงบให้กับพื้นที่ ผ่านรูปทรง พื้นผิว และรายละเอียดที่คัดสรรอย่างพิถีพิถัน เพื่อเติมเต็มบ้านด้วยสัมผัสแห่งความงามที่เหนือกาลเวลา",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075153365-143.webp?v=1779075154654",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779075136272-330.webp?v=1779075137565",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781494014928-487.webp",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350021339-69.webp?v=1786350020719",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350023530-371.webp?v=1786350022988",
-    ],
-    imageAlt: "Terra Studio Ornament Collection",
-  },
-  {
-    number: "02",
-    title: "BOOKENDS",
-    thaiTitle: "ตกแต่งชั้นหนังสือ",
-    categoryQuery: "BOOKED",
-    englishText:
-      "More than a functional piece, bookends become an elegant expression of personal taste. Designed to complement your collection, they bring structure, character, and a sense of quiet sophistication to every shelf.",
-    thaiText:
-      "มากกว่าของใช้สำหรับจัดวางหนังสือ Bookends คือรายละเอียดที่สะท้อนรสนิยมส่วนตัว เติมความเป็นระเบียบ คาแรกเตอร์ และความสง่างามอย่าง understated ให้กับทุกชั้นวาง",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781494047650-726.webp",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/woodslabs/WS-1779078544795-355.webp?v=1779078545748",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/woodslabs/WS-1779078565880-634.webp?v=1779078566854",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/woodslabs/WS-1779088760685-836.webp?v=1779088761520",
-    ],
-    imageAlt: "Terra Studio Bookends Collection",
-  },
-  {
-    number: "03",
-    title: "CANDLE HOLDERS",
-    thaiTitle: "เชิงเทียน",
-    categoryQuery: "CANDLE HOLDERS",
-    englishText:
-      "Candle holders bring warmth and atmosphere into the everyday. With sculptural silhouettes and refined details, each piece creates an intimate presence that elevates the mood of any space.",
-    thaiText:
-      "เชิงเทียนช่วยเติมความอบอุ่นและบรรยากาศให้กับช่วงเวลาในทุกวัน ด้วยรูปทรงที่มีมิติและรายละเอียดอันประณีต ช่วยสร้างความละมุนและยกระดับบรรยากาศให้กับทุกพื้นที่",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1787545755823-349.webp",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781062599943-712.webp?v=1781062601540",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781582702709-840.webp?v=1781582704453",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781582779997-837.webp?v=1781582780070",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781582820399-976.webp?v=1781582820424",
-    ],
-    imageAlt: "Terra Studio Candle Holders Collection",
-  },
-  {
-    number: "04",
-    title: "DECORATIVE OBJECTS",
-    thaiTitle: "ของตกแต่งและวัตถุทางศิลปะ",
-    categoryQuery: "Accessories",
-    englishText:
-      "Decorative objects are the details that give a space its identity. A considered balance of form, texture, and proportion, each piece adds depth and distinction to the art of living.",
-    thaiText:
-      "ของตกแต่งคือรายละเอียดที่ทำให้พื้นที่มีเอกลักษณ์ ผ่านความสมดุลของรูปทรง พื้นผิว และสัดส่วน แต่ละชิ้นช่วยเติมมิติและความโดดเด่นให้กับศิลปะแห่งการใช้ชีวิต",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604706503-265.webp?v=1786604707101",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350044803-666.webp?v=1786350044169",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350045685-631.webp?v=1786350045084",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350087279-446.webp?v=1786350087140",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350090888-392.webp?v=1786350090482",
-    ],
-    imageAlt: "Terra Studio Decorative Objects Collection",
-  },
-  {
-    number: "05",
-    title: "DOLLS & TOYS",
-    thaiTitle: "ตุ๊กตาและของเล่นตกแต่ง",
-    categoryQuery: "Figure",
-    englishText:
-      "A playful expression of design, thoughtfully created to bring warmth and personality into the home. Dolls and toys become charming accents that add a softer, more personal character to every space.",
-    thaiText:
-      "เติมความขี้เล่นผ่านงานออกแบบที่ยังคงไว้ซึ่งความประณีต ช่วยเพิ่มความอบอุ่นและตัวตนให้กับบ้าน พร้อมสร้างเสน่ห์ที่นุ่มนวลและเป็นกันเองในทุกพื้นที่",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604772503-762.webp?v=1786604773067",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604774505-403.webp?v=1786604775122",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604776504-274.webp?v=1786604777190",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604778504-554.webp?v=1786604779109",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/woodslabs/WS-1779097945917-948.webp?v=1779097947269",
-    ],
-    imageAlt: "Terra Studio Dolls and Toys Collection",
-  },
-  {
-    number: "06",
-    title: "TABLEWARE",
-    thaiTitle: "เครื่องใช้บนโต๊ะอาหาร",
-    categoryQuery: "Dining & Tableware",
-    englishText:
-      "Tableware transforms everyday rituals into moments of beauty. Thoughtfully designed pieces bring together form and function, creating a table setting that feels effortlessly elegant and timeless.",
-    thaiText:
-      "Tableware เปลี่ยนช่วงเวลาในชีวิตประจำวันให้กลายเป็นช่วงเวลาที่งดงาม ผสานรูปทรงและฟังก์ชันอย่างลงตัว เพื่อสร้างบรรยากาศบนโต๊ะอาหารที่เรียบหรูและเหนือกาลเวลา",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786439826243-927.webp?v=1786439827911",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350175135-402.webp?v=1786350174880",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350176468-964.webp?v=1786350175899",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350177488-614.webp?v=1786350176950",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786432839307-904.webp?v=1786432841077",
-    ],
-    imageAlt: "Terra Studio Tableware Collection",
-  },
-  {
-    number: "07",
-    title: "TRAYS",
-    thaiTitle: "ถาดตกแต่งและเสิร์ฟ",
-    categoryQuery: "Trays",
-    englishText:
-      "Defined by both beauty and purpose, trays bring effortless order to the art of display. From everyday essentials to treasured objects, each piece creates a refined composition within the home.",
-    thaiText:
-      "ถาดที่ผสานความงามเข้ากับประโยชน์ใช้สอย ช่วยจัดวางสิ่งของอย่างมีระเบียบและมีสไตล์ ตั้งแต่ของใช้ในชีวิตประจำวันไปจนถึงของชิ้นโปรด ล้วนกลายเป็นองค์ประกอบที่งดงามของพื้นที่",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781494032603-453.webp",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786439826243-927.webp?v=1786439827911",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779076767119-215.webp?v=1779076769682",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779076786238-5.webp?v=1779076787979",
-    ],
-    imageAlt: "Terra Studio Trays Collection",
-  },
-  {
-    number: "08",
-    title: "VESSELS",
-    thaiTitle: "แจกันและภาชนะ",
-    categoryQuery: "Vase & Vessels",
-    englishText:
-      "Vessels bring sculptural beauty into the home. Defined by graceful forms, refined proportions, and timeless character, they stand beautifully on their own or as part of a considered arrangement.",
-    thaiText:
-      "ภาชนะที่ถ่ายทอดความงามผ่านรูปทรงอันสง่างาม สัดส่วนที่ลงตัว และคาแรกเตอร์เหนือกาลเวลา สามารถโดดเด่นได้ด้วยตัวเอง หรือผสานเข้ากับองค์ประกอบอื่นได้อย่างมีรสนิยม",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781170155375-345.webp",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350038342-287.webp?v=1786350037911",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350039477-151.webp?v=1786350038863",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350040478-8.webp?v=1786350039891",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786350240589-906.webp?v=1786350240296",
-    ],
-    imageAlt: "Terra Studio Vessels Collection",
-  },
-  {
-    number: "09",
-    title: "ART & WALL DECOR",
-    thaiTitle: "งานศิลปะและของตกแต่งผนัง",
-    categoryQuery: "Art & walldecor",
-    englishText:
-      "Art and wall décor shape the atmosphere and identity of a space. Carefully selected pieces create visual balance, introduce character, and turn empty walls into an expression of personal taste.",
-    thaiText:
-      "งานศิลปะและของตกแต่งผนังช่วยกำหนดบรรยากาศและตัวตนของพื้นที่ ผ่านชิ้นงานที่คัดสรรอย่างตั้งใจ เพื่อสร้างสมดุลทางสายตา เติมคาแรกเตอร์ และเปลี่ยนผนังธรรมดาให้กลายเป็นพื้นที่ที่สะท้อนรสนิยม",
-    images: [
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779269612983-684.webp?v=1779269613167",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1779269532491-461.webp?v=1779269532722",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786675412963-359.webp?v=1786675413486",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786675414339-365.webp?v=1786675414726",
-      "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1786604706503-265.webp?v=1786604707101",
-    ],
-    imageAlt: "Terra Studio Art & Wall Decor Collection",
-  },
-];
-
 function SectionImageSlider({ section }: { section: JournalSection }) {
-  const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
+  const router = useRouter();
 
-  const images = section.images && section.images.length > 0 ? section.images : [];
+  const images = section.images && section.images.length > 0 ? section.images : ["/placeholder.webp"];
 
   useEffect(() => {
     if (isHovered || isDraggingRef.current || images.length <= 1) return;
@@ -246,7 +85,7 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
 
   return (
     <div
-      className="group relative aspect-square w-full max-w-[520px] mx-auto rounded-3xl overflow-hidden bg-[#F2EDE6] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-[#E5DFD5]/60 flex items-center justify-center p-8 sm:p-12 select-none transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] cursor-grab active:cursor-grabbing touch-pan-y"
+      className="group relative aspect-square w-full max-w-[540px] mx-auto rounded-3xl overflow-hidden bg-[#F4EFEA] shadow-lg border border-[#E7E2D9]/80 flex items-center justify-center p-0 select-none transition-all duration-500 hover:shadow-2xl cursor-grab active:cursor-grabbing touch-pan-y"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
@@ -264,47 +103,49 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
               isDraggingRef.current = true;
             }}
             onDragEnd={handleDragEnd}
-            initial={{ opacity: 0, x: direction > 0 ? 30 : direction < 0 ? -30 : 0, scale: 0.96 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: direction > 0 ? -30 : direction < 0 ? 30 : 0, scale: 0.96 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
             className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-auto"
           >
             <img
               src={images[activeIndex]}
               alt={`${section.imageAlt} - Photo ${activeIndex + 1}`}
               draggable={false}
-              className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm pointer-events-none select-none transform group-hover:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover pointer-events-none select-none transform group-hover:scale-106 transition-transform duration-700 ease-out"
             />
           </motion.div>
         </AnimatePresence>
       </div>
 
+      {/* Navigation Arrows */}
       {images.length > 1 && (
         <div onClick={(e) => e.stopPropagation()} className="contents">
           <button
             type="button"
             onClick={handlePrev}
             aria-label="Previous Image"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
+            className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-lg border border-[#E5DFD5] backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             type="button"
             onClick={handleNext}
             aria-label="Next Image"
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-md border border-[#E5DFD5]/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
+            className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white text-[#1C1A18] shadow-lg border border-[#E5DFD5] backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </button>
         </div>
       )}
 
+      {/* Slide Indicator Dots */}
       {images.length > 1 && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/25 backdrop-blur-md z-10 pointer-events-auto"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-md z-10 pointer-events-auto shadow-md"
         >
           {images.map((_, idx) => (
             <button
@@ -330,6 +171,8 @@ function SectionImageSlider({ section }: { section: JournalSection }) {
 
 export default function CollectionsPage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [sections, setSections] = useState<JournalSection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -338,9 +181,57 @@ export default function CollectionsPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch Live Categories from Supabase
+  useEffect(() => {
+    async function fetchCollections() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("journal_categories")
+          .select(`
+            *,
+            images:journal_images ( id, image_url, sort_order, is_active )
+          `)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const mapped: JournalSection[] = data.map((cat: any) => {
+            const rawImgs = (cat.images || []).filter((i: any) => i.is_active);
+            rawImgs.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+            const imgUrls = rawImgs.map((i: any) => i.image_url);
+
+            return {
+              id: cat.id,
+              number: String(cat.sort_order || 1).padStart(2, "0"),
+              title: cat.title_en,
+              thaiTitle: cat.title_th || cat.title_en,
+              categoryQuery: cat.category_query || cat.title_en,
+              englishText: cat.description_en || "",
+              thaiText: cat.description_th || "",
+              images: imgUrls.length > 0 ? imgUrls : (cat.cover_image_url ? [cat.cover_image_url] : []),
+              imageAlt: `Terra Studio ${cat.title_en} Collection`,
+            };
+          });
+          setSections(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch live collections:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchCollections();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#1C1A18] selection:bg-[#84492C] selection:text-[#FAF7F2] flex flex-col">
-      <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden bg-[#2F2420]">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1A18] selection:bg-[#84492C] selection:text-[#FAF7F2] flex flex-col font-sans">
+      
+      {/* Top Hero Banner */}
+      <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden bg-[#241C18]">
         {HERO_BANNERS.map((src, idx) => (
           <motion.img
             key={`${src}-${idx}`}
@@ -353,20 +244,20 @@ export default function CollectionsPage() {
               scale: idx === currentBannerIndex ? 1 : 1.05,
             }}
             transition={{
-              opacity: { duration: 1.5, ease: "easeInOut" },
+              opacity: { duration: 1.6, ease: "easeInOut" },
               scale: { duration: 6, ease: "easeOut" },
             }}
           />
         ))}
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-full h-12 md:h-20 bg-gradient-to-t from-[#F9F6F0] via-[#F9F6F0]/50 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/60 to-transparent pointer-events-none z-20" />
 
         <div className="absolute bottom-8 left-6 sm:bottom-12 sm:left-12 lg:left-16 text-white z-30">
-          <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.3em] uppercase opacity-85 block mb-1.5 drop-shadow-sm">
+          <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.35em] uppercase opacity-85 block mb-1.5 drop-shadow-sm">
             Terra Studio Editorial
           </span>
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-[0.1em] font-light drop-shadow-md">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-[0.12em] font-light drop-shadow-md">
             Living With Art & Design
           </h1>
         </div>
@@ -378,75 +269,93 @@ export default function CollectionsPage() {
               type="button"
               onClick={() => setCurrentBannerIndex(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-400 drop-shadow-sm ${
-                i === currentBannerIndex ? "w-7 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
+              className={`h-1 rounded-full transition-all duration-400 drop-shadow-sm cursor-pointer ${
+                i === currentBannerIndex ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/80"
               }`}
             />
           ))}
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 lg:px-12 pt-16 md:pt-24 pb-32">
-        <div className="flex flex-col space-y-24 md:space-y-36 lg:space-y-44">
-          {JOURNAL_SECTIONS.map((section, index) => {
-            const isImageLeft = index % 2 === 0;
+      {/* Dynamic Editorial Sections */}
+      <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 lg:px-12 pt-16 md:pt-24 pb-36">
+        {isLoading ? (
+          <div className="py-32 flex flex-col items-center justify-center text-[#84492C] gap-3">
+            <div className="w-8 h-8 border-2 border-[#84492C] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs uppercase tracking-widest text-[#736B63]">Loading Collections...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col space-y-28 md:space-y-44">
+            {sections.map((section, index) => {
+              const isImageLeft = index % 2 === 0;
 
-            return (
-              <motion.article
-                key={section.number}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 lg:gap-20 items-center"
-              >
-                <div
-                  className={`lg:col-span-6 w-full ${
-                    isImageLeft ? "lg:order-1" : "lg:order-2"
-                  }`}
+              return (
+                <motion.article
+                  key={section.id || section.number}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px", amount: 0.1 }}
+                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                  className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-14 lg:gap-20 items-center"
                 >
-                  <SectionImageSlider section={section} />
-                </div>
-
-                <div
-                  className={`lg:col-span-6 flex flex-col justify-center ${
-                    isImageLeft ? "lg:order-2 lg:pl-6" : "lg:order-1 lg:pr-6"
-                  }`}
-                >
-                  <div className="mb-6">
-                    <span className="text-[11px] font-semibold tracking-[0.25em] text-[#84492C] uppercase block mb-2">
-                      {section.number} — {section.thaiTitle}
-                    </span>
-                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl uppercase tracking-[0.1em] text-[#1C1A18] font-normal leading-tight">
-                      {section.title}
-                    </h2>
+                  {/* Image Column with Full-Bleed Slider */}
+                  <div
+                    className={`lg:col-span-6 w-full ${
+                      isImageLeft ? "lg:order-1" : "lg:order-2"
+                    }`}
+                  >
+                    <SectionImageSlider section={section} />
                   </div>
 
-                  <div className="space-y-4 mb-8">
-                    <p className="text-[#2C2723] text-sm sm:text-[15px] leading-relaxed font-normal">
-                      {section.englishText}
-                    </p>
-                    <p className="text-[#736B63] text-sm sm:text-[14.5px] leading-relaxed font-normal">
-                      {section.thaiText}
-                    </p>
-                  </div>
+                  {/* Content Column */}
+                  <div
+                    className={`lg:col-span-6 flex flex-col justify-center ${
+                      isImageLeft ? "lg:order-2 lg:pl-6" : "lg:order-1 lg:pr-6"
+                    }`}
+                  >
+                    <div className="mb-6 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-[13px] font-bold tracking-[0.2em] text-[#84492C] uppercase">
+                          {section.number}
+                        </span>
+                        <span className="text-[#84492C]/40 text-xs font-light">—</span>
+                        <span className="text-xs sm:text-[13.5px] font-semibold text-[#84492C] tracking-normal">
+                          {section.thaiTitle}
+                        </span>
+                      </div>
+                      <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl uppercase tracking-[0.1em] text-[#1C1A18] font-light leading-tight">
+                        {section.title}
+                      </h2>
+                    </div>
 
-                  <div>
-                    <Link
-                      href={`/prop?category=${encodeURIComponent(section.categoryQuery)}`}
-                      className="group inline-flex items-center gap-2 border-b border-[#84492C]/40 pb-1.5 hover:border-[#84492C] transition-all"
-                    >
-                      <span className="text-[11px] sm:text-[12px] font-medium tracking-[0.2em] uppercase text-[#84492C]">
-                        Explore {section.title}
-                      </span>
-                      <ArrowUpRight className="w-4 h-4 text-[#84492C] transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                    </Link>
+                    <div className="space-y-3 mb-8">
+                      {section.englishText && (
+                        <p className="text-[#2D2824] text-sm sm:text-[15px] leading-relaxed font-normal">
+                          {section.englishText}
+                        </p>
+                      )}
+                      {section.thaiText && (
+                        <p className="text-[#554C43] text-xs sm:text-[14.5px] leading-relaxed font-normal">
+                          {section.thaiText}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Link
+                        href={`/prop?category=${encodeURIComponent(section.categoryQuery)}`}
+                        className="group inline-flex items-center gap-2 text-[11px] sm:text-[12px] font-medium tracking-[0.25em] uppercase text-[#84492C] border-b border-[#84492C]/40 pb-1 hover:border-[#84492C] transition-all duration-300"
+                      >
+                        <span>Explore {section.title}</span>
+                        <ArrowUpRight className="w-4 h-4 text-[#84492C] transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </motion.article>
-            );
-          })}
-        </div>
+                </motion.article>
+              );
+            })}
+          </div>
+        )}
       </div>
       <Footer />
     </div>

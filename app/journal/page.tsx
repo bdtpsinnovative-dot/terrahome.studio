@@ -259,21 +259,37 @@ export default function JournalPage() {
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                      className={`space-y-2 ${isEven ? "text-left" : "md:text-right"}`}
+                      className={`space-y-3 ${isEven ? "text-left" : "md:text-right"}`}
                     >
-                      <span className="text-[10px] sm:text-[11px] font-semibold tracking-[0.3em] text-[#84492C] uppercase block">
-                        {category.number} — {category.title_th}
-                      </span>
+                      {/* Number + Thai Title Badge */}
+                      <div className={`flex items-center gap-2 ${isEven ? "justify-start" : "md:justify-end"}`}>
+                        <span className="text-xs sm:text-[13px] font-bold tracking-[0.2em] text-[#84492C] uppercase">
+                          {category.number}
+                        </span>
+                        <span className="text-[#84492C]/40 text-xs font-light">—</span>
+                        <span className="text-xs sm:text-[13.5px] font-semibold text-[#84492C] tracking-normal">
+                          {category.title_th}
+                        </span>
+                      </div>
+
+                      {/* Main Title English */}
                       <h2 className="font-serif text-3xl sm:text-4xl lg:text-[44px] uppercase tracking-[0.1em] text-[#1C1A18] font-light leading-tight">
                         {category.title_en}
                       </h2>
-                      {category.description_th && (
-                        <p className={`text-xs sm:text-[13.5px] text-[#736B63] max-w-2xl mt-1.5 leading-relaxed font-light ${
-                          isEven ? "" : "md:ml-auto"
-                        }`}>
-                          {category.description_th}
-                        </p>
-                      )}
+
+                      {/* Descriptions (English & Thai) */}
+                      <div className={`space-y-1.5 max-w-2xl ${isEven ? "" : "md:ml-auto"}`}>
+                        {category.description_en && (
+                          <p className="text-xs sm:text-[14.5px] text-[#2D2824] leading-relaxed font-normal">
+                            {category.description_en}
+                          </p>
+                        )}
+                        {category.description_th && (
+                          <p className="text-xs sm:text-[14px] text-[#554C43] leading-relaxed font-normal">
+                            {category.description_th}
+                          </p>
+                        )}
+                      </div>
                     </motion.div>
 
                     {/* Explore Link */}
@@ -374,25 +390,27 @@ export default function JournalPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative max-w-4xl max-h-[85vh] w-full bg-[#FDFBF7] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center p-6 md:p-10 cursor-default border border-[#E5DFD5]"
             >
+              {/* Close Button (z-50 ไม่โดนบัง และกดง่ายชัดเจน 100%) */}
               <button
                 type="button"
                 onClick={() => setPreviewImage(null)}
-                className="absolute top-4 right-4 p-2.5 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow-md transition-colors cursor-pointer"
-                title="ปิด"
+                className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-white text-[#1C1A18] hover:bg-[#84492C] hover:text-white shadow-lg border border-[#E5DFD5] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center"
+                title="ปิดหน้าต่าง"
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={18} strokeWidth={2.5} />
               </button>
 
-              <div className="w-full flex-1 min-h-[300px] max-h-[60vh] flex items-center justify-center p-2">
+              <div className="w-full flex-1 min-h-[260px] max-h-[58vh] flex items-center justify-center p-2 pt-8 sm:pt-4">
                 <img
                   src={previewImage.url}
                   alt={previewImage.title}
-                  className="max-w-full max-h-[55vh] object-contain drop-shadow-md rounded-lg"
+                  className="max-w-full max-h-[52vh] object-contain drop-shadow-md rounded-xl"
                 />
               </div>
 
               <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-[#E5DFD5] mt-auto">
-                <div>
+                <div className="text-center sm:text-left">
                   <span className="text-[10px] tracking-[0.25em] uppercase font-semibold text-[#84492C]">
                     Collection
                   </span>
