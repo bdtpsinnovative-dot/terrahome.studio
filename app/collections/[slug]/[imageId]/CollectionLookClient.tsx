@@ -304,7 +304,8 @@ export default function CollectionLookClient({
 
   const specs = activeProduct.specs || {};
   
-  let activeStock = activeProduct.stock?.filter((s: any) => s.qty > 0).map((s: any) => {
+  // 1. Single Product Stock
+  let singleActiveStock = activeProduct.stock?.filter((s: any) => s.qty > 0).map((s: any) => {
     if (userLocation && s.branches?.latitude && s.branches?.longitude) {
       const dist = calculateDistance(
         userLocation[0],
@@ -317,9 +318,66 @@ export default function CollectionLookClient({
     return { ...s, distance: null };
   }) || [];
 
-  if (userLocation && activeStock.length > 0) {
-    activeStock.sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
+  if (userLocation && singleActiveStock.length > 0) {
+    singleActiveStock.sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
   }
+
+  // 2. Full Look Set Stock Grouped by Branch
+  const branchMap = new Map<number, {
+    branch: any;
+    availableItems: number;
+    totalQty: number;
+    distance: number | null;
+  }>();
+
+  linkedProducts.forEach((prod) => {
+    (prod.stock || []).forEach((s: any) => {
+      if (s.qty > 0 && s.branches?.id) {
+        const branchId = s.branches.id;
+        if (!branchMap.has(branchId)) {
+          let dist = null;
+          if (userLocation && s.branches.latitude && s.branches.longitude) {
+            dist = calculateDistance(
+              userLocation[0],
+              userLocation[1],
+              Number(s.branches.latitude),
+              Number(s.branches.longitude)
+            );
+          }
+          branchMap.set(branchId, {
+            branch: s.branches,
+            availableItems: 0,
+            totalQty: 0,
+            distance: dist,
+          });
+        }
+        const entry = branchMap.get(branchId)!;
+        entry.availableItems += 1;
+        entry.totalQty += Number(s.qty);
+      }
+    });
+  });
+
+  const setBranchStock = Array.from(branchMap.values()).map((entry) => ({
+    branches: entry.branch,
+    qty: entry.totalQty,
+    availableItems: entry.availableItems,
+    isComplete: entry.availableItems === linkedProducts.length,
+    distance: entry.distance,
+  }));
+
+  if (setBranchStock.length > 0) {
+    setBranchStock.sort((a, b) => {
+      if (a.isComplete && !b.isComplete) return -1;
+      if (!a.isComplete && b.isComplete) return 1;
+      if (userLocation) {
+        return (a.distance || 0) - (b.distance || 0);
+      }
+      return b.availableItems - a.availableItems;
+    });
+  }
+
+  const effectiveStock = isFullSetSelected ? setBranchStock : singleActiveStock;
 
   return (
     <div className="relative z-[9999] min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans antialiased selection:bg-[#3A3835] selection:text-[#EBE8E1] flex flex-col justify-between">
@@ -517,107 +575,121 @@ export default function CollectionLookClient({
                   <span className="font-medium text-[10px] text-[#3A3835]">{specs.thickness_cm || "-"} cm</span>
                 </div>
               </div>
-
-              {/* IN-STORE AVAILABILITY & MAP */}
-              <div className="mt-6 max-w-lg">
-                <button 
-                  onClick={() => {
-                    trackAnalyticsCta(showStock ? "close_stock_availability" : "open_stock_availability", { product_id: activeProduct.id });
-                    setShowStock(!showStock);
-                  }}
-                  className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
-                >
-                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
-                    <MapPin className="w-3.5 h-3.5" />
-                    IN-STORE AVAILABILITY & MAP
-                  </div>
-                  <span className="text-[#8C8A86] text-lg font-light group-hover:text-[#84492C] transition-colors">
-                    {showStock ? "−" : "+"}
-                  </span>
-                </button>
-
-                <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[1200px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
-                  
-                  {activeStock.length > 0 && !userLocation && (
-                    <button
-                      onClick={handleGetLocation}
-                      disabled={loadingLocation}
-                      className="mb-4 w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
-                    >
-                      <Navigation className={`w-3 h-3 ${loadingLocation ? "animate-spin" : ""}`} />
-                      {loadingLocation ? "CALCULATING..." : "CALCULATE DISTANCE FROM YOUR LOCATION"}
-                    </button>
-                  )}
-
-                  <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
-                    {activeStock.length > 0 ? (
-                      activeStock.map((s: any, idx: number) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => {
-                            if (s.branches?.latitude && s.branches?.longitude) {
-                              setSelectedBranch({
-                                lat: Number(s.branches.latitude),
-                                lng: Number(s.branches.longitude),
-                                timestamp: Date.now(),
-                              });
-                            }
-                          }}
-                          className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
-                        >
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[#3A3835] font-medium tracking-[0.1em]">
-                              {s.branches?.branch_name || "Unknown Branch"}
-                            </span>
-                            {s.distance !== null && (
-                              <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
-                                <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                              <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
-                            </div>
-                            
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()} 
-                              title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
-                              className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
-                            >
-                              <Navigation className="w-3.5 h-3.5" />
-                            </a>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                        <span>PRE-ORDER AVAILABLE</span>
-                        <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {activeStock.length > 0 && (
-                    <BranchMap 
-                      activeStock={activeStock} 
-                      productImage={activeProduct.image_url} 
-                      productName={activeProduct.name}
-                      userLocation={userLocation}
-                      setUserLocation={setUserLocation}
-                      selectedBranch={selectedBranch}
-                    />
-                  )}
-
-                </div>
-              </div>
             </div>
           )}
+
+          {/* IN-STORE AVAILABILITY & MAP (Always Available for both Full Set & Single Items) */}
+          <div className="max-w-lg">
+            <button 
+              onClick={() => {
+                trackAnalyticsCta(showStock ? "close_stock_availability" : "open_stock_availability", { product_id: activeProduct.id });
+                setShowStock(!showStock);
+              }}
+              className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
+            >
+              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
+                <MapPin className="w-3.5 h-3.5" />
+                {isFullSetSelected ? "IN-STORE AVAILABILITY & MAP (FULL SET)" : "IN-STORE AVAILABILITY & MAP"}
+              </div>
+              <span className="text-[#8C8A86] text-lg font-light group-hover:text-[#84492C] transition-colors">
+                {showStock ? "−" : "+"}
+              </span>
+            </button>
+
+            <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[1200px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
+              
+              {effectiveStock.length > 0 && !userLocation && (
+                <button
+                  onClick={handleGetLocation}
+                  disabled={loadingLocation}
+                  className="mb-4 w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
+                >
+                  <Navigation className={`w-3 h-3 ${loadingLocation ? "animate-spin" : ""}`} />
+                  {loadingLocation ? "CALCULATING..." : "CALCULATE DISTANCE FROM YOUR LOCATION"}
+                </button>
+              )}
+
+              <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
+                {effectiveStock.length > 0 ? (
+                  effectiveStock.map((s: any, idx: number) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        if (s.branches?.latitude && s.branches?.longitude) {
+                          setSelectedBranch({
+                            lat: Number(s.branches.latitude),
+                            lng: Number(s.branches.longitude),
+                            timestamp: Date.now(),
+                          });
+                        }
+                      }}
+                      className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#3A3835] font-medium tracking-[0.1em]">
+                            {s.branches?.branch_name || "Unknown Branch"}
+                          </span>
+                          {isFullSetSelected && s.isComplete && (
+                            <span className="text-[7.5px] font-bold text-white bg-[#84492C] px-1.5 py-0.5 rounded-[2px]">
+                              ครบทั้งเซต
+                            </span>
+                          )}
+                        </div>
+                        {s.distance !== null && (
+                          <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                          <span className="font-mono text-[#3A3835] font-semibold">
+                            {isFullSetSelected 
+                              ? `${s.availableItems}/${linkedProducts.length} ชิ้นในเซต`
+                              : `${s.qty} in stock`
+                            }
+                          </span>
+                        </div>
+                        
+                        {s.branches?.latitude && s.branches?.longitude && (
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()} 
+                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                            className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                          >
+                            <Navigation className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                    <span>PRE-ORDER AVAILABLE</span>
+                    <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                  </div>
+                )}
+              </div>
+
+              {effectiveStock.length > 0 && (
+                <BranchMap 
+                  activeStock={effectiveStock} 
+                  productImage={isFullSetSelected ? collectionImage.imageUrl : activeProduct.image_url} 
+                  productName={isFullSetSelected ? `${category.titleEn} Look #${collectionImage.sortOrder} Full Set` : activeProduct.name}
+                  userLocation={userLocation}
+                  setUserLocation={setUserLocation}
+                  selectedBranch={selectedBranch}
+                />
+              )}
+
+            </div>
+          </div>
 
           {/* COMPLETE THE SET / COLLECTION ITEMS CAROUSEL */}
           <div className="mt-4">
