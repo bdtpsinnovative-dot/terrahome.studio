@@ -346,9 +346,9 @@ export default function CollectionLookClient({
       {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        {/* LEFT COLUMN: 1:1 Square Image (Dynamic between Look Photo & Active Product Image) */}
+        {/* LEFT COLUMN: Large Photograph (Matches ProductDetailClient style) */}
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] border border-[#3A3835]/5 shadow-xs flex items-center justify-center">
+          <div className="flex-1 bg-[#F4F1EB] aspect-3/4 lg:aspect-auto relative overflow-hidden group rounded-[2px] min-h-[360px] lg:min-h-[480px]">
             {isFullSetSelected ? (
               <img 
                 src={collectionImage.imageUrl} 
@@ -358,17 +358,21 @@ export default function CollectionLookClient({
                 className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <img 
-                src={activeProduct.image_url || collectionImage.imageUrl} 
-                alt={activeProduct.name || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
-                title={activeProduct.name} 
-                key={`product-${activeProduct.id || collectionImage.id}`}
-                className={`w-full h-full transition-all duration-500 group-hover:scale-105 ${
-                  activeProduct.image_url 
-                    ? "object-contain p-6 sm:p-8 mix-blend-multiply" 
-                    : "object-cover"
-                }`}
-              />
+              activeProduct.image_url ? (
+                <img 
+                  src={activeProduct.image_url} 
+                  alt={activeProduct.name || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
+                  title={activeProduct.name} 
+                  key={`product-${activeProduct.id || collectionImage.id}`}
+                  className="w-full h-full absolute inset-0 object-contain p-10 lg:p-16 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                />
+              ) : (
+                <img 
+                  src={collectionImage.imageUrl} 
+                  alt={category.titleEn} 
+                  className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              )
             )}
 
             {/* Look / Product Badge */}
