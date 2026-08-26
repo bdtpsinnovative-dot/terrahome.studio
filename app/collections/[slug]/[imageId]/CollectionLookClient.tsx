@@ -60,8 +60,10 @@ export default function CollectionLookClient({
   const router = useRouter();
   const supabase = createClient();
   
-  // Set Mode vs Single Product Mode
-  const [isFullSetSelected, setIsFullSetSelected] = useState(false);
+  // Set Mode vs Single Product Mode (Default to Full Set if multiple products exist)
+  const [isFullSetSelected, setIsFullSetSelected] = useState(() => {
+    return linkedProducts.length > 1;
+  });
 
   // Active product selected from the linked items in this look
   const [activeProduct, setActiveProduct] = useState(() => {
@@ -404,20 +406,16 @@ export default function CollectionLookClient({
       {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        {/* LEFT COLUMN: Large Photograph (1:1 for Full Look Set, Prop Detail Style for Single Product) */}
+        {/* LEFT COLUMN: Large Photograph (Consistent container sizing matching Prop Detail) */}
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className={`bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] transition-all duration-300 ${
-            isFullSetSelected 
-              ? "w-full aspect-square shadow-xs" 
-              : "flex-1 aspect-3/4 lg:aspect-auto min-h-[360px] lg:min-h-[480px]"
-          }`}>
+          <div className="bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] flex-1 aspect-3/4 lg:aspect-auto min-h-[360px] lg:min-h-[480px] shadow-2xs">
             {isFullSetSelected ? (
               <img 
                 src={collectionImage.imageUrl} 
                 alt={collectionImage.altText || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
                 title={`${category.titleEn} Look ${collectionImage.sortOrder}`} 
                 key={`look-${collectionImage.id}`}
-                className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full absolute inset-0 object-contain p-6 lg:p-10 transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
               activeProduct.image_url ? (
@@ -494,36 +492,7 @@ export default function CollectionLookClient({
                 </div>
                 <div>
                   <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1">SET TYPE</span>
-                  <span className="font-semibold text-[11px] text-[#84492C]">ครบเซตตามภาพ</span>
-                </div>
-              </div>
-
-              {/* SET ITEMS BREAKDOWN SUMMARY */}
-              <div className="mt-6 max-w-lg">
-                <span className="text-[8.5px] uppercase tracking-[0.2em] font-bold text-[#8C8A86] block mb-2.5">
-                  รายการสินค้าในเซตนี้ ({linkedProducts.length} ชิ้น):
-                </span>
-                <div className="bg-[#F2EFE9]/60 p-3 rounded-[2px] border border-[#3A3835]/5 space-y-2">
-                  {linkedProducts.map((item, idx) => (
-                    <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-[#3A3835]/5 last:border-b-0">
-                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                        <span className="text-[10px] font-mono text-[#8C8A86]">{idx + 1}.</span>
-                        <div className="h-7 w-7 rounded-[2px] bg-white overflow-hidden p-0.5 shrink-0 border border-[#3A3835]/10">
-                          {item.image_url ? (
-                            <img src={item.image_url} alt="" className="h-full w-full object-contain" />
-                          ) : (
-                            <Package className="h-full w-full text-slate-300 p-0.5" />
-                          )}
-                        </div>
-                        <span className="text-[10.5px] font-medium text-[#3A3835] truncate">
-                          {item.name}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[10.5px] font-semibold text-[#84492C] shrink-0">
-                        {item.price > 0 ? `฿${Number(item.price).toLocaleString()}` : "POA"}
-                      </span>
-                    </div>
-                  ))}
+                  <span className="font-semibold text-[11px] text-[#84492C]">สินค้าที่ระบุใน Look</span>
                 </div>
               </div>
             </div>
@@ -596,9 +565,9 @@ export default function CollectionLookClient({
               </span>
             </button>
 
-            <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[1200px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
+            <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[3000px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
               
-              {effectiveStock.length > 0 && !userLocation && (
+              {!userLocation && (
                 <button
                   onClick={handleGetLocation}
                   disabled={loadingLocation}
@@ -609,83 +578,156 @@ export default function CollectionLookClient({
                 </button>
               )}
 
-              <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
-                {effectiveStock.length > 0 ? (
-                  effectiveStock.map((s: any, idx: number) => (
-                    <div 
-                      key={idx} 
-                      onClick={() => {
-                        if (s.branches?.latitude && s.branches?.longitude) {
-                          setSelectedBranch({
-                            lat: Number(s.branches.latitude),
-                            lng: Number(s.branches.longitude),
-                            timestamp: Date.now(),
-                          });
-                        }
-                      }}
-                      className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#3A3835] font-medium tracking-[0.1em]">
-                            {s.branches?.branch_name || "Unknown Branch"}
-                          </span>
-                          {isFullSetSelected && s.isComplete && (
-                            <span className="text-[7.5px] font-bold text-white bg-[#84492C] px-1.5 py-0.5 rounded-[2px]">
-                              ครบทั้งเซต
-                            </span>
-                          )}
-                        </div>
-                        {s.distance !== null && (
-                          <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
-                            <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                          <span className="font-mono text-[#3A3835] font-semibold">
-                            {isFullSetSelected 
-                              ? `${s.availableItems}/${linkedProducts.length} ชิ้นในเซต`
-                              : `${s.qty} in stock`
+              {/* 1. FULL SET: Smart Store Matrix (รวมสถานะทุกชิ้น + แผนที่เดียว) */}
+              {isFullSetSelected ? (
+                <div className="space-y-4">
+                  <div className="bg-[#F2EFE9]/50 p-2.5 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1.5">
+                    {setBranchStock.length > 0 ? (
+                      setBranchStock.map((s: any, idx: number) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            if (s.branches?.latitude && s.branches?.longitude) {
+                              setSelectedBranch({
+                                lat: Number(s.branches.latitude),
+                                lng: Number(s.branches.longitude),
+                                timestamp: Date.now(),
+                              });
                             }
-                          </span>
-                        </div>
-                        
-                        {s.branches?.latitude && s.branches?.longitude && (
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
-                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
-                            className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
-                          >
-                            <Navigation className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                    <span>PRE-ORDER AVAILABLE</span>
-                    <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
-                  </div>
-                )}
-              </div>
+                          }}
+                          className={`flex flex-col gap-2 p-3 rounded-sm cursor-pointer transition-all border ${
+                            s.isComplete 
+                              ? "bg-white border-[#84492C]/30 shadow-2xs hover:border-[#84492C]" 
+                              : "bg-white/50 border-transparent hover:bg-white hover:border-[#3A3835]/10"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[#3A3835] font-bold text-[10.5px] tracking-[0.08em]">
+                                  {s.branches?.branch_name || "Unknown Branch"}
+                                </span>
+                                {s.isComplete ? (
+                                  <span className="text-[7.5px] font-bold text-white bg-[#84492C] px-1.5 py-0.5 rounded-[2px] tracking-wider uppercase">
+                                    ครบทั้งเซต ({s.availableItems}/{linkedProducts.length})
+                                  </span>
+                                ) : (
+                                  <span className="text-[7.5px] font-bold text-[#84492C] bg-[#84492C]/10 px-1.5 py-0.5 rounded-[2px] tracking-wider">
+                                    มี {s.availableItems}/{linkedProducts.length} ชิ้น
+                                  </span>
+                                )}
+                              </div>
+                              {s.distance !== null && (
+                                <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                                  <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                                </span>
+                              )}
+                            </div>
 
-              {effectiveStock.length > 0 && (
-                <BranchMap 
-                  activeStock={effectiveStock} 
-                  productImage={isFullSetSelected ? collectionImage.imageUrl : activeProduct.image_url} 
-                  productName={isFullSetSelected ? `${category.titleEn} Look #${collectionImage.sortOrder} Full Set` : activeProduct.name}
-                  userLocation={userLocation}
-                  setUserLocation={setUserLocation}
-                  selectedBranch={selectedBranch}
-                />
+                            {s.branches?.latitude && s.branches?.longitude && (
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} 
+                                title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                                className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                              >
+                                <Navigation className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                        <span>PRE-ORDER AVAILABLE</span>
+                        <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {setBranchStock.length > 0 && (
+                    <BranchMap 
+                      activeStock={setBranchStock} 
+                      productImage={collectionImage.imageUrl} 
+                      productName={`${category.titleEn} Look #${collectionImage.sortOrder} (Complete Set)`}
+                      userLocation={userLocation}
+                      setUserLocation={setUserLocation}
+                      selectedBranch={selectedBranch}
+                    />
+                  )}
+                </div>
+              ) : (
+                /* 2. SINGLE PRODUCT: แสดงสถานะสาขาและแผนที่เฉพาะสินค้ารายชิ้นนั้น */
+                <div>
+                  <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
+                    {singleActiveStock.length > 0 ? (
+                      singleActiveStock.map((s: any, idx: number) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            if (s.branches?.latitude && s.branches?.longitude) {
+                              setSelectedBranch({
+                                lat: Number(s.branches.latitude),
+                                lng: Number(s.branches.longitude),
+                                timestamp: Date.now(),
+                              });
+                            }
+                          }}
+                          className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
+                        >
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[#3A3835] font-medium tracking-[0.1em]">
+                              {s.branches?.branch_name || "Unknown Branch"}
+                            </span>
+                            {s.distance !== null && (
+                              <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                                <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                              <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
+                            </div>
+                            
+                            {s.branches?.latitude && s.branches?.longitude && (
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} 
+                                title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                                className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                              >
+                                <Navigation className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                        <span>PRE-ORDER AVAILABLE</span>
+                        <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {singleActiveStock.length > 0 && (
+                    <BranchMap 
+                      activeStock={singleActiveStock} 
+                      productImage={activeProduct.image_url} 
+                      productName={activeProduct.name}
+                      userLocation={userLocation}
+                      setUserLocation={setUserLocation}
+                      selectedBranch={selectedBranch}
+                    />
+                  )}
+                </div>
               )}
 
             </div>
@@ -752,7 +794,7 @@ export default function CollectionLookClient({
                         THB {Number(totalSetDiscountedPrice).toLocaleString()}
                       </p>
                       <span className="text-[7.5px] text-[#8C8A86] mt-0.5 uppercase tracking-wider font-mono">
-                        ({linkedProducts.length} ชิ้นครบเซต)
+                        ({linkedProducts.length} ชิ้นใน Look นี้)
                       </span>
                     </div>
                   </div>
