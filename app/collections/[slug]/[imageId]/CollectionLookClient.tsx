@@ -346,9 +346,13 @@ export default function CollectionLookClient({
       {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        {/* LEFT COLUMN: Large Photograph (Matches ProductDetailClient style) */}
+        {/* LEFT COLUMN: Large Photograph (1:1 for Full Look Set, Prop Detail Style for Single Product) */}
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className="flex-1 bg-[#F4F1EB] aspect-3/4 lg:aspect-auto relative overflow-hidden group rounded-[2px] min-h-[360px] lg:min-h-[480px]">
+          <div className={`bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] transition-all duration-300 ${
+            isFullSetSelected 
+              ? "w-full aspect-square shadow-xs" 
+              : "flex-1 aspect-3/4 lg:aspect-auto min-h-[360px] lg:min-h-[480px]"
+          }`}>
             {isFullSetSelected ? (
               <img 
                 src={collectionImage.imageUrl} 
