@@ -346,20 +346,34 @@ export default function CollectionLookClient({
       {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        {/* LEFT COLUMN: Large Collection Photograph */}
+        {/* LEFT COLUMN: 1:1 Square Image (Dynamic between Look Photo & Active Product Image) */}
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className="flex-1 bg-[#F4F1EB] aspect-3/4 lg:aspect-auto relative overflow-hidden group rounded-[2px]">
-            <img 
-              src={collectionImage.imageUrl} 
-              alt={collectionImage.altText || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
-              title={`${category.titleEn} Look ${collectionImage.sortOrder}`} 
-              key={collectionImage.id}
-              className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            {/* Look Badge */}
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/20">
-              <Sparkles className="w-3 h-3 text-[#F2C94C]" />
-              <span>Look #{collectionImage.sortOrder}</span>
+          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] border border-[#3A3835]/5 shadow-xs flex items-center justify-center">
+            {isFullSetSelected ? (
+              <img 
+                src={collectionImage.imageUrl} 
+                alt={collectionImage.altText || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
+                title={`${category.titleEn} Look ${collectionImage.sortOrder}`} 
+                key={`look-${collectionImage.id}`}
+                className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <img 
+                src={activeProduct.image_url || collectionImage.imageUrl} 
+                alt={activeProduct.name || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
+                title={activeProduct.name} 
+                key={`product-${activeProduct.id || collectionImage.id}`}
+                className={`w-full h-full transition-all duration-500 group-hover:scale-105 ${
+                  activeProduct.image_url 
+                    ? "object-contain p-6 sm:p-8 mix-blend-multiply" 
+                    : "object-cover"
+                }`}
+              />
+            )}
+
+            {/* Look / Product Badge */}
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/10">
+              <span>{isFullSetSelected ? `Look #${collectionImage.sortOrder} · Set` : (activeProduct.sku || `Look #${collectionImage.sortOrder}`)}</span>
             </div>
           </div>
         </div>
