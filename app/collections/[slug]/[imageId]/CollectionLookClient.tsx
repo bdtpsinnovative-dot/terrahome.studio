@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, CheckCircle2, MapPin, Navigation, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MapPin, Navigation, Sparkles, Layers, Package } from "lucide-react";
 import { createClient, getSafeSession } from "@/src/supabase/client";
 import { trackAnalyticsCta } from "@/app/components/AnalyticsTracker";
 import MessengerInquiryButton from "@/app/components/MessengerInquiryButton";
-import CollectionCard from "@/app/prop/CollectionCard";
 
 const BranchMap = dynamic(() => import("@/app/prop/[groupId]/[sku]/BranchMap"), { 
   ssr: false, 
@@ -61,6 +60,9 @@ export default function CollectionLookClient({
   const router = useRouter();
   const supabase = createClient();
   
+  // Set Mode vs Single Product Mode
+  const [isFullSetSelected, setIsFullSetSelected] = useState(false);
+
   // Active product selected from the linked items in this look
   const [activeProduct, setActiveProduct] = useState(() => {
     return linkedProducts[0] || {
@@ -86,6 +88,20 @@ export default function CollectionLookClient({
     return originalPrice;
   };
 
+  // Full Set Calculations
+  const totalSetOriginalPrice = linkedProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
+  const totalSetDiscountedPrice = linkedProducts.reduce((sum, p) => {
+    const discounted = getDiscountedPrice(p);
+    return sum + (discounted !== null ? discounted : Number(p.price || 0));
+  }, 0);
+  const hasSetDiscount = totalSetDiscountedPrice < totalSetOriginalPrice && totalSetDiscountedPrice > 0;
+  const isSetAvailable = linkedProducts.length > 0;
+
+  const allSetInStock = linkedProducts.every((p) => {
+    const stockQty = (p.stock || []).reduce((sum: number, s: any) => sum + Number(s.qty || 0), 0);
+    return stockQty > 0;
+  });
+
   const [showStock, setShowStock] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -99,6 +115,7 @@ export default function CollectionLookClient({
   const previousProductRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (isFullSetSelected) return;
     const productId = Number(activeProduct?.id);
     if (!Number.isSafeInteger(productId) || productId <= 0 || trackedViewsRef.current.has(productId) || pendingViewsRef.current.has(productId)) return;
 
@@ -134,10 +151,16 @@ export default function CollectionLookClient({
     };
 
     void sendViewEvent();
-  }, [activeProduct?.id, activeProduct?.sku, category.slug]);
+  }, [activeProduct?.id, activeProduct?.sku, category.slug, isFullSetSelected]);
 
   const handleSelectProduct = (product: any) => {
+    setIsFullSetSelected(false);
     setActiveProduct(product);
+    setShowStock(false);
+  };
+
+  const handleSelectFullSet = () => {
+    setIsFullSetSelected(true);
     setShowStock(false);
   };
 
@@ -168,6 +191,7 @@ export default function CollectionLookClient({
   const activeDiscountedPrice = getDiscountedPrice(activeProduct);
   const hasActiveDiscount = Number.isFinite(activeDiscountValue) && activeDiscountValue > 0 && activeDiscountType;
 
+  // 1. Single Product Add To Cart
   const handleAddToCart = async () => {
     if (!activeProduct || !activeProduct.id) return;
     try {
@@ -223,6 +247,61 @@ export default function CollectionLookClient({
     }
   };
 
+  // 2. Full Set Add To Cart (Batch Add All Linked Products)
+  const handleAddFullSetToCart = async () => {
+    if (!linkedProducts.length) return;
+    try {
+      trackAnalyticsCta("add_full_set_to_cart", { 
+        look_id: collectionImage.id, 
+        items_count: linkedProducts.length,
+        total_price: totalSetDiscountedPrice 
+      });
+      setIsAddingToCart(true);
+
+      const session = await getSafeSession();
+      if (!session) {
+        alert("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้านะครับ");
+        router.push("/login");
+        return;
+      }
+
+      // Add each item in the look set to the user's cart
+      for (const product of linkedProducts) {
+        if (!product.id) continue;
+
+        const { data: existingItem } = await supabase
+          .from("cart_items")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .eq("product_id", product.id)
+          .maybeSingle();
+
+        if (existingItem) {
+          await supabase
+            .from("cart_items")
+            .update({ quantity: existingItem.quantity + 1 })
+            .eq("id", existingItem.id);
+        } else {
+          await supabase
+            .from("cart_items")
+            .insert({
+              user_id: session.user.id,
+              product_id: product.id,
+              quantity: 1,
+            });
+        }
+      }
+
+      setAddedSuccess(true);
+      setTimeout(() => setAddedSuccess(false), 2500);
+    } catch (error: any) {
+      console.error("Error adding full set to cart:", error);
+      alert("เกิดข้อผิดพลาดในการเพิ่มสินค้าทั้งเซตลงตะกร้า โปรดลองอีกครั้งครับ");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
   const specs = activeProduct.specs || {};
   
   let activeStock = activeProduct.stock?.filter((s: any) => s.qty > 0).map((s: any) => {
@@ -267,7 +346,7 @@ export default function CollectionLookClient({
       {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
         
-        {/* LEFT COLUMN: Large Collection Photograph (ภาพใหญ่ทางซ้ายเป็นภาพของ collection ตามที่ขอเป๊ะๆ) */}
+        {/* LEFT COLUMN: Large Collection Photograph */}
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-3/4 lg:aspect-auto relative overflow-hidden group rounded-[2px]">
             <img 
@@ -277,7 +356,7 @@ export default function CollectionLookClient({
               key={collectionImage.id}
               className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
             />
-            {/* Subtle Look Badge */}
+            {/* Look Badge */}
             <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/20">
               <Sparkles className="w-3 h-3 text-[#F2C94C]" />
               <span>Look #{collectionImage.sortOrder}</span>
@@ -285,161 +364,244 @@ export default function CollectionLookClient({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Active Product Details & Collection Items (เหมือนหน้า Detail สินค้าเดิมเป๊ะๆ) */}
+        {/* RIGHT COLUMN: Active Product Details OR Complete Set Details */}
         <div className="lg:col-span-7 p-4 lg:p-6 xl:p-8 flex flex-col gap-6">
           
-          <div>
-            <div className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#84492C] mb-1">
-              {activeProduct.sku || `${category.titleEn} COLLECTION`}
-            </div>
-
-            <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
-              {activeProduct.name}
-            </h1>
-
-            {hasActiveDiscount && activeDiscountedPrice !== null ? (
-              <div className="mt-3 flex items-center gap-3 flex-wrap">
-                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
-                  {activeDiscountType === "PERCENT" ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+          {/* A. COMPLETE SET VIEW (เมื่อเลือก เซ็ตรวม) */}
+          {isFullSetSelected ? (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#84492C] bg-[#84492C]/10 px-2 py-0.5 rounded-[2px]">
+                  FULL LOOK SET
                 </span>
-                <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
-                  THB {Number(activeProduct.price).toLocaleString()}
+                <span className="text-[9px] text-[#8C8A86] font-mono">
+                  {linkedProducts.length} ITEMS INCLUDED
                 </span>
-                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                  THB {Number(activeDiscountedPrice).toLocaleString()}
-                </p>
               </div>
-            ) : (
-              <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                {outOfStock ? "PRE-ORDER (รอสินค้า 45-60 วัน)" : activeProduct.price > 0 ? `THB ${Number(activeProduct.price).toLocaleString()}` : "POA"}
-              </p>
-            )}
 
-            {/* SPECS TABLE (MATERIAL, WIDTH, DEPTH, HEIGHT) */}
-            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || "-"}</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">WIDTH</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.width_cm || "-"} cm</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">DEPTH</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.length_cm || "-"} cm</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">HEIGHT</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.thickness_cm || "-"} cm</span>
-              </div>
-            </div>
+              <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
+                {category.titleEn} (LOOK #{collectionImage.sortOrder} SET)
+              </h1>
 
-            {/* IN-STORE AVAILABILITY & MAP */}
-            <div className="mt-8 max-w-lg">
-              <button 
-                onClick={() => {
-                  trackAnalyticsCta(showStock ? "close_stock_availability" : "open_stock_availability", { product_id: activeProduct.id });
-                  setShowStock(!showStock);
-                }}
-                className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
-              >
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
-                  <MapPin className="w-3.5 h-3.5" />
-                  IN-STORE AVAILABILITY & MAP
+              {/* Set Price */}
+              {hasSetDiscount ? (
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
+                    SPECIAL SET PRICE
+                  </span>
+                  <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                    THB {Number(totalSetOriginalPrice).toLocaleString()}
+                  </span>
+                  <p className="text-[14px] font-bold tracking-[0.12em] text-[#84492C]">
+                    THB {Number(totalSetDiscountedPrice).toLocaleString()}
+                  </p>
                 </div>
-                <span className="text-[#8C8A86] text-lg font-light group-hover:text-[#84492C] transition-colors">
-                  {showStock ? "−" : "+"}
+              ) : (
+                <p className="mt-3 text-[14px] font-bold tracking-[0.12em] text-[#84492C]">
+                  THB {Number(totalSetOriginalPrice).toLocaleString()}
+                </p>
+              )}
+
+              {/* SET SPECS TABLE */}
+              <div className="mt-8 py-5 border-y border-[#3A3835]/10 grid grid-cols-3 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1">TOTAL PIECES</span>
+                  <span className="font-semibold text-[11px] text-[#3A3835]">{linkedProducts.length} รายการ</span>
+                </div>
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1">COLLECTION</span>
+                  <span className="font-semibold text-[11px] text-[#3A3835]">{category.titleEn}</span>
+                </div>
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1">SET TYPE</span>
+                  <span className="font-semibold text-[11px] text-[#84492C]">ครบเซตตามภาพ</span>
+                </div>
+              </div>
+
+              {/* SET ITEMS BREAKDOWN SUMMARY */}
+              <div className="mt-6 max-w-lg">
+                <span className="text-[8.5px] uppercase tracking-[0.2em] font-bold text-[#8C8A86] block mb-2.5">
+                  รายการสินค้าในเซตนี้ ({linkedProducts.length} ชิ้น):
                 </span>
-              </button>
-
-              <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[1200px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
-                
-                {activeStock.length > 0 && !userLocation && (
-                  <button
-                    onClick={handleGetLocation}
-                    disabled={loadingLocation}
-                    className="mb-4 w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
-                  >
-                    <Navigation className={`w-3 h-3 ${loadingLocation ? "animate-spin" : ""}`} />
-                    {loadingLocation ? "CALCULATING..." : "CALCULATE DISTANCE FROM YOUR LOCATION"}
-                  </button>
-                )}
-
-                <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
-                  {activeStock.length > 0 ? (
-                    activeStock.map((s: any, idx: number) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => {
-                          if (s.branches?.latitude && s.branches?.longitude) {
-                            setSelectedBranch({
-                              lat: Number(s.branches.latitude),
-                              lng: Number(s.branches.longitude),
-                              timestamp: Date.now(),
-                            });
-                          }
-                        }}
-                        className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
-                      >
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[#3A3835] font-medium tracking-[0.1em]">
-                            {s.branches?.branch_name || "Unknown Branch"}
-                          </span>
-                          {s.distance !== null && (
-                            <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
-                            </span>
+                <div className="bg-[#F2EFE9]/60 p-3 rounded-[2px] border border-[#3A3835]/5 space-y-2">
+                  {linkedProducts.map((item, idx) => (
+                    <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-[#3A3835]/5 last:border-b-0">
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <span className="text-[10px] font-mono text-[#8C8A86]">{idx + 1}.</span>
+                        <div className="h-7 w-7 rounded-[2px] bg-white overflow-hidden p-0.5 shrink-0 border border-[#3A3835]/10">
+                          {item.image_url ? (
+                            <img src={item.image_url} alt="" className="h-full w-full object-contain" />
+                          ) : (
+                            <Package className="h-full w-full text-slate-300 p-0.5" />
                           )}
                         </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                            <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
-                          </div>
-                          
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
-                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
-                            className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
-                          >
-                            <Navigation className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
+                        <span className="text-[10.5px] font-medium text-[#3A3835] truncate">
+                          {item.name}
+                        </span>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                      <span>PRE-ORDER AVAILABLE</span>
-                      <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                      <span className="font-mono text-[10.5px] font-semibold text-[#84492C] shrink-0">
+                        {item.price > 0 ? `฿${Number(item.price).toLocaleString()}` : "POA"}
+                      </span>
                     </div>
-                  )}
+                  ))}
                 </div>
-
-                {activeStock.length > 0 && (
-                  <BranchMap 
-                    activeStock={activeStock} 
-                    productImage={activeProduct.image_url} 
-                    productName={activeProduct.name}
-                    userLocation={userLocation}
-                    setUserLocation={setUserLocation}
-                    selectedBranch={selectedBranch}
-                  />
-                )}
-
               </div>
             </div>
-          </div>
+          ) : (
+            /* B. INDIVIDUAL PRODUCT VIEW (เมื่อเลือก ชิ้นเดี่ยว) */
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#84492C] mb-1">
+                {activeProduct.sku || `${category.titleEn} COLLECTION`}
+              </div>
+
+              <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
+                {activeProduct.name}
+              </h1>
+
+              {hasActiveDiscount && activeDiscountedPrice !== null ? (
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
+                    {activeDiscountType === "PERCENT" ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+                  </span>
+                  <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                    THB {Number(activeProduct.price).toLocaleString()}
+                  </span>
+                  <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
+                    THB {Number(activeDiscountedPrice).toLocaleString()}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
+                  {outOfStock ? "PRE-ORDER (รอสินค้า 45-60 วัน)" : activeProduct.price > 0 ? `THB ${Number(activeProduct.price).toLocaleString()}` : "POA"}
+                </p>
+              )}
+
+              {/* SPECS TABLE (MATERIAL, WIDTH, DEPTH, HEIGHT) */}
+              <div className="mt-8 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
+                  <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || "-"}</span>
+                </div>
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">WIDTH</span>
+                  <span className="font-medium text-[10px] text-[#3A3835]">{specs.width_cm || "-"} cm</span>
+                </div>
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">DEPTH</span>
+                  <span className="font-medium text-[10px] text-[#3A3835]">{specs.length_cm || "-"} cm</span>
+                </div>
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">HEIGHT</span>
+                  <span className="font-medium text-[10px] text-[#3A3835]">{specs.thickness_cm || "-"} cm</span>
+                </div>
+              </div>
+
+              {/* IN-STORE AVAILABILITY & MAP */}
+              <div className="mt-6 max-w-lg">
+                <button 
+                  onClick={() => {
+                    trackAnalyticsCta(showStock ? "close_stock_availability" : "open_stock_availability", { product_id: activeProduct.id });
+                    setShowStock(!showStock);
+                  }}
+                  className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
+                >
+                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
+                    <MapPin className="w-3.5 h-3.5" />
+                    IN-STORE AVAILABILITY & MAP
+                  </div>
+                  <span className="text-[#8C8A86] text-lg font-light group-hover:text-[#84492C] transition-colors">
+                    {showStock ? "−" : "+"}
+                  </span>
+                </button>
+
+                <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? "max-h-[1200px] mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
+                  
+                  {activeStock.length > 0 && !userLocation && (
+                    <button
+                      onClick={handleGetLocation}
+                      disabled={loadingLocation}
+                      className="mb-4 w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
+                    >
+                      <Navigation className={`w-3 h-3 ${loadingLocation ? "animate-spin" : ""}`} />
+                      {loadingLocation ? "CALCULATING..." : "CALCULATE DISTANCE FROM YOUR LOCATION"}
+                    </button>
+                  )}
+
+                  <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
+                    {activeStock.length > 0 ? (
+                      activeStock.map((s: any, idx: number) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            if (s.branches?.latitude && s.branches?.longitude) {
+                              setSelectedBranch({
+                                lat: Number(s.branches.latitude),
+                                lng: Number(s.branches.longitude),
+                                timestamp: Date.now(),
+                              });
+                            }
+                          }}
+                          className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
+                        >
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[#3A3835] font-medium tracking-[0.1em]">
+                              {s.branches?.branch_name || "Unknown Branch"}
+                            </span>
+                            {s.distance !== null && (
+                              <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                                <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                              <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
+                            </div>
+                            
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()} 
+                              title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                              className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                        <span>PRE-ORDER AVAILABLE</span>
+                        <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {activeStock.length > 0 && (
+                    <BranchMap 
+                      activeStock={activeStock} 
+                      productImage={activeProduct.image_url} 
+                      productName={activeProduct.name}
+                      userLocation={userLocation}
+                      setUserLocation={setUserLocation}
+                      selectedBranch={selectedBranch}
+                    />
+                  )}
+
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* COMPLETE THE SET / COLLECTION ITEMS CAROUSEL */}
           <div className="mt-4">
-            <div className="mb-6">
+            <div className="mb-4">
               <span className="text-[#84492C] text-[8px] uppercase tracking-[0.2em] font-bold block mb-1">
-                FEATURED PIECES IN THIS LOOK
+                CHOOSE PIECE OR COMPLETE SET
               </span>
               <h2 className="font-serif text-lg uppercase tracking-wider text-[#3A3835]">
                 ITEMS IN THIS SET ({linkedProducts.length})
@@ -451,9 +613,60 @@ export default function CollectionLookClient({
                 ยังไม่มีรายการสินค้าที่ผูกไว้กับ Look นี้
               </div>
             ) : (
-              <div className="flex flex-row gap-5 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-row gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                
+                {/* 1. SPECIAL CARD: COMPLETE SET (เซ็ตรวมทั้งชุด) */}
+                {linkedProducts.length > 1 && (
+                  <div 
+                    onClick={handleSelectFullSet}
+                    className={`snap-start min-w-[130px] max-w-[130px] flex flex-col group transition-all duration-300 cursor-pointer`}
+                  >
+                    <div className={`w-full aspect-4/5 mb-3 relative overflow-hidden flex flex-col items-center justify-center rounded-[2px] transition-all duration-300 ${
+                      isFullSetSelected 
+                        ? "bg-[#F2EFE9] border-2 border-[#84492C] shadow-xs" 
+                        : "bg-[#F2EFE9] border border-[#3A3835]/20 hover:border-[#84492C]"
+                    }`}>
+                      {/* Set Badge */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <span className="flex items-center gap-1 text-[7px] font-bold text-white bg-[#84492C] px-1.5 py-0.5 rounded-[2px] tracking-[0.1em] uppercase">
+                          <Layers className="w-2.5 h-2.5" />
+                          FULL SET
+                        </span>
+                      </div>
+
+                      {isFullSetSelected && (
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 w-full flex justify-center">
+                          <span className="flex items-center gap-1 text-[7px] font-bold text-[#84492C] uppercase tracking-[0.15em] bg-white px-2 py-0.5 rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#3A3835]/5">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            VIEWING
+                          </span>
+                        </div>
+                      )}
+
+                      <img 
+                        src={collectionImage.imageUrl} 
+                        className={`w-full h-full object-cover transition-opacity ${isFullSetSelected ? "opacity-100" : "opacity-75 group-hover:opacity-100"}`} 
+                        alt="Complete Set" 
+                      />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center px-1">
+                      <h3 className={`text-[9.5px] uppercase font-bold tracking-[0.1em] truncate w-full transition-colors ${isFullSetSelected ? "text-[#84492C]" : "text-[#5A544F] group-hover:text-[#84492C]"}`}>
+                        เซ็ตรวมทั้งชุด
+                      </h3>
+                      <p className={`text-[9px] mt-1 font-bold ${isFullSetSelected ? "text-[#84492C]" : "text-[#3A3835]"}`}>
+                        THB {Number(totalSetDiscountedPrice).toLocaleString()}
+                      </p>
+                      <span className="text-[7.5px] text-[#8C8A86] mt-0.5 uppercase tracking-wider font-mono">
+                        ({linkedProducts.length} ชิ้นครบเซต)
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. INDIVIDUAL CARDS: สินค้าแยกชิ้น */}
                 {linkedProducts.map((item) => {
-                  const isActive = item.id === activeProduct.id;
+                  const isActive = !isFullSetSelected && item.id === activeProduct.id;
                   
                   return (
                     <div 
@@ -512,35 +725,64 @@ export default function CollectionLookClient({
             )}
           </div>
 
-          {/* ADD TO CART BUTTON */}
+          {/* ADD TO CART BUTTON (Handles Full Set or Single Item) */}
           <div className="pt-2 max-w-lg mt-auto">
-            <button
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || outOfStock || !activeProduct.id}
-              className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
-                outOfStock 
-                  ? "bg-[#EAE7E0] border border-[#3A3835]/10 text-[#8C8A86] cursor-not-allowed"
-                  : addedSuccess 
+            {isFullSetSelected ? (
+              <button
+                onClick={handleAddFullSetToCart}
+                disabled={isAddingToCart || !isSetAvailable}
+                className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
+                  addedSuccess 
                     ? "bg-[#84492C] text-white" 
                     : "bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]"
-              }`}
-            >
-              {isAddingToCart ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ADDING...
-                </>
-              ) : outOfStock ? (
-                "PRE-ORDER (รอสินค้า 45-60 วัน)"
-              ) : addedSuccess ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  ADDED TO CART
-                </>
-              ) : (
-                "ADD TO CART"
-              )}
-            </button>
+                }`}
+              >
+                {isAddingToCart ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ADDING FULL SET ({linkedProducts.length} ITEMS)...
+                  </>
+                ) : addedSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ADDED FULL SET ({linkedProducts.length} ITEMS) TO CART
+                  </>
+                ) : (
+                  <>
+                    <Layers className="w-3.5 h-3.5" />
+                    ADD FULL SET TO CART (THB {Number(totalSetDiscountedPrice).toLocaleString()})
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || outOfStock || !activeProduct.id}
+                className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
+                  outOfStock 
+                    ? "bg-[#EAE7E0] border border-[#3A3835]/10 text-[#8C8A86] cursor-not-allowed"
+                    : addedSuccess 
+                      ? "bg-[#84492C] text-white" 
+                      : "bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]"
+                }`}
+              >
+                {isAddingToCart ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ADDING...
+                  </>
+                ) : outOfStock ? (
+                  "PRE-ORDER (รอสินค้า 45-60 วัน)"
+                ) : addedSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ADDED TO CART
+                  </>
+                ) : (
+                  "ADD TO CART"
+                )}
+              </button>
+            )}
           </div>
           
         </div>
@@ -577,7 +819,7 @@ export default function CollectionLookClient({
       )}
 
       {/* Floating Messenger Inquiry */}
-      <MessengerInquiryButton productName={activeProduct.name || activeProduct.sku || category.titleEn} />
+      <MessengerInquiryButton productName={isFullSetSelected ? `${category.titleEn} Look #${collectionImage.sortOrder} Full Set` : (activeProduct.name || activeProduct.sku || category.titleEn)} />
     </div>
   );
 }
