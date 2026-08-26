@@ -6,6 +6,7 @@ import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
 import { CATEGORY_DISPLAY_NAMES } from "@/app/constants/categories"
 import ProductFilterDrawer from "@/app/components/ProductFilterDrawer"
+import VisualImageSearch, { type ImageSearchResult } from "@/app/components/VisualImageSearch"
 import {
   filterCollectionsByCategory,
   productColorValues,
@@ -26,6 +27,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [searchQuery, setSearchQuery] = useState(initialSearch) // 🌟 2. เพิ่ม State สำหรับเก็บบล็อกคำค้นหา
+  const [activeImageSearch, setActiveImageSearch] = useState<ImageSearchResult | null>(null)
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialFilterOpen)
@@ -57,6 +59,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const handleClearFilters = () => {
     setActiveFilter('All')
     setSearchQuery('')
+    setActiveImageSearch(null)
     setAttributeFilter('ALL_ATTRIBUTE')
     setCurrentPage(1)
     setOpenColorPanel(false)
@@ -126,7 +129,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   )
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
-  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || searchQuery.trim() !== '' || currentPage > 1
+  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
@@ -152,10 +155,34 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
         .map((group) => ({
           ...group,
           products: (group.products || []).filter((product: any) =>
-            productColorValues(product).some((color) => selectedColorSet.has(color))
+            product.category_id === 'prop' && productColorValues(product).some((color) => selectedColorSet.has(color))
           ),
         }))
         .filter((group) => group.products.length > 0)
+    }
+
+    if (activeImageSearch) {
+      const matchedIds = new Set(activeImageSearch.matchedProductIds || [])
+      const similarityMap = new Map((activeImageSearch.matches || []).map((m) => [Number(m.id), Number(m.similarity)]))
+
+      if (matchedIds.size > 0) {
+        result = result
+          .map((group) => {
+            const matchingGroupProducts = (group.products || []).filter((p: any) =>
+              p.category_id === 'prop' && matchedIds.has(Number(p.id))
+            )
+            matchingGroupProducts.sort((a: any, b: any) => (similarityMap.get(Number(b.id)) || 0) - (similarityMap.get(Number(a.id)) || 0))
+            return {
+              ...group,
+              products: matchingGroupProducts,
+              maxSimilarity: Math.max(...matchingGroupProducts.map((p: any) => similarityMap.get(Number(p.id)) || 0), 0),
+            }
+          })
+          .filter((group) => group.products.length > 0)
+
+        // Sort collection groups so the most visually similar group comes first
+        result.sort((a: any, b: any) => (b.maxSimilarity || 0) - (a.maxSimilarity || 0))
+      }
     }
 
     if (searchQuery.trim() !== "") {
@@ -163,14 +190,14 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
       result = result.filter(group => {
         const matchGroupName = group.name?.toLowerCase().includes(query)
         const matchProducts = group.products?.some((p: any) =>
-          p.name?.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query)
+          p.category_id === 'prop' && (p.name?.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query))
         )
         return matchGroupName || matchProducts
       })
     }
 
     return result
-  }, [categoryFilteredCollections, searchQuery, selectedColors])
+  }, [categoryFilteredCollections, searchQuery, selectedColors, activeImageSearch])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -269,26 +296,17 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
             {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่ม FILTER และ BranchSelector */}
             <div className="flex min-w-0 flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-6 w-full lg:w-auto justify-end">
-              <div className="relative min-w-0 w-full sm:w-64 group">
-                <input
-                  type="text"
-                  placeholder="SEARCH PROPS, SKU..."
+              <div className="min-w-0 w-full sm:w-72">
+                <VisualImageSearch
                   value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="w-full bg-white/60 backdrop-blur-sm pl-3 pr-8 py-1.5 border border-[#D5D2CA] text-[11px] font-mono tracking-wider text-[#3A3835] uppercase placeholder-[#8C8A86]/50 outline-none focus:border-[#3A3835] focus:bg-white transition-all duration-300 rounded-sm"
+                  placeholder="SEARCH PROPS, SKU..."
+                  onChange={handleSearchChange}
+                  activeImage={activeImageSearch}
+                  onImageSearch={(img) => {
+                    setActiveImageSearch(img)
+                    setCurrentPage(1)
+                  }}
                 />
-                {searchQuery ? (
-                  <button
-                    onClick={() => handleSearchChange("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8A86] hover:text-[#3A3835] text-[11px] transition-colors"
-                  >
-                    ✕
-                  </button>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8C8A86]/60 pointer-events-none group-hover:text-[#3A3835] transition-colors">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" />
-                  </svg>
-                )}
               </div>
 
               <div className="flex min-w-0 items-center justify-between sm:justify-end gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">

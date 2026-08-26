@@ -60,9 +60,9 @@ export default function CollectionLookClient({
   const router = useRouter();
   const supabase = createClient();
   
-  // Set Mode vs Single Product Mode (Default to Full Set if multiple products exist)
+  // Set Mode vs Single Product Mode (Default to Full Set if products exist)
   const [isFullSetSelected, setIsFullSetSelected] = useState(() => {
-    return linkedProducts.length > 1;
+    return linkedProducts.length > 0;
   });
 
   // Active product selected from the linked items in this look
@@ -752,7 +752,7 @@ export default function CollectionLookClient({
               <div className="flex flex-row gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 
                 {/* 1. SPECIAL CARD: COMPLETE SET (เซ็ตรวมทั้งชุด) */}
-                {linkedProducts.length > 1 && (
+                {linkedProducts.length > 0 && (
                   <div 
                     onClick={handleSelectFullSet}
                     className={`snap-start min-w-[130px] max-w-[130px] flex flex-col group transition-all duration-300 cursor-pointer`}
