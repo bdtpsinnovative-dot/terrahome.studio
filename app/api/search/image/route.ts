@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/src/supabase/server";
-import { AutoProcessor, CLIPVisionModelWithProjection, RawImage } from "@xenova/transformers";
+import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from "@xenova/transformers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+// Configure HuggingFace cache directory for serverless environments (Vercel / Cloud)
+env.allowLocalModels = false;
+env.useBrowserCache = false;
+env.cacheDir = "/tmp/transformers-cache";
 
 // Singleton cache for CLIP model & processor to keep search ultra-fast
 let cachedModel: any = null;
@@ -20,12 +26,21 @@ async function getClipModel() {
   }
 
   modelLoadingPromise = (async () => {
-    const model = await CLIPVisionModelWithProjection.from_pretrained("Xenova/clip-vit-base-patch32");
-    const processor = await AutoProcessor.from_pretrained("Xenova/clip-vit-base-patch32");
+    // Using quantized model reduces download size from ~350MB down to ~85MB for fast serverless boot
+    const [model, processor] = await Promise.all([
+      CLIPVisionModelWithProjection.from_pretrained("Xenova/clip-vit-base-patch32", {
+        quantized: true,
+      }),
+      AutoProcessor.from_pretrained("Xenova/clip-vit-base-patch32"),
+    ]);
+
     cachedModel = model;
     cachedProcessor = processor;
-    return [model, processor];
-  })();
+    return [model, processor] as [any, any];
+  })().catch((err) => {
+    modelLoadingPromise = null;
+    throw err;
+  });
 
   return modelLoadingPromise;
 }
