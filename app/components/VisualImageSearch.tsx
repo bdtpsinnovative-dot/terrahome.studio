@@ -95,37 +95,20 @@ export default function VisualImageSearch({
       setAnalyzingImage(dataUrl);
 
       try {
-        let embeddingVector: number[] | null = null;
+        // Extract CLIP embedding directly in user's browser via Web Worker + CDN
+        const { extractImageEmbedding } = await import("@/lib/clipClient");
+        setLoadingStatus("Scanning visual features (CLIP)...");
+        const embeddingVector = await extractImageEmbedding(file, (_progress, status) => {
+          setLoadingStatus(status);
+        });
 
-        // 1. Try extracting CLIP embedding directly in user's browser (WASM/WebGPU)
-        try {
-          const { extractImageEmbedding } = await import("@/lib/clipClient");
-          setLoadingStatus("Scanning visual features (CLIP)...");
-          embeddingVector = await extractImageEmbedding(file, (_progress, status) => {
-            setLoadingStatus(status);
-          });
-        } catch (clientEmbedErr) {
-          console.warn("Client CLIP extraction fallback:", clientEmbedErr);
-        }
-
-        let res: Response;
-        if (embeddingVector && embeddingVector.length > 0) {
-          // Fast-path: Send compact vector embedding directly
-          setLoadingStatus("Matching product catalog in Supabase...");
-          res = await fetch("/api/search/image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ embedding: embeddingVector }),
-          });
-        } else {
-          // Fallback: Send form-data to server
-          const formData = new FormData();
-          formData.append("file", file);
-          res = await fetch("/api/search/image", {
-            method: "POST",
-            body: formData,
-          });
-        }
+        // Send compact vector embedding to server for Supabase search
+        setLoadingStatus("Matching product catalog...");
+        const res = await fetch("/api/search/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ embedding: embeddingVector }),
+        });
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
