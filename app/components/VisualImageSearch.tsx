@@ -69,6 +69,31 @@ export default function VisualImageSearch({
     }
   }, [state, preview]);
 
+  // Silent AI Model Preload on Idle or User Intent (Mouse hover/focus)
+  const handleWarmup = () => {
+    import("@/lib/clipClient")
+      .then(({ preloadClipModel }) => {
+        preloadClipModel();
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const idleCallback =
+        (window as any).requestIdleCallback ||
+        ((cb: () => void) => setTimeout(cb, 1200));
+      const idleId = idleCallback(() => {
+        handleWarmup();
+      });
+      return () => {
+        if ((window as any).cancelIdleCallback && typeof idleId === "number") {
+          (window as any).cancelIdleCallback(idleId);
+        }
+      };
+    }
+  }, []);
+
   const [loadingStatus, setLoadingStatus] = useState<string>("Analyzing Visual Features...");
 
   // Process Image File: Extract CLIP Embedding on Client (Fast & 0 Server Overload)
@@ -216,12 +241,12 @@ export default function VisualImageSearch({
 
       {/* Main Search Bar Wrapper */}
       <div
-        className={`${styles.searchWrapper} ${activeHoverClass} ${activeFocusClass} ${
-          isDragging ? styles.isDragging : ""
-        } ${activeImage ? styles.hasActiveImage : ""} ${disabled ? styles.isDisabled : ""}`}
+        className={`${styles.searchWrapper} ${activeHoverClass} ${activeFocusClass} ${isDragging ? styles.isDragging : ""
+          } ${activeImage ? styles.hasActiveImage : ""} ${disabled ? styles.isDisabled : ""}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onMouseEnter={handleWarmup}
       >
         {/* Active Image Badge inside Search Input */}
         {activeImage && (
@@ -245,6 +270,8 @@ export default function VisualImageSearch({
           value={value}
           placeholder={activeImage ? "FILTER RESULTS BY TEXT..." : placeholder}
           onChange={(e) => onChange?.(e.target.value)}
+          onFocus={handleWarmup}
+          onMouseEnter={handleWarmup}
           disabled={disabled}
           className={styles.inputField}
         />
@@ -265,13 +292,16 @@ export default function VisualImageSearch({
           {/* Visual Search Camera Icon */}
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              handleWarmup();
+              setIsModalOpen(true);
+            }}
+            onMouseEnter={handleWarmup}
             disabled={disabled}
             aria-label="Search with image"
             title="ค้นหาด้วยภาพ (Drag & drop or Paste image)"
-            className={`${styles.actionBtn} ${activeHoverClass} ${activeFocusClass} ${activeActiveClass} ${
-              activeImage || isModalOpen ? styles.activeLens : ""
-            }`}
+            className={`${styles.actionBtn} ${activeHoverClass} ${activeFocusClass} ${activeActiveClass} ${activeImage || isModalOpen ? styles.activeLens : ""
+              }`}
           >
             {internalState === "loading" ? (
               <Loader2 size={13} className="animate-spin text-[#84492C]" />

@@ -303,6 +303,14 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                   onChange={handleSearchChange}
                   activeImage={activeImageSearch}
                   onImageSearch={(img) => {
+                    if (img) {
+                      // บังคับเคลียร์หมวดหมู่และฟิลเตอร์สีทั้งหมดให้เป็น All เพื่อให้ผลการค้นหาด้วยภาพเจอสินค้าครบทุกหมวด
+                      setActiveFilter('All')
+                      setAttributeFilter('ALL_ATTRIBUTE')
+                      setOpenColorPanel(false)
+                      setIsSidebarOpen(false)
+                      updateURL('All', 1, searchQuery, 'ALL_ATTRIBUTE', false)
+                    }
                     setActiveImageSearch(img)
                     setCurrentPage(1)
                   }}

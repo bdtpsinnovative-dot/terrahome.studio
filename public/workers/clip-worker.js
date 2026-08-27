@@ -9,40 +9,57 @@ env.useBrowserCache = true;
 
 let model = null;
 let processor = null;
-let isLoading = false;
+let loadPromise = null;
 
 async function loadModel() {
-  if (model && processor) return;
-  if (isLoading) return;
+  if (model && processor) return { model, processor };
+  if (loadPromise) return loadPromise;
 
-  isLoading = true;
+  loadPromise = (async () => {
+    try {
+      self.postMessage({ type: "progress", progress: 0, text: "Loading AI Vision Model..." });
 
-  try {
-    self.postMessage({ type: "progress", progress: 0, text: "Loading AI Vision Model..." });
+      const progressCallback = (info) => {
+        if (info.status === "progress" && info.progress !== undefined) {
+          self.postMessage({ type: "progress", progress: Math.round(info.progress), text: `Loading Model: ${Math.round(info.progress)}%` });
+        } else if (info.status === "ready") {
+          self.postMessage({ type: "progress", progress: 100, text: "AI Model Ready" });
+        }
+      };
 
-    const progressCallback = (info) => {
-      if (info.status === "progress" && info.progress !== undefined) {
-        self.postMessage({ type: "progress", progress: Math.round(info.progress), text: `Loading Model: ${Math.round(info.progress)}%` });
-      } else if (info.status === "ready") {
-        self.postMessage({ type: "progress", progress: 100, text: "AI Model Ready" });
-      }
-    };
+      const [loadedModel, loadedProcessor] = await Promise.all([
+        CLIPVisionModelWithProjection.from_pretrained("Xenova/clip-vit-base-patch32", {
+          quantized: true,
+          progress_callback: progressCallback,
+        }),
+        AutoProcessor.from_pretrained("Xenova/clip-vit-base-patch32"),
+      ]);
 
-    [model, processor] = await Promise.all([
-      CLIPVisionModelWithProjection.from_pretrained("Xenova/clip-vit-base-patch32", {
-        quantized: true,
-        progress_callback: progressCallback,
-      }),
-      AutoProcessor.from_pretrained("Xenova/clip-vit-base-patch32"),
-    ]);
-  } catch (err) {
-    isLoading = false;
-    throw err;
-  }
+      model = loadedModel;
+      processor = loadedProcessor;
+      self.postMessage({ type: "ready" });
+      return { model, processor };
+    } catch (err) {
+      loadPromise = null;
+      throw err;
+    }
+  })();
+
+  return loadPromise;
 }
 
 self.onmessage = async (event) => {
   const { type, imageData, mimeType } = event.data;
+
+  if (type === "preload") {
+    try {
+      await loadModel();
+      self.postMessage({ type: "ready" });
+    } catch (err) {
+      self.postMessage({ type: "error", error: err.message || "Failed to preload model" });
+    }
+    return;
+  }
 
   if (type === "extract") {
     try {
