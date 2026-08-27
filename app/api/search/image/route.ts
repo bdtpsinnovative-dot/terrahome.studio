@@ -48,9 +48,38 @@ async function getClipModel() {
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get("content-type") || "";
-    let rawImage: any = null;
+    let queryVector: number[] | null = null;
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      const { embedding, image, dataUrl } = body;
+
+      // Fast-path: If client provided pre-computed vector embedding (e.g. extracted on browser)
+      if (Array.isArray(embedding) && embedding.length > 0) {
+        queryVector = embedding;
+      } else {
+        const imgSource = image || dataUrl;
+        if (!imgSource) {
+          return NextResponse.json({ error: "No image payload provided" }, { status: 400 });
+        }
+
+        let rawImage: any;
+        if (imgSource.startsWith("data:")) {
+          const base64Data = imgSource.split(",")[1];
+          const buffer = Buffer.from(base64Data, "base64");
+          const mime = imgSource.substring(imgSource.indexOf(":") + 1, imgSource.indexOf(";"));
+          const blob = new Blob([buffer], { type: mime });
+          rawImage = await RawImage.fromBlob(blob);
+        } else {
+          rawImage = await RawImage.read(imgSource);
+        }
+
+        const [model, processor] = await getClipModel();
+        const inputs = await processor(rawImage);
+        const { image_embeds } = await model(inputs);
+        queryVector = Array.from(image_embeds.data);
+      }
+    } else if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       if (!file) {
@@ -58,37 +87,21 @@ export async function POST(req: NextRequest) {
       }
       const buffer = Buffer.from(await file.arrayBuffer());
       const blob = new Blob([buffer], { type: file.type });
-      rawImage = await RawImage.fromBlob(blob);
-    } else if (contentType.includes("application/json")) {
-      const body = await req.json();
-      const { image, dataUrl } = body;
-      const imgSource = image || dataUrl;
-      if (!imgSource) {
-        return NextResponse.json({ error: "No image payload provided" }, { status: 400 });
-      }
+      const rawImage = await RawImage.fromBlob(blob);
 
-      if (imgSource.startsWith("data:")) {
-        // Base64 Data URL
-        const base64Data = imgSource.split(",")[1];
-        const buffer = Buffer.from(base64Data, "base64");
-        const mime = imgSource.substring(imgSource.indexOf(":") + 1, imgSource.indexOf(";"));
-        const blob = new Blob([buffer], { type: mime });
-        rawImage = await RawImage.fromBlob(blob);
-      } else {
-        // URL
-        rawImage = await RawImage.read(imgSource);
-      }
+      const [model, processor] = await getClipModel();
+      const inputs = await processor(rawImage);
+      const { image_embeds } = await model(inputs);
+      queryVector = Array.from(image_embeds.data);
     } else {
       return NextResponse.json({ error: "Unsupported content type" }, { status: 400 });
     }
 
-    // 1. Generate 512-dim vector embedding using CLIP Vision
-    const [model, processor] = await getClipModel();
-    const inputs = await processor(rawImage);
-    const { image_embeds } = await model(inputs);
-    const queryVector = Array.from(image_embeds.data);
+    if (!queryVector || queryVector.length === 0) {
+      return NextResponse.json({ error: "Failed to generate visual embedding" }, { status: 400 });
+    }
 
-    // 2. Query Supabase RPC with category_filter = 'prop' (Strict multi-tenant DB protection)
+    // Query Supabase RPC with category_filter = 'prop' (Strict multi-tenant DB protection)
     const supabase = await createClient();
     const { data: matches, error: rpcError } = await supabase.rpc("match_products_by_image_embedding", {
       query_embedding: queryVector,

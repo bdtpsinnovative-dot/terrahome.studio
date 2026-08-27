@@ -69,7 +69,9 @@ export default function VisualImageSearch({
     }
   }, [state, preview]);
 
-  // Process Real Image File through Backend CLIP API
+  const [loadingStatus, setLoadingStatus] = useState<string>("Analyzing Visual Features...");
+
+  // Process Image File: Extract CLIP Embedding on Client (Fast & 0 Server Overload)
   const processImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setErrorMessage("กรุณาเลือกไฟล์รูปภาพที่ถูกต้อง (JPG, PNG, WEBP)");
@@ -85,6 +87,7 @@ export default function VisualImageSearch({
 
     setErrorMessage(null);
     setInternalState("loading");
+    setLoadingStatus("Preparing AI Vision Scanner...");
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -92,13 +95,37 @@ export default function VisualImageSearch({
       setAnalyzingImage(dataUrl);
 
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        let embeddingVector: number[] | null = null;
 
-        const res = await fetch("/api/search/image", {
-          method: "POST",
-          body: formData,
-        });
+        // 1. Try extracting CLIP embedding directly in user's browser (WASM/WebGPU)
+        try {
+          const { extractImageEmbedding } = await import("@/lib/clipClient");
+          setLoadingStatus("Scanning visual features (CLIP)...");
+          embeddingVector = await extractImageEmbedding(file, (_progress, status) => {
+            setLoadingStatus(status);
+          });
+        } catch (clientEmbedErr) {
+          console.warn("Client CLIP extraction fallback:", clientEmbedErr);
+        }
+
+        let res: Response;
+        if (embeddingVector && embeddingVector.length > 0) {
+          // Fast-path: Send compact vector embedding directly
+          setLoadingStatus("Matching product catalog in Supabase...");
+          res = await fetch("/api/search/image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ embedding: embeddingVector }),
+          });
+        } else {
+          // Fallback: Send form-data to server
+          const formData = new FormData();
+          formData.append("file", file);
+          res = await fetch("/api/search/image", {
+            method: "POST",
+            body: formData,
+          });
+        }
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -124,6 +151,7 @@ export default function VisualImageSearch({
           setIsModalOpen(false);
           setAnalyzingImage(null);
           setInternalState("default");
+          setLoadingStatus("Analyzing Visual Features...");
         }, 500);
       } catch (err: any) {
         console.error("Image search error:", err);
@@ -309,7 +337,7 @@ export default function VisualImageSearch({
                   )}
                   <div className={styles.scanLaser} />
                 </div>
-                <p className={styles.analyzingLabel}>Analyzing Visual Features...</p>
+                <p className={styles.analyzingLabel}>{loadingStatus}</p>
                 <span className={styles.analyzingSubtitle}>Matching textures, shapes & color palettes</span>
               </div>
             ) : (
