@@ -1,84 +1,55 @@
 "use client";
 
-// Client-side CLIP Vision feature extraction using WebAssembly/WebGPU via @xenova/transformers
-let cachedModel: any = null;
-let cachedProcessor: any = null;
-let modelLoadingPromise: Promise<[any, any]> | null = null;
+// Client-side CLIP Vision extraction via Web Worker (bypasses Next.js bundler entirely)
 
-export async function loadClientClipModel(onProgress?: (progress: number, text: string) => void) {
-  if (cachedModel && cachedProcessor) {
-    return [cachedModel, cachedProcessor];
-  }
+let worker: Worker | null = null;
+let workerReady = false;
 
-  if (modelLoadingPromise) {
-    return modelLoadingPromise;
-  }
+function getWorker(): Worker {
+  if (worker) return worker;
+  worker = new Worker("/workers/clip-worker.js", { type: "module" });
+  workerReady = true;
+  return worker;
+}
 
-  modelLoadingPromise = (async () => {
-    // Dynamic import to ensure it runs strictly in client browser
-    const { AutoProcessor, CLIPVisionModelWithProjection, env } = await import("@xenova/transformers");
+export function extractImageEmbedding(
+  file: File,
+  onProgress?: (progress: number, text: string) => void
+): Promise<number[]> {
+  return new Promise((resolve, reject) => {
+    const w = getWorker();
 
-    // Configure client-side caching in browser IndexedDB/CacheStorage
-    env.allowLocalModels = false;
-    env.useBrowserCache = true;
+    const handler = (event: MessageEvent) => {
+      const { type, embedding, error, progress, text } = event.data;
 
-    const progressCallback = (info: any) => {
-      if (info.status === "progress" && info.progress !== undefined && onProgress) {
-        onProgress(Math.round(info.progress), `Loading AI Model: ${Math.round(info.progress)}%`);
-      } else if (info.status === "ready" && onProgress) {
-        onProgress(100, "AI Model Ready");
+      if (type === "progress" && onProgress) {
+        onProgress(progress, text);
+      } else if (type === "result") {
+        w.removeEventListener("message", handler);
+        w.removeEventListener("error", errorHandler);
+        resolve(embedding);
+      } else if (type === "error") {
+        w.removeEventListener("message", handler);
+        w.removeEventListener("error", errorHandler);
+        reject(new Error(error));
       }
     };
 
-    // Load quantized model (~85MB) cached in user browser
-    const [model, processor] = await Promise.all([
-      CLIPVisionModelWithProjection.from_pretrained("Xenova/clip-vit-base-patch32", {
-        quantized: true,
-        progress_callback: progressCallback,
-      }),
-      AutoProcessor.from_pretrained("Xenova/clip-vit-base-patch32"),
-    ]);
+    const errorHandler = (event: ErrorEvent) => {
+      w.removeEventListener("message", handler);
+      w.removeEventListener("error", errorHandler);
+      reject(new Error(event.message || "Worker error"));
+    };
 
-    cachedModel = model;
-    cachedProcessor = processor;
-    return [model, processor] as [any, any];
-  })().catch((err) => {
-    modelLoadingPromise = null;
-    throw err;
+    w.addEventListener("message", handler);
+    w.addEventListener("error", errorHandler);
+
+    // Read file as ArrayBuffer and send to worker
+    file.arrayBuffer().then((buffer) => {
+      w.postMessage(
+        { type: "extract", imageData: buffer, mimeType: file.type },
+        [buffer] // Transfer ownership for zero-copy
+      );
+    }).catch(reject);
   });
-
-  return modelLoadingPromise;
-}
-
-export async function extractImageEmbedding(
-  imageSource: File | Blob | string,
-  onProgress?: (progress: number, text: string) => void
-): Promise<number[]> {
-  const { RawImage } = await import("@xenova/transformers");
-  const [model, processor] = await loadClientClipModel(onProgress);
-
-  let rawImage: any;
-  if (imageSource instanceof Blob) {
-    rawImage = await RawImage.fromBlob(imageSource);
-  } else if (typeof imageSource === "string") {
-    if (imageSource.startsWith("data:")) {
-      const base64Data = imageSource.split(",")[1];
-      const buffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-      const mime = imageSource.substring(imageSource.indexOf(":") + 1, imageSource.indexOf(";"));
-      const blob = new Blob([buffer], { type: mime });
-      rawImage = await RawImage.fromBlob(blob);
-    } else {
-      rawImage = await RawImage.read(imageSource);
-    }
-  } else {
-    throw new Error("Unsupported image source");
-  }
-
-  if (onProgress) {
-    onProgress(100, "Extracting visual features...");
-  }
-
-  const inputs = await processor(rawImage);
-  const { image_embeds } = await model(inputs);
-  return Array.from(image_embeds.data) as number[];
 }
