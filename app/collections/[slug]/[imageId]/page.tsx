@@ -168,6 +168,35 @@ export default async function CollectionLookPage({ params }: Props) {
       sortOrder: Number(img.sort_order || 1),
     }));
 
+  // 6. ดึงโปรโมชั่น Auto Set Promotion ของรูป/เซ็ตนี้ (ถ้ามี)
+  const { data: setPromos } = await supabase
+    .from("terra_collection_promotions")
+    .select(`
+      id,
+      title,
+      description,
+      discount_type,
+      discount_value,
+      min_sets,
+      max_discount_amount,
+      start_date,
+      end_date,
+      usage_limit,
+      used_count,
+      is_active
+    `)
+    .eq("is_active", true)
+    .eq("trigger_type", "auto")
+    .eq("collection_group_id", String(imageIdNum));
+
+  const nowIso = now.toISOString();
+  const validSetPromo = (setPromos || []).find((p: any) => {
+    if (p.start_date && p.start_date > nowIso) return false;
+    if (p.end_date && p.end_date < nowIso) return false;
+    if (p.usage_limit && p.used_count >= p.usage_limit) return false;
+    return true;
+  }) || null;
+
   return (
     <CollectionLookClient
       collectionImage={{
@@ -188,6 +217,14 @@ export default async function CollectionLookPage({ params }: Props) {
       }}
       linkedProducts={linkedProducts}
       otherLooks={otherLooks}
+      setPromotion={validSetPromo ? {
+        id: validSetPromo.id,
+        title: validSetPromo.title,
+        description: validSetPromo.description,
+        discountType: validSetPromo.discount_type as 'percentage' | 'fixed_amount',
+        discountValue: Number(validSetPromo.discount_value),
+        maxDiscountAmount: validSetPromo.max_discount_amount ? Number(validSetPromo.max_discount_amount) : null,
+      } : null}
     />
   );
 }

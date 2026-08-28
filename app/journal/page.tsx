@@ -98,6 +98,7 @@ export default function JournalPage() {
   const [categories, setCategories] = useState<JournalCategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string; categoryQuery: string } | null>(null);
+  const [setPromotionsMap, setSetPromotionsMap] = useState<Record<string, any>>({});
 
   // Banner Slideshow Auto Rotation
   useEffect(() => {
@@ -112,19 +113,54 @@ export default function JournalPage() {
     async function fetchJournal() {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("journal_categories")
-          .select(`
-            *,
-            images:journal_images ( id, image_url, sort_order, alt_text, is_active )
-          `)
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true });
+        const nowIso = new Date().toISOString();
 
-        if (error) throw error;
+        const [categoriesRes, promosRes] = await Promise.all([
+          supabase
+            .from("journal_categories")
+            .select(`
+              *,
+              images:journal_images ( id, image_url, sort_order, alt_text, is_active )
+            `)
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true }),
+          supabase
+            .from("terra_collection_promotions")
+            .select(`
+              id,
+              title,
+              promo_scope,
+              collection_group_id,
+              trigger_type,
+              discount_type,
+              discount_value,
+              start_date,
+              end_date,
+              usage_limit,
+              used_count,
+              is_active
+            `)
+            .eq("is_active", true)
+            .eq("trigger_type", "auto"),
+        ]);
 
-        if (data && data.length > 0) {
-          const mapped: JournalCategoryItem[] = data.map((cat: any) => {
+        if (categoriesRes.error) throw categoriesRes.error;
+
+        if (promosRes.data) {
+          const pMap: Record<string, any> = {};
+          promosRes.data.forEach((p: any) => {
+            if (p.start_date && p.start_date > nowIso) return;
+            if (p.end_date && p.end_date < nowIso) return;
+            if (p.usage_limit && p.used_count >= p.usage_limit) return;
+            if (p.collection_group_id) {
+              pMap[String(p.collection_group_id)] = p;
+            }
+          });
+          setSetPromotionsMap(pMap);
+        }
+
+        if (categoriesRes.data && categoriesRes.data.length > 0) {
+          const mapped: JournalCategoryItem[] = categoriesRes.data.map((cat: any) => {
             const rawImgs = (cat.images || []).filter((i: any) => i.is_active);
             rawImgs.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 

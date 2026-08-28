@@ -36,6 +36,7 @@ export default function CollectionLookClient({
   linkedProducts,
   recommendedCollections,
   otherLooks,
+  setPromotion,
 }: {
   collectionImage: {
     id: number;
@@ -56,6 +57,14 @@ export default function CollectionLookClient({
   linkedProducts: any[];
   recommendedCollections?: any[];
   otherLooks?: Array<{ id: number; imageUrl: string; sortOrder: number }>;
+  setPromotion?: {
+    id: string;
+    title: string;
+    description?: string | null;
+    discountType: "percentage" | "fixed_amount";
+    discountValue: number;
+    maxDiscountAmount?: number | null;
+  } | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -92,11 +101,33 @@ export default function CollectionLookClient({
 
   // Full Set Calculations
   const totalSetOriginalPrice = linkedProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
-  const totalSetDiscountedPrice = linkedProducts.reduce((sum, p) => {
+  
+  // 1. Calculate item-level sum discount
+  const itemLevelDiscountedPrice = linkedProducts.reduce((sum, p) => {
     const discounted = getDiscountedPrice(p);
     return sum + (discounted !== null ? discounted : Number(p.price || 0));
   }, 0);
-  const hasSetDiscount = totalSetDiscountedPrice < totalSetOriginalPrice && totalSetDiscountedPrice > 0;
+  const itemLevelDiscountAmount = Math.max(0, totalSetOriginalPrice - itemLevelDiscountedPrice);
+
+  // 2. Calculate set promotion discount from terra_collection_promotions (if any)
+  let setPromoDiscountAmount = 0;
+  if (setPromotion && totalSetOriginalPrice > 0) {
+    if (setPromotion.discountType === "percentage") {
+      setPromoDiscountAmount = (totalSetOriginalPrice * Number(setPromotion.discountValue)) / 100;
+      if (setPromotion.maxDiscountAmount && setPromoDiscountAmount > Number(setPromotion.maxDiscountAmount)) {
+        setPromoDiscountAmount = Number(setPromotion.maxDiscountAmount);
+      }
+    } else {
+      setPromoDiscountAmount = Math.min(totalSetOriginalPrice, Number(setPromotion.discountValue));
+    }
+    setPromoDiscountAmount = Math.round(setPromoDiscountAmount);
+  }
+
+  // Choose the best discount for the set
+  const effectiveSetDiscountAmount = Math.max(itemLevelDiscountAmount, setPromoDiscountAmount);
+  const totalSetDiscountedPrice = Math.max(0, totalSetOriginalPrice - effectiveSetDiscountAmount);
+  const hasSetDiscount = effectiveSetDiscountAmount > 0;
+  const isAutoSetPromoActive = setPromoDiscountAmount > 0 && setPromoDiscountAmount >= itemLevelDiscountAmount;
   const isSetAvailable = linkedProducts.length > 0;
 
   const allSetInStock = linkedProducts.every((p) => {
@@ -436,8 +467,10 @@ export default function CollectionLookClient({
             )}
 
             {/* Look / Product Badge */}
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/10">
-              <span>{isFullSetSelected ? `Look #${collectionImage.sortOrder} · Set` : (activeProduct.sku || `Look #${collectionImage.sortOrder}`)}</span>
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/10">
+                <span>{isFullSetSelected ? `Look #${collectionImage.sortOrder} · Set` : (activeProduct.sku || `Look #${collectionImage.sortOrder}`)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -449,8 +482,8 @@ export default function CollectionLookClient({
           {isFullSetSelected ? (
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#84492C] bg-[#84492C]/10 px-2 py-0.5 rounded-[2px]">
-                  FULL LOOK SET
+                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#84492C] bg-[#84492C]/10 px-2 py-0.5 rounded-[2px] flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-[#84492C]" /> FULL LOOK SET
                 </span>
                 <span className="text-[9px] text-[#8C8A86] font-mono">
                   {linkedProducts.length} ITEMS INCLUDED
@@ -464,18 +497,15 @@ export default function CollectionLookClient({
               {/* Set Price */}
               {hasSetDiscount ? (
                 <div className="mt-3 flex items-center gap-3 flex-wrap">
-                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
-                    SPECIAL SET PRICE
-                  </span>
-                  <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                  <span className="text-[11px] text-[#8C8A86] line-through tracking-[0.12em] uppercase font-mono">
                     THB {Number(totalSetOriginalPrice).toLocaleString()}
                   </span>
-                  <p className="text-[14px] font-bold tracking-[0.12em] text-[#84492C]">
+                  <p className="text-[16px] font-bold tracking-[0.12em] text-[#84492C] font-mono">
                     THB {Number(totalSetDiscountedPrice).toLocaleString()}
                   </p>
                 </div>
               ) : (
-                <p className="mt-3 text-[14px] font-bold tracking-[0.12em] text-[#84492C]">
+                <p className="mt-3 text-[14px] font-bold tracking-[0.12em] text-[#84492C] font-mono">
                   THB {Number(totalSetOriginalPrice).toLocaleString()}
                 </p>
               )}
