@@ -31,6 +31,7 @@ function groupForCategory(category: string) {
   if (value === "DINING & TABLEWARE" || value === "PLATES & DISHES" || value === "BOWLS" || value === "GLASSWARE" || value === "CUPS & MUGS" || value === "TRAYS & SERVINGWARE" || value === "OTHER DINING & TABLEWARE" || value === "KITCHENWARE") return "DINING & TABLEWARE"
   if (value === "DRESSING & BATH" || value === "BATH ROOM" || value === "DRESSING ROOM" || value.includes("BATH")) return "DRESSING & BATH"
   if (value === "ART & WALL DECOR" || value === "HANDMADE" || value === "3D HANDMADE" || value === "DIGITAL PRINT" || value === "MIXED MEDIA ART" || value === "PHOTO FRAME" || value.startsWith("WALL ART")) return "ART & WALL DECOR"
+  if (value === "ไม่มี" || value === "NULL" || value === "NONE" || value === "UNMAPPED" || value === "UNCATEGORIZED" || value === "DEV_UNMAPPED") return "ไม่มี"
   return null
 }
 
@@ -70,15 +71,55 @@ export default function ProductFilterDrawer({
     }
   }, [])
 
-  const unmappedCount = useMemo(() => {
-    if (!isLocal || !collections) return 0
+  const unmappedMenuItem = useMemo<ProductFilterMenuItem | null>(() => {
+    if (!isLocal || !collections) return null
     const allAllowed = new Set(Object.values(CATEGORY_MAP).flat())
-    return collections.filter((group) => {
+
+    const supCounts = new Map<string, number>()
+    let nullCount = 0
+
+    for (const group of collections) {
       const isProp = group.products?.some((p: any) => p.category_id === 'prop')
-      if (!isProp && group.products?.length > 0) return false
-      const sup = String(group.product_sup || "").trim().toLowerCase()
-      return !sup || !allAllowed.has(sup)
-    }).length
+      if (!isProp && group.products?.length > 0) continue
+
+      const rawSup = group.product_sup
+      const sup = String(rawSup || "").trim()
+      const supLower = sup.toLowerCase()
+
+      if (!sup || supLower === "null" || supLower === "undefined") {
+        nullCount += 1
+      } else if (!allAllowed.has(supLower)) {
+        supCounts.set(sup, (supCounts.get(sup) || 0) + 1)
+      }
+    }
+
+    const totalUnmapped = nullCount + Array.from(supCounts.values()).reduce((a, b) => a + b, 0)
+    if (totalUnmapped === 0) return null
+
+    const children: Array<{ fullValue: string; displayLabel: string; thaiLabel?: string }> = []
+
+    if (nullCount > 0) {
+      children.push({
+        fullValue: "ไม่มี",
+        displayLabel: "ไม่มี (NULL)",
+        thaiLabel: `ไม่มีค่า product_sup (${nullCount})`,
+      })
+    }
+
+    for (const [supName, count] of Array.from(supCounts.entries()).sort((a, b) => b[1] - a[1])) {
+      children.push({
+        fullValue: supName,
+        displayLabel: supName.toUpperCase(),
+        thaiLabel: `product_sup: "${supName}" (${count})`,
+      })
+    }
+
+    return {
+      label: "ไม่มี",
+      displayLabel: "ไม่มี",
+      thaiLabel: `ยังไม่มีในหมวดข้างต้น (${totalUnmapped})`,
+      items: children,
+    }
   }, [isLocal, collections])
 
   useEffect(() => {
@@ -206,8 +247,8 @@ export default function ProductFilterDrawer({
     }
 
     const isExpanded = expandedGroups.includes(item.label)
-    const isParentActive = activeCategory === item.label
-    const hasActiveChild = item.items?.some((child) => activeCategory === child.fullValue)
+    const isParentActive = activeCategory === item.label || (item.label === "ไม่มี" && isNoCategoryFilter(activeCategory))
+    const hasActiveChild = item.items?.some((child) => activeCategory === child.fullValue || (child.fullValue === "ไม่มี" && isNoCategoryFilter(activeCategory)))
     const label = item.displayLabel || item.label
     return (
       <div key={item.label} className="flex w-full flex-col items-start text-left py-0.5">
@@ -241,7 +282,7 @@ export default function ProductFilterDrawer({
         <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"}`}>
           <div className="flex flex-col items-start pb-2 pl-4 pr-1 pt-1 text-left w-full space-y-0.5 border-l border-[#C4B5A5]/30 ml-4 my-1">
             {item.items?.map((child) => {
-              const isActive = activeCategory === child.fullValue
+              const isActive = activeCategory === child.fullValue || (child.fullValue === "ไม่มี" && isNoCategoryFilter(activeCategory))
               return (
                 <div key={child.fullValue} className="flex w-full items-center py-0.5">
                   <button 
@@ -324,39 +365,7 @@ export default function ProductFilterDrawer({
             ) : (
               <>
                 {PRODUCT_FILTER_ITEMS.map(renderMenuItem)}
-                {isLocal && (
-                  <div className="flex w-full items-center py-0.5">
-                    <button 
-                      type="button" 
-                      onClick={() => onCategoryChange("ไม่มี")} 
-                      className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${
-                        isNoCategoryFilter(activeCategory)
-                          ? "bg-[#84492C]/10 text-[#84492C]" 
-                          : "text-[#3A3835] hover:bg-black/[0.02]"
-                      }`}
-                    >
-                      <div className="flex flex-col items-start min-w-0 text-left">
-                        <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${
-                          isNoCategoryFilter(activeCategory)
-                            ? "font-bold text-[#84492C]" 
-                            : "font-medium text-[#3A3835]"
-                        }`}>
-                          ไม่มี
-                        </span>
-                        <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${
-                          isNoCategoryFilter(activeCategory)
-                            ? "text-[#84492C] font-medium" 
-                            : "text-[#807971] font-normal"
-                        }`}>
-                          ยังไม่มีในหมวดข้างต้น ({unmappedCount})
-                        </span>
-                      </div>
-                      {isNoCategoryFilter(activeCategory) && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />
-                      )}
-                    </button>
-                  </div>
-                )}
+                {unmappedMenuItem && renderMenuItem(unmappedMenuItem, PRODUCT_FILTER_ITEMS.length)}
               </>
             )}
           </div>
