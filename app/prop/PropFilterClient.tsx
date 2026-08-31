@@ -9,6 +9,7 @@ import ProductFilterDrawer from "@/app/components/ProductFilterDrawer"
 import VisualImageSearch, { type ImageSearchResult } from "@/app/components/VisualImageSearch"
 import {
   filterCollectionsByCategory,
+  isNoCategoryFilter,
   productColorValues,
   selectedAttributeValues,
 } from "./productFilterModel"
@@ -248,8 +249,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     if (activeFilter === "SPECIAL_DISCOUNT") return "SPECIAL OFFERS"
     if (activeFilter === "PRE_ORDER") return "PRE-ORDER"
     if (activeFilter === "IN_STOCK" || activeFilter === "READY_TO_SHIP") return "IN STOCK"
-    const upper = activeFilter.toUpperCase().trim()
-    if (upper === "UNCATEGORIZED" || upper === "UNMAPPED" || upper === "DEV_UNMAPPED") return "UNCATEGORIZED (ยังไม่มีในหมวดข้างต้น)"
+    if (isNoCategoryFilter(activeFilter)) return "ไม่มี (ไม่มี product_sup)"
     if (CATEGORY_DISPLAY_NAMES[activeFilter]) return CATEGORY_DISPLAY_NAMES[activeFilter].toUpperCase()
     return activeFilter.toUpperCase()
   };

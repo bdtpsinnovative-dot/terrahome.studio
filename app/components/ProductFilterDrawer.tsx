@@ -5,6 +5,7 @@ import {
   getColorOptions,
   PRODUCT_FILTER_ITEMS,
   CATEGORY_MAP,
+  isNoCategoryFilter,
   type ProductFilterMenuItem,
 } from "@/app/prop/productFilterModel"
 
@@ -327,30 +328,30 @@ export default function ProductFilterDrawer({
                   <div className="flex w-full items-center py-0.5">
                     <button 
                       type="button" 
-                      onClick={() => onCategoryChange("UNCATEGORIZED")} 
+                      onClick={() => onCategoryChange("ไม่มี")} 
                       className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${
-                        activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                        isNoCategoryFilter(activeCategory)
                           ? "bg-[#84492C]/10 text-[#84492C]" 
                           : "text-[#3A3835] hover:bg-black/[0.02]"
                       }`}
                     >
                       <div className="flex flex-col items-start min-w-0 text-left">
                         <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${
-                          activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                          isNoCategoryFilter(activeCategory)
                             ? "font-bold text-[#84492C]" 
                             : "font-medium text-[#3A3835]"
                         }`}>
-                          OTHER / UNMAPPED
+                          ไม่มี
                         </span>
                         <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${
-                          activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                          isNoCategoryFilter(activeCategory)
                             ? "text-[#84492C] font-medium" 
                             : "text-[#807971] font-normal"
                         }`}>
-                          ยังไม่มีในหมวดข้างต้น
+                          ยังไม่มีในหมวดข้างต้น ({unmappedCount})
                         </span>
                       </div>
-                      {(activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED") && (
+                      {isNoCategoryFilter(activeCategory) && (
                         <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />
                       )}
                     </button>

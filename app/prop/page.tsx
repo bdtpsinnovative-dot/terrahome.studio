@@ -4,8 +4,7 @@ import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import PropBanner from "./PropBanner"
 
-export const runtime = 'edge'
-import { CATEGORY_MAP } from "./productFilterModel"
+import { CATEGORY_MAP, isNoCategoryFilter } from "./productFilterModel"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"
 
@@ -114,8 +113,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
     ));
 
-    const upperParam = (categoryParam || "").toUpperCase().trim();
-    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT" || upperParam === "UNCATEGORIZED" || upperParam === "UNMAPPED" || upperParam === "DEV_UNMAPPED";
+    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT" || isNoCategoryFilter(categoryParam);
 
     if (!isSpecialFilter) {
       const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());

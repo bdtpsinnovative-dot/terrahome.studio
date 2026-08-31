@@ -223,6 +223,21 @@ export function selectedAttributeValues(value: string) {
   return Array.from(new Set(value.split(",").map(normalizeAttribute).filter(Boolean)))
 }
 
+export function isNoCategoryFilter(filter: string): boolean {
+  if (!filter) return false
+  const val = decodeURIComponent(filter).trim().toLowerCase()
+  return (
+    val === "ไม่มี" ||
+    val === "ไม่มีหมวดหมู่" ||
+    val === "none" ||
+    val === "null" ||
+    val === "undefined" ||
+    val === "uncategorized" ||
+    val === "unmapped" ||
+    val === "dev_unmapped"
+  )
+}
+
 export function filterCollectionsByCategory(collections: any[], activeFilter: string, hotProductIds: number[] = []) {
   const filterUpper = activeFilter.toUpperCase().trim()
   if (filterUpper === "ALL") return collections
@@ -259,8 +274,7 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       }))
   }
 
-  const filterKey = activeFilter.toUpperCase().trim()
-  if (filterKey === "UNCATEGORIZED" || filterKey === "UNMAPPED" || filterKey === "DEV_UNMAPPED") {
+  if (isNoCategoryFilter(activeFilter)) {
     const isLocal = (typeof window !== "undefined" && (
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||
@@ -275,7 +289,7 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       if (!isProp && group.products?.length > 0) return false
 
       const sup = String(group.product_sup || "").trim().toLowerCase()
-      return !sup || sup === "null" || !allAllowed.has(sup)
+      return !sup || sup === "null" || sup === "undefined" || !allAllowed.has(sup)
     })
   }
 
