@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/src/supabase/server";
 import CollectionLookClient from "./CollectionLookClient";
 
+export const runtime = "edge";
+
 type Props = {
   params: Promise<{ slug: string; imageId: string }>;
 };
