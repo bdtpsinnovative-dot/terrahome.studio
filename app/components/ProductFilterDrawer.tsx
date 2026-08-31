@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import {
   getColorOptions,
   PRODUCT_FILTER_ITEMS,
+  CATEGORY_MAP,
   type ProductFilterMenuItem,
 } from "@/app/prop/productFilterModel"
 
@@ -48,10 +49,36 @@ export default function ProductFilterDrawer({
   const activeGroup = groupForCategory(activeCategory)
   const [expandedGroups, setExpandedGroups] = useState<string[]>(activeGroup ? [activeGroup] : [])
   const [colorScope, setColorScope] = useState<string | null>(null)
+  const [isLocal, setIsLocal] = useState(false)
   const onCloseRef = useRef(onClose)
   const wasOpenRef = useRef(false)
   const categoryDrawerId = `${idPrefix}-drawer`
   const colorDrawerId = `${idPrefix}-color-drawer`
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname
+      if (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.endsWith(".local") ||
+        process.env.NODE_ENV === "development"
+      ) {
+        setIsLocal(true)
+      }
+    }
+  }, [])
+
+  const unmappedCount = useMemo(() => {
+    if (!isLocal || !collections) return 0
+    const allAllowed = new Set(Object.values(CATEGORY_MAP).flat())
+    return collections.filter((group) => {
+      const isProp = group.products?.some((p: any) => p.category_id === 'prop')
+      if (!isProp && group.products?.length > 0) return false
+      const sup = String(group.product_sup || "").trim().toLowerCase()
+      return !sup || !allAllowed.has(sup)
+    }).length
+  }, [isLocal, collections])
 
   useEffect(() => {
     onCloseRef.current = onClose
@@ -293,7 +320,49 @@ export default function ProductFilterDrawer({
                   )
                 }) : <p className="px-2 py-6 text-[9px] uppercase tracking-[0.14em] text-[#8C8A86]">No color data</p>}
               </div>
-            ) : PRODUCT_FILTER_ITEMS.map(renderMenuItem)}
+            ) : (
+              <>
+                {PRODUCT_FILTER_ITEMS.map(renderMenuItem)}
+                {isLocal && (
+                  <div className="mt-6 border-t-2 border-dashed border-amber-600/30 pt-4 pb-2">
+                    <div className="flex items-center justify-between px-3 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase">
+                          LOCAL ONLY (DEV CHECK)
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-mono font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-full">
+                        {unmappedCount} รายการ
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onCategoryChange("DEV_UNMAPPED")}
+                      className={`group flex min-h-12 w-full items-center justify-between px-3 py-2.5 rounded-xl transition-all text-left outline-none ${
+                        activeCategory === "DEV_UNMAPPED"
+                          ? "bg-amber-500/20 text-amber-950 border border-amber-500/60 shadow-sm"
+                          : "bg-amber-500/5 hover:bg-amber-500/10 text-amber-900 border border-dashed border-amber-400/60"
+                      }`}
+                    >
+                      <div className="flex flex-col items-start min-w-0 text-left">
+                        <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${
+                          activeCategory === "DEV_UNMAPPED" ? "font-bold text-amber-950" : "font-semibold text-amber-900"
+                        }`}>
+                          UNMAPPED / ไม่มีหมวด
+                        </span>
+                        <span className="text-[11px] sm:text-[11.5px] text-amber-800/80 font-normal mt-0.5">
+                          สินค้าที่ตกหล่นจากฟิลเตอร์ในระบบ
+                        </span>
+                      </div>
+                      {activeCategory === "DEV_UNMAPPED" && (
+                        <span className="h-2 w-2 rounded-full bg-amber-600 shrink-0 ml-2" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </aside>
 

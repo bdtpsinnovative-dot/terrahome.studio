@@ -259,6 +259,25 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       }))
   }
 
+  if (activeFilter === "DEV_UNMAPPED") {
+    const isLocal = (typeof window !== "undefined" && (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname.endsWith(".local")
+    )) || process.env.NODE_ENV === "development"
+
+    if (!isLocal) return collections
+
+    const allAllowed = new Set(Object.values(CATEGORY_MAP).flat())
+    return collections.filter((group) => {
+      const isProp = group.products?.some((p: any) => p.category_id === 'prop')
+      if (!isProp && group.products?.length > 0) return false
+
+      const sup = String(group.product_sup || "").trim().toLowerCase()
+      return !sup || !allAllowed.has(sup)
+    })
+  }
+
   const target = activeFilter.trim()
   const allowed = CATEGORY_MAP[target] || CATEGORY_MAP[filterUpper] || [target.toLowerCase()]
 
