@@ -5,10 +5,9 @@ import { createClient } from '@supabase/supabase-js';
 import { Scanner } from '@yudiel/react-qr-scanner'; 
 
 // 1. ตั้งค่า Supabase 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zexflchjcycxrpjkuews.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleGZsY2hqY3ljeHJwamt1ZXdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzMyNTEsImV4cCI6MjA4MDc0OTI1MX0.Hw3dJqP6-bpmqMW56pGHB1-Y2hN9tjCKNq9u2BnyeTk';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function SysDiagPage() {
   const [productData, setProductData] = useState<any>(null);

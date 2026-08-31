@@ -28,10 +28,9 @@ function escapeXml(unsafe: string): string {
 
 export async function GET() {
   try {
-    const supabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zexflchjcycxrpjkuews.supabase.co';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleGZsY2hqY3ljeHJwamt1ZXdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzMyNTEsImV4cCI6MjA4MDc0OTI1MX0.Hw3dJqP6-bpmqMW56pGHB1-Y2hN9tjCKNq9u2BnyeTk';
+    const supabase = createSupabaseClient(supabaseUrl, supabaseKey);
 
     // 1. ดึงข้อมูลกลุ่มคอลเล็กชันที่มี tag เป็น 'prop' (สำหรับเว็บของตกแต่งบ้าน) เพื่อไม่ให้ดึงสินค้าของเว็บอื่น (เช่น เฟอร์นิเจอร์) ที่ใช้ฐานข้อมูลร่วมกัน
     const { data: collections, error: productsError } = await supabase
