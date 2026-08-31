@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[hot-items] query failed', error)
-    return NextResponse.json({ error: 'Unable to load Hot Items' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to load Hot Items', details: error.message || error }, { status: 500 })
   }
 
   return NextResponse.json({ data: data || [] })

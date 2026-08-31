@@ -214,9 +214,12 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     console.error("[PropCollectionsPage] Supabase collection fetch error:", error)
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EBE8E1]">
-        <div className="text-center">
+        <div className="text-center max-w-md p-4">
           <p className="text-[#3A3835] font-serif text-xl mb-2">Unavailable</p>
-          <p className="text-[#8C8A86] text-sm font-light tracking-wide">Unable to load the collections at this time.</p>
+          <p className="text-[#8C8A86] text-sm font-light tracking-wide mb-2">Unable to load the collections at this time.</p>
+          <p className="text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200 break-all font-mono">
+            {typeof error === 'object' ? JSON.stringify(error) : String(error)}
+          </p>
         </div>
       </div>
     )

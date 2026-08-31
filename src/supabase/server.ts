@@ -12,16 +12,13 @@ export async function createClient() {
     supabaseUrl,
     supabaseKey,
     {
-      // Supabase requests include live stock and the Prop hot-item RPC. Do not
-      // let Next's patched fetch reuse an older response for these queries.
-      global: {
-        fetch(input, init) {
-          return globalThis.fetch(input, { ...init, cache: 'no-store' })
-        },
-      },
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          try {
+            return cookieStore.getAll()
+          } catch {
+            return []
+          }
         },
         setAll(cookiesToSet) {
           try {
