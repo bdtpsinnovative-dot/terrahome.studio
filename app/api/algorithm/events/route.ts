@@ -191,6 +191,8 @@ export async function POST(request: Request) {
   )
   const productSnapshot = relation ? getProductSnapshot(relation, Number.isSafeInteger(payload.product_id) ? payload.product_id! : null) : {}
 
+  const ipHash = await hashClientIp(clientIp)
+
   const eventData = {
     event_type: eventType,
     product_id: Number.isSafeInteger(payload.product_id) ? payload.product_id : null,
@@ -215,7 +217,7 @@ export async function POST(request: Request) {
     exit_type: safeText(payload.exit_type, 100),
     is_bounce: Boolean(payload.is_bounce),
     is_quick_bounce: Boolean(payload.is_quick_bounce),
-    ip_hash: hashClientIp(clientIp),
+    ip_hash: ipHash,
     country_code: location.countryCode,
     country: location.country,
     region: location.region,
@@ -258,7 +260,7 @@ export async function POST(request: Request) {
     const { error: fallbackError } = await supabase.from('algorithm_events').insert({
       event_type: 'product_view', source_tag: 'prop', product_id: payload.product_id,
       collection_group_id: String(relation.id), user_id: userId, visitor_id: userId ? null : visitorId,
-      identity_type: identityType, view_bucket: getViewBucket(), ip_hash: hashClientIp(clientIp),
+      identity_type: identityType, view_bucket: getViewBucket(), ip_hash: ipHash,
       country_code: location.countryCode, country: location.country, region: location.region, city: location.city,
       isp: location.isp, asn: location.asn, user_agent: userAgent?.slice(0, 1000) || null,
       referrer: attribution.referrerHost, traffic_type: traffic.trafficType, is_bot: traffic.isBot,

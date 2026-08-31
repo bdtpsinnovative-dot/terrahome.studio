@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { createHash, createHmac } from 'node:crypto'
-import { isIP } from 'node:net'
 import {
   detectAttribution,
   isSourceConfidence,
@@ -26,6 +24,35 @@ export const LAST_PRODUCT_COOKIE_NAME = 'prop_last_product_id'
 export const ALGORITHM_EVENT_TYPE = 'product_view'
 
 const BOT_USER_AGENT = /bot|crawler|spider|slurp|headless|prerender|facebookexternalhit|whatsapp/i
+
+const isIP = (ip: string): number => {
+  const ipv4 = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+  const ipv6 = /^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$/i
+
+  if (ipv4.test(ip)) return 4
+  if (ipv6.test(ip)) return 6
+  return 0
+}
+
+const rotl32 = (value: number, shift: number): number => ((value << shift) | (value >>> (32 - shift))) >>> 0
+
+async function hashHex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+async function hmacHashHex(secret: string, value: string): Promise<string> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(value))
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
 
 type LocationData = {
   countryCode: string | null
@@ -77,17 +104,17 @@ export function getTrustedClientIp(headers: Headers): string | null {
   return candidates.find((candidate) => candidate && isIP(candidate) > 0) || null
 }
 
-export function hashClientIp(ip: string | null): string | null {
+export async function hashClientIp(ip: string | null): Promise<string | null> {
   const secret = process.env.ALGORITHM_IP_HMAC_SECRET
   if (!ip) return null
 
   if (secret) {
-    return createHmac('sha256', secret).update(ip).digest('hex')
+    return hmacHashHex(secret, ip)
   }
 
   // Optional-env fallback: stable across deploys, but not secret. Configure
   // ALGORITHM_IP_HMAC_SECRET when IP correlation must resist guessing attacks.
-  return createHash('sha256').update(`prop-ip-v1:${ip}`).digest('hex')
+  return hashHex(`prop-ip-v1:${ip}`)
 }
 
 function ipv4ToNumber(ip: string): number | null {
@@ -278,7 +305,7 @@ export async function getLocationData(headers: Headers, ip: string | null): Prom
 
   if (!ip || Object.values(headerLocation).every(Boolean)) return headerLocation
 
-  const cacheKey = hashClientIp(ip) || ip
+  const cacheKey = (await hashClientIp(ip)) || ip
   const cached = locationCache.get(cacheKey)
   if (cached && cached.expiresAt > Date.now()) {
     return {
