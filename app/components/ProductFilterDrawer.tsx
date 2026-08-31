@@ -327,30 +327,30 @@ export default function ProductFilterDrawer({
                   <div className="flex w-full items-center py-0.5">
                     <button 
                       type="button" 
-                      onClick={() => onCategoryChange("UNMAPPED")} 
+                      onClick={() => onCategoryChange("UNCATEGORIZED")} 
                       className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${
-                        activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                        activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
                           ? "bg-[#84492C]/10 text-[#84492C]" 
                           : "text-[#3A3835] hover:bg-black/[0.02]"
                       }`}
                     >
                       <div className="flex flex-col items-start min-w-0 text-left">
                         <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${
-                          activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                          activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
                             ? "font-bold text-[#84492C]" 
                             : "font-medium text-[#3A3835]"
                         }`}>
-                          UNMAPPED
+                          OTHER / UNMAPPED
                         </span>
                         <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${
-                          activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                          activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
                             ? "text-[#84492C] font-medium" 
                             : "text-[#807971] font-normal"
                         }`}>
-                          สินค้าไม่มีหมวดหมู่
+                          ยังไม่มีในหมวดข้างต้น
                         </span>
                       </div>
-                      {(activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED") && (
+                      {(activeCategory.toUpperCase() === "UNCATEGORIZED" || activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED") && (
                         <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />
                       )}
                     </button>

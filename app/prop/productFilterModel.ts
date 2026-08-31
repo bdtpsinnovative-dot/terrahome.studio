@@ -259,7 +259,8 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       }))
   }
 
-  if (activeFilter.toUpperCase().trim() === "UNMAPPED" || activeFilter === "DEV_UNMAPPED") {
+  const filterKey = activeFilter.toUpperCase().trim()
+  if (filterKey === "UNCATEGORIZED" || filterKey === "UNMAPPED" || filterKey === "DEV_UNMAPPED") {
     const isLocal = (typeof window !== "undefined" && (
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||
@@ -274,7 +275,7 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       if (!isProp && group.products?.length > 0) return false
 
       const sup = String(group.product_sup || "").trim().toLowerCase()
-      return !sup || !allAllowed.has(sup)
+      return !sup || sup === "null" || !allAllowed.has(sup)
     })
   }
 

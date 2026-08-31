@@ -114,7 +114,8 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
     ));
 
-    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT";
+    const upperParam = (categoryParam || "").toUpperCase().trim();
+    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT" || upperParam === "UNCATEGORIZED" || upperParam === "UNMAPPED" || upperParam === "DEV_UNMAPPED";
 
     if (!isSpecialFilter) {
       const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());
