@@ -24,6 +24,7 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
       { fullValue: "Ceramic Vases", displayLabel: "CERAMIC VASES", thaiLabel: "แจกันเซรามิก" },
       { fullValue: "Glass Vases", displayLabel: "GLASS VASES", thaiLabel: "แจกันแก้ว" },
       { fullValue: "Vessels", displayLabel: "VESSELS", thaiLabel: "ภาชนะ" },
+      { fullValue: "Vase and Flower", displayLabel: "VASE AND FLOWER", thaiLabel: "แจกันและดอกไม้" },
       { fullValue: "Others Vase", displayLabel: "OTHERS VASE", thaiLabel: "แจกันอื่น ๆ" },
     ],
   },
@@ -92,10 +93,11 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
 
 export const CATEGORY_MAP: Record<string, string[]> = {
   // 1. Vase & Vessels
-  "VASE & VESSELS": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "VASE & VESSELS": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal", "vase and flower", "flower"],
   "Ceramic Vases": ["ceramic handmade", "ceramic 3d"],
   "Glass Vases": ["glass handmade", "vase glass handmade"],
   "Vessels": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "Vase and Flower": ["vase and flower", "flower"],
   "Others Vase": ["vase", "vase normal"],
 
   // 2. Figure
@@ -133,9 +135,9 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Other Dining & Tableware": ["kitchenware"],
 
   // 8. Dressing & Bath
-  "DRESSING & BATH": ["decorative bath", "bath"],
+  "DRESSING & BATH": ["decorative bath", "bath", "dressing room", "dressing"],
   "Bath Room": ["decorative bath", "bath"],
-  "Dressing Room": ["decorative bath", "bath"],
+  "Dressing Room": ["dressing room", "dressing"],
 
   // 9. Art & walldecor
   "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame"],

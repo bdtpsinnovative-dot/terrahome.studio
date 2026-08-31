@@ -2,6 +2,7 @@ export const HARDCODED_CATEGORIES = [
   "Ceramic Vases",
   "Glass Vases",
   "Vessels",
+  "Vase and Flower",
   "Others Vase",
   "Animal Figure",
   "Human Figure",
@@ -34,6 +35,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Ceramic Vases": "Ceramic Vases",
   "Glass Vases": "Glass Vases",
   "Vessels": "Vessels",
+  "Vase and Flower": "Vase and Flower",
   "Others Vase": "Others Vase",
 
   "FIGURE": "Figure",
