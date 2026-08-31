@@ -42,7 +42,7 @@ function setAttributionCookies(request: NextRequest, response: NextResponse) {
   return response;
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { randomUUID } from 'node:crypto'
 import { createClient } from '@/src/supabase/server'
 
 export const runtime = 'edge'
@@ -160,11 +159,11 @@ export async function POST(request: Request) {
 
   const cookieStore = await cookies()
   let visitorId = cookieStore.get(VISITOR_COOKIE_NAME)?.value
-  if (!isUuid(visitorId)) visitorId = randomUUID()
+  if (!isUuid(visitorId)) visitorId = crypto.randomUUID()
 
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value
   const hadSessionCookie = isUuid(sessionCookie)
-  const sessionId = hadSessionCookie ? sessionCookie! : randomUUID()
+  const sessionId = hadSessionCookie ? sessionCookie! : crypto.randomUUID()
 
   const previousProductId = Number(cookieStore.get(LAST_PRODUCT_COOKIE_NAME)?.value)
   const userData = await supabase.auth.getUser()
