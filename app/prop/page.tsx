@@ -3,6 +3,8 @@ import { connection } from "next/server"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
 import PropBanner from "./PropBanner"
+
+export const runtime = 'edge'
 import { CATEGORY_MAP } from "./productFilterModel"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"

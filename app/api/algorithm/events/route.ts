@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@/src/supabase/server'
+
+export const runtime = 'edge'
+
 import {
   FIRST_TOUCH_COOKIE_NAME,
   LAST_PRODUCT_COOKIE_NAME,

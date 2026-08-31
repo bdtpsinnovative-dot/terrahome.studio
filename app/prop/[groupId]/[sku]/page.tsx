@@ -4,6 +4,8 @@ import { createClient } from "../../../../src/supabase/server" // ⚡ ดึง�
 import ProductDetailClient from './ProductDetailClient'
 import { redirect } from 'next/navigation'
 
+export const runtime = 'edge'
+
 type Props = {
   params: Promise<{ groupId: string; sku: string }> // ⚡ ปรับเป็น Promise ตามมาตรฐาน Next.js ใหม่
 }
