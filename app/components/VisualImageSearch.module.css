@@ -1,0 +1,380 @@
+/* Hallmark · component: visual-image-search · genre: editorial · theme: studio
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass (46–50)
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #D5D2CA;
+  border-radius: 2px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.searchWrapper:hover,
+.searchWrapper.isHover {
+  border-color: #84492C;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(132, 73, 44, 0.06);
+}
+
+.searchWrapper:focus-within,
+.searchWrapper.isFocus {
+  border-color: #3A3835;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 1px #3A3835, 0 3px 12px rgba(58, 56, 53, 0.08);
+}
+
+.searchWrapper.isDragging {
+  border-color: #84492C;
+  background: #F8F5F0;
+  box-shadow: 0 0 0 2px rgba(132, 73, 44, 0.3);
+}
+
+.searchWrapper.hasActiveImage {
+  border-color: #84492C;
+  background: #FDFBF7;
+}
+
+.searchWrapper.isDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+  background: #F2EFE9;
+  border-color: #E2DDD5;
+}
+
+.inputField {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #3A3835;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.inputField::placeholder {
+  color: rgba(140, 138, 134, 0.6);
+  font-size: 10.5px;
+}
+
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: #6F6861;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionBtn:hover,
+.actionBtn.isHover {
+  color: #84492C;
+  background: rgba(132, 73, 44, 0.08);
+}
+
+.actionBtn:focus-visible,
+.actionBtn.isFocus {
+  outline: 2px solid #84492C;
+  outline-offset: 1px;
+}
+
+.actionBtn:active,
+.actionBtn.isActive {
+  transform: scale(0.92);
+}
+
+.actionBtn.activeLens {
+  color: #84492C;
+  background: rgba(132, 73, 44, 0.12);
+}
+
+.activeImagePill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 4px;
+  margin-left: 4px;
+  background: #F2EFE9;
+  border: 1px solid rgba(132, 73, 44, 0.25);
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #84492C;
+  letter-spacing: 0.05em;
+  max-width: 140px;
+}
+
+.activeThumbnail {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 1px;
+}
+
+.pillLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.pillClearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  background: transparent;
+  border: none;
+  color: #8C8A86;
+  cursor: pointer;
+}
+
+.pillClearBtn:hover {
+  color: #84492C;
+}
+
+/* =========================================================================
+   Modal / Dropzone Dialog (Editorial Floating Panel)
+   ========================================================================= */
+.dropModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(28, 26, 24, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropModalCard {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: #FDFBF7;
+  border: 1px solid #D5D2CA;
+  border-radius: 4px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  padding: 24px;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(58, 56, 53, 0.1);
+}
+
+.modalTitle {
+  font-family: var(--font-serif, Optima, Georgia, serif);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3A3835;
+  font-weight: 500;
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(58, 56, 53, 0.1);
+  color: #3A3835;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  background: #84492C;
+  border-color: #84492C;
+  color: #FFFFFF;
+}
+
+.dropZone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px 20px;
+  background: #F4F1EB;
+  border: 1.5px dashed #C5C0B7;
+  border-radius: 3px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.dropZone:hover,
+.dropZone.isDragOver {
+  border-color: #84492C;
+  background: #EFEBE3;
+  box-shadow: inset 0 0 0 1px rgba(132, 73, 44, 0.2);
+}
+
+.dropIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(132, 73, 44, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #84492C;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropZone:hover .dropIconWrap {
+  transform: translateY(-2px);
+  background: rgba(132, 73, 44, 0.15);
+}
+
+.dropPrimaryText {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3A3835;
+  letter-spacing: 0.04em;
+}
+
+.dropSecondaryText {
+  font-size: 10px;
+  color: #8C8A86;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dropPasteBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #D5D2CA;
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  color: #6F6861;
+}
+
+/* =========================================================================
+   Scanning / Loading Bar
+   ========================================================================= */
+.analyzingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.scanPreviewContainer {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #84492C;
+  box-shadow: 0 4px 16px rgba(132, 73, 44, 0.15);
+}
+
+.scanPreviewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanLaser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #84492C 50%, transparent);
+  box-shadow: 0 0 8px #84492C;
+  animation: scanMove 1.4s ease-in-out infinite alternate;
+}
+
+.analyzingLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #84492C;
+}
+
+.analyzingSubtitle {
+  font-size: 9.5px;
+  color: #8C8A86;
+  font-family: var(--font-mono, monospace);
+}
+
+/* Error State */
+.errorMessage {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #FDF2F2;
+  border: 1px solid #F87171;
+  border-radius: 2px;
+  font-size: 10px;
+  color: #991B1B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes scanMove {
+  0% { top: 4%; }
+  100% { top: 94%; }
+}

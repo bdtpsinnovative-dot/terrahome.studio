@@ -98,6 +98,7 @@ export default function JournalPage() {
   const [categories, setCategories] = useState<JournalCategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string; categoryQuery: string } | null>(null);
+  const [setPromotionsMap, setSetPromotionsMap] = useState<Record<string, any>>({});
 
   // Banner Slideshow Auto Rotation
   useEffect(() => {
@@ -112,19 +113,54 @@ export default function JournalPage() {
     async function fetchJournal() {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("journal_categories")
-          .select(`
-            *,
-            images:journal_images ( id, image_url, sort_order, alt_text, is_active )
-          `)
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true });
+        const nowIso = new Date().toISOString();
 
-        if (error) throw error;
+        const [categoriesRes, promosRes] = await Promise.all([
+          supabase
+            .from("journal_categories")
+            .select(`
+              *,
+              images:journal_images ( id, image_url, sort_order, alt_text, is_active )
+            `)
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true }),
+          supabase
+            .from("terra_collection_promotions")
+            .select(`
+              id,
+              title,
+              promo_scope,
+              collection_group_id,
+              trigger_type,
+              discount_type,
+              discount_value,
+              start_date,
+              end_date,
+              usage_limit,
+              used_count,
+              is_active
+            `)
+            .eq("is_active", true)
+            .eq("trigger_type", "auto"),
+        ]);
 
-        if (data && data.length > 0) {
-          const mapped: JournalCategoryItem[] = data.map((cat: any) => {
+        if (categoriesRes.error) throw categoriesRes.error;
+
+        if (promosRes.data) {
+          const pMap: Record<string, any> = {};
+          promosRes.data.forEach((p: any) => {
+            if (p.start_date && p.start_date > nowIso) return;
+            if (p.end_date && p.end_date < nowIso) return;
+            if (p.usage_limit && p.used_count >= p.usage_limit) return;
+            if (p.collection_group_id) {
+              pMap[String(p.collection_group_id)] = p;
+            }
+          });
+          setSetPromotionsMap(pMap);
+        }
+
+        if (categoriesRes.data && categoriesRes.data.length > 0) {
+          const mapped: JournalCategoryItem[] = categoriesRes.data.map((cat: any) => {
             const rawImgs = (cat.images || []).filter((i: any) => i.is_active);
             rawImgs.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 
@@ -318,49 +354,49 @@ export default function JournalPage() {
                       const { className: gridPlacement, isHero } = getImageGridStyle(imgIdx, isEven, category.images.length);
 
                       return (
-                        <motion.div
+                        <Link
                           key={img.id}
-                          initial={{ opacity: 0, y: 35, scale: 0.97 }}
-                          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                          viewport={{ once: true, margin: "-40px", amount: 0.12 }}
-                          transition={{
-                            duration: 0.7,
-                            delay: (imgIdx % 3) * 0.1,
-                            ease: [0.22, 1, 0.36, 1],
-                          }}
-                          whileHover={{ y: -6, transition: { duration: 0.3, ease: "easeOut" } }}
-                          onClick={() => setPreviewImage({
-                            url: img.image_url,
-                            title: category.title_en,
-                            categoryQuery: category.category_query
-                          })}
-                          className={`group relative rounded-2xl md:rounded-3xl overflow-hidden bg-[#F4EFEA] border border-[#E7E2D9]/80 shadow-xs hover:shadow-2xl transition-all duration-500 cursor-pointer ${gridPlacement}`}
+                          href={`/collections/${category.slug}/${img.id}`}
+                          className={`group relative rounded-2xl md:rounded-3xl overflow-hidden bg-[#F4EFEA] border border-[#E7E2D9]/80 shadow-xs hover:shadow-2xl transition-all duration-500 cursor-pointer block ${gridPlacement}`}
                         >
-                          <img
-                            src={img.image_url}
-                            alt={img.alt_text || `${category.title_en} image ${imgIdx + 1}`}
-                            loading="lazy"
-                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106 select-none"
-                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 35, scale: 0.97 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                            viewport={{ once: true, margin: "-40px", amount: 0.12 }}
+                            transition={{
+                              duration: 0.7,
+                              delay: (imgIdx % 3) * 0.1,
+                              ease: [0.22, 1, 0.36, 1],
+                            }}
+                            whileHover={{ y: -6, transition: { duration: 0.3, ease: "easeOut" } }}
+                            className="w-full h-full relative"
+                          >
+                            <img
+                              src={img.image_url}
+                              alt={img.alt_text || `${category.title_en} image ${imgIdx + 1}`}
+                              loading="lazy"
+                              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106 select-none"
+                            />
 
-                          {/* Hero Badge for 2x2 Feature Images */}
-                          {isHero && (
-                            <div className="absolute top-4 left-4 z-10 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[10px] font-medium tracking-[0.2em] uppercase border border-white/20">
-                              <Sparkles size={11} className="text-[#F2C94C]" />
-                              <span>Featured Collection</span>
-                            </div>
-                          )}
+                            {/* Hero Badge for 2x2 Feature Images */}
+                            {isHero && (
+                              <div className="absolute top-4 left-4 z-10 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[10px] font-medium tracking-[0.2em] uppercase border border-white/20">
+                                <Sparkles size={11} className="text-[#F2C94C]" />
+                                <span>Featured Collection</span>
+                              </div>
+                            )}
 
-                          {/* Subtle Luxury Gradient Overlay on Hover */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4 sm:p-6">
-                            <span className="text-[11px] sm:text-xs tracking-[0.25em] text-white uppercase font-medium drop-shadow-sm">
-                              View Piece
-                            </span>
-                            <div className="p-2 rounded-full bg-white/95 text-[#1C1A18] shadow-md backdrop-blur-xs">
-                              <Maximize2 size={16} />
+                            {/* Subtle Luxury Gradient Overlay on Hover */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4 sm:p-6">
+                              <span className="text-[11px] sm:text-xs tracking-[0.25em] text-white uppercase font-medium drop-shadow-sm">
+                                ดูสินค้าในภาพนี้
+                              </span>
+                              <div className="p-2 rounded-full bg-white/95 text-[#1C1A18] shadow-md backdrop-blur-xs">
+                                <ArrowUpRight size={16} />
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
+                          </motion.div>
+                        </Link>
                       );
                     })}
                   </div>
