@@ -259,7 +259,7 @@ export function filterCollectionsByCategory(collections: any[], activeFilter: st
       }))
   }
 
-  if (activeFilter === "DEV_UNMAPPED") {
+  if (activeFilter.toUpperCase().trim() === "UNMAPPED" || activeFilter === "DEV_UNMAPPED") {
     const isLocal = (typeof window !== "undefined" && (
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||

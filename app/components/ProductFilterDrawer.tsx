@@ -324,39 +324,34 @@ export default function ProductFilterDrawer({
               <>
                 {PRODUCT_FILTER_ITEMS.map(renderMenuItem)}
                 {isLocal && (
-                  <div className="mt-6 border-t-2 border-dashed border-amber-600/30 pt-4 pb-2">
-                    <div className="flex items-center justify-between px-3 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                        <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase">
-                          LOCAL ONLY (DEV CHECK)
-                        </span>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-full">
-                        {unmappedCount} รายการ
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onCategoryChange("DEV_UNMAPPED")}
-                      className={`group flex min-h-12 w-full items-center justify-between px-3 py-2.5 rounded-xl transition-all text-left outline-none ${
-                        activeCategory === "DEV_UNMAPPED"
-                          ? "bg-amber-500/20 text-amber-950 border border-amber-500/60 shadow-sm"
-                          : "bg-amber-500/5 hover:bg-amber-500/10 text-amber-900 border border-dashed border-amber-400/60"
+                  <div className="flex w-full items-center py-0.5">
+                    <button 
+                      type="button" 
+                      onClick={() => onCategoryChange("UNMAPPED")} 
+                      className={`group flex min-h-12 min-w-0 w-full items-center justify-between px-3 py-2 rounded-xl transition-all text-left outline-none ${
+                        activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                          ? "bg-[#84492C]/10 text-[#84492C]" 
+                          : "text-[#3A3835] hover:bg-black/[0.02]"
                       }`}
                     >
                       <div className="flex flex-col items-start min-w-0 text-left">
                         <span className={`text-[13px] uppercase tracking-wider transition-colors sm:text-[14px] ${
-                          activeCategory === "DEV_UNMAPPED" ? "font-bold text-amber-950" : "font-semibold text-amber-900"
+                          activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                            ? "font-bold text-[#84492C]" 
+                            : "font-medium text-[#3A3835]"
                         }`}>
-                          UNMAPPED / ไม่มีหมวด
+                          UNMAPPED
                         </span>
-                        <span className="text-[11px] sm:text-[11.5px] text-amber-800/80 font-normal mt-0.5">
-                          สินค้าที่ตกหล่นจากฟิลเตอร์ในระบบ
+                        <span className={`text-[11.5px] sm:text-[12px] tracking-normal transition-colors mt-0.5 ${
+                          activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED"
+                            ? "text-[#84492C] font-medium" 
+                            : "text-[#807971] font-normal"
+                        }`}>
+                          สินค้าไม่มีหมวดหมู่
                         </span>
                       </div>
-                      {activeCategory === "DEV_UNMAPPED" && (
-                        <span className="h-2 w-2 rounded-full bg-amber-600 shrink-0 ml-2" />
+                      {(activeCategory.toUpperCase() === "UNMAPPED" || activeCategory === "DEV_UNMAPPED") && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#84492C] shrink-0 ml-2" />
                       )}
                     </button>
                   </div>

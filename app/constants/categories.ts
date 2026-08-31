@@ -73,6 +73,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
 
   "IN_STOCK": "In Stock",
   "READY_TO_SHIP": "Ready To Ship",
+  "UNMAPPED": "Unmapped",
 
   // Legacy mappings for bookmarks/old links
   "Art Object": "Ornament",
