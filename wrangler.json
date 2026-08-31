@@ -17,5 +17,15 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  "find_additional_modules": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "**/*.js",
+        "**/*.mjs"
+      ]
+    }
+  ]
 }
