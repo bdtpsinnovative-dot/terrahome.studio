@@ -190,7 +190,7 @@ export default function JournalPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1A18] selection:bg-[#84492C] selection:text-[#FAF7F2] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#E5DDD3] text-[#1C1A18] selection:bg-[#84492C] selection:text-[#FAF7F2] flex flex-col font-sans">
       
       {/* =========================================================================
           1. TOP HERO BANNER (Full-Width Edge-to-Edge หรูหรา ไร้รอยต่อ)
@@ -217,8 +217,8 @@ export default function JournalPage() {
         {/* Top Navbar Dimmer & Dark Vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-transparent pointer-events-none" />
 
-        {/* ชั้นไล่สีครีมละลายขอบล่างกลืนกับพื้นหลังหน้าเว็บ */}
-        <div className="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/60 to-transparent pointer-events-none z-20" />
+        {/* ชั้นไล่สีละลายขอบล่างกลืนกับพื้นหลังหน้าเว็บ */}
+        <div className="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-[#E5DDD3] via-[#E5DDD3]/60 to-transparent pointer-events-none z-20" />
         
         <div className="absolute bottom-8 left-6 sm:bottom-12 sm:left-12 lg:left-16 text-white z-30">
           <motion.span
@@ -424,7 +424,7 @@ export default function JournalPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative max-w-4xl max-h-[85vh] w-full bg-[#FDFBF7] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center p-6 md:p-10 cursor-default border border-[#E5DFD5]"
+              className="relative max-w-4xl max-h-[85vh] w-full bg-[#EFE8DF] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center p-6 md:p-10 cursor-default border border-[#D9D0C5]"
             >
               {/* Close Button (z-50 ไม่โดนบัง และกดง่ายชัดเจน 100%) */}
               <button
