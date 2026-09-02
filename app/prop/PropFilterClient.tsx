@@ -101,7 +101,17 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setMaterialFilter(urlMaterial)
   }, [searchParams])
 
-  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter, newMaterial = materialFilter, showLoading = true) => {
+  const updateURL = (
+    newFilter: string,
+    newPage: number,
+    newSearch: string,
+    newAttribute = attributeFilter,
+    newMaterial: string | boolean = materialFilter,
+    showLoading = true
+  ) => {
+    const actualMaterial = typeof newMaterial === 'string' ? newMaterial : materialFilter
+    const actualShowLoading = typeof newMaterial === 'boolean' ? newMaterial : showLoading
+
     const params = new URLSearchParams(searchParams.toString())
 
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
@@ -116,7 +126,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     if (newAttribute && newAttribute !== "ALL_ATTRIBUTE") params.set('attribute', newAttribute)
     else params.delete('attribute')
 
-    if (newMaterial && newMaterial !== "ALL_MATERIAL") params.set('material', newMaterial)
+    if (actualMaterial && actualMaterial !== "ALL_MATERIAL") params.set('material', actualMaterial)
     else params.delete('material')
 
     // Choosing a filter is an in-page action; the explicit open state belongs only to the navbar/filter entry point.
@@ -126,7 +136,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     const targetPath = `${pathname}${query ? `?${query}` : ''}`
     const currentPath = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     if (targetPath === currentPath) return
-    if (showLoading) setIsNavigationPending(true)
+    if (actualShowLoading) setIsNavigationPending(true)
     router.push(targetPath, { scroll: false })
   }
 
@@ -355,9 +365,11 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                       // บังคับเคลียร์หมวดหมู่และฟิลเตอร์สีทั้งหมดให้เป็น All เพื่อให้ผลการค้นหาด้วยภาพเจอสินค้าครบทุกหมวด
                       setActiveFilter('All')
                       setAttributeFilter('ALL_ATTRIBUTE')
+                      setMaterialFilter('')
                       setOpenColorPanel(false)
+                      setOpenMaterialPanel(false)
                       setIsSidebarOpen(false)
-                      updateURL('All', 1, searchQuery, 'ALL_ATTRIBUTE', false)
+                      updateURL('All', 1, searchQuery, 'ALL_ATTRIBUTE', '', false)
                     }
                     setActiveImageSearch(img)
                     setCurrentPage(1)
