@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { createClient, getSafeSession } from '@/src/supabase/client';
 import ProductFilterDrawer from './ProductFilterDrawer';
-import { selectedAttributeValues } from '@/app/prop/productFilterModel';
+import { selectedAttributeValues, selectedMaterialValues } from '@/app/prop/productFilterModel';
 
 export default function Navbar({ collections = [], isLightMode = false }: { collections?: any[], isLightMode?: boolean }) {
   const pathname = usePathname();
@@ -174,6 +174,17 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     startTransition(() => router.push(`/prop${query ? `?${query}` : ''}`));
   };
 
+  const handleProductMaterialsSelect = (materials: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (materials.length > 0) params.set('material', materials.join(','));
+    else params.delete('material');
+    params.delete('page');
+    const query = params.toString();
+    closeProductDrawer();
+    setIsLoading(true);
+    startTransition(() => router.push(`/prop${query ? `?${query}` : ''}`));
+  };
+
   return (
     <>
       {isPending && (
@@ -194,9 +205,11 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
         collections={collections}
         activeCategory={searchParams.get('category') || 'All'}
         selectedColors={selectedAttributeValues(searchParams.get('attribute') || 'ALL_ATTRIBUTE')}
+        selectedMaterials={selectedMaterialValues(searchParams.get('material') || '')}
         onClose={closeProductDrawer}
         onCategoryChange={handleProductFilterSelect}
         onColorsChange={handleProductColorsSelect}
+        onMaterialsChange={handleProductMaterialsSelect}
         idPrefix="navbar-product-filter"
         zIndexClass="z-[10000]"
       />

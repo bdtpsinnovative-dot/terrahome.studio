@@ -3,21 +3,26 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   getColorOptions,
+  getMaterialOptions,
   PRODUCT_FILTER_ITEMS,
   CATEGORY_MAP,
   isNoCategoryFilter,
   type ProductFilterMenuItem,
+  type ProductMaterialOption,
 } from "@/app/prop/productFilterModel"
 
 type ProductFilterDrawerProps = {
   open: boolean
   openColorPanel?: boolean
+  openMaterialPanel?: boolean
   collections: any[]
   activeCategory: string
-  selectedColors: string[]
+  selectedColors?: string[]
+  selectedMaterials?: string[]
   onClose: () => void
   onCategoryChange: (category: string) => void
   onColorsChange: (category: string, colors: string[]) => void
+  onMaterialsChange?: (materials: string[]) => void
   hotProductIds?: number[]
   idPrefix?: string
   zIndexClass?: string
@@ -38,24 +43,28 @@ function groupForCategory(category: string) {
 export default function ProductFilterDrawer({
   open,
   openColorPanel = false,
+  openMaterialPanel = false,
   collections,
   activeCategory,
-  selectedColors,
+  selectedColors = [],
+  selectedMaterials = [],
   onClose,
   onCategoryChange,
   onColorsChange,
+  onMaterialsChange,
   hotProductIds = [],
   idPrefix = "product-filter",
   zIndexClass = "z-[9999]",
 }: ProductFilterDrawerProps) {
   const activeGroup = groupForCategory(activeCategory)
   const [expandedGroups, setExpandedGroups] = useState<string[]>(activeGroup ? [activeGroup] : [])
-  const [colorScope, setColorScope] = useState<string | null>(null)
+  const [currentPanel, setCurrentPanel] = useState<'category' | 'color' | 'material'>('category')
   const [isLocal, setIsLocal] = useState(false)
   const onCloseRef = useRef(onClose)
   const wasOpenRef = useRef(false)
   const categoryDrawerId = `${idPrefix}-drawer`
   const colorDrawerId = `${idPrefix}-color-drawer`
+  const materialDrawerId = `${idPrefix}-material-drawer`
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -128,19 +137,21 @@ export default function ProductFilterDrawer({
 
   useEffect(() => {
     if (!open) {
-      setColorScope(null)
+      setCurrentPanel('category')
       wasOpenRef.current = false
       return
     }
 
     if (openColorPanel) {
-      setColorScope(activeCategory)
+      setCurrentPanel('color')
+    } else if (openMaterialPanel) {
+      setCurrentPanel('material')
     } else {
-      setColorScope(null)
+      setCurrentPanel('category')
     }
 
     wasOpenRef.current = true
-  }, [activeCategory, open, openColorPanel])
+  }, [activeCategory, open, openColorPanel, openMaterialPanel])
 
   useEffect(() => {
     if (!open) {
@@ -165,10 +176,14 @@ export default function ProductFilterDrawer({
   }, [activeCategory, open])
 
   const colorOptions = useMemo(
-    () => colorScope ? getColorOptions(collections, colorScope, hotProductIds) : [],
-    [collections, colorScope, hotProductIds],
+    () => currentPanel === 'color' ? getColorOptions(collections, activeCategory, hotProductIds) : [],
+    [collections, activeCategory, hotProductIds, currentPanel],
   )
-  const scopedSelectedColors = colorScope === activeCategory ? selectedColors : []
+
+  const materialOptions = useMemo(
+    () => currentPanel === 'material' ? getMaterialOptions(collections, activeCategory, hotProductIds) : [],
+    [collections, activeCategory, hotProductIds, currentPanel],
+  )
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((current) => current.includes(label)
@@ -176,16 +191,18 @@ export default function ProductFilterDrawer({
       : [...current, label])
   }
 
-  const toggleColorPanel = (category: string) => {
-    setColorScope((current) => current === category ? null : category)
+  const toggleColor = (value: string) => {
+    const nextColors = selectedColors.includes(value)
+      ? selectedColors.filter((color) => color !== value)
+      : [...selectedColors, value]
+    onColorsChange(activeCategory, nextColors)
   }
 
-  const toggleColor = (value: string) => {
-    if (!colorScope) return
-    const nextColors = scopedSelectedColors.includes(value)
-      ? scopedSelectedColors.filter((color) => color !== value)
-      : [...scopedSelectedColors, value]
-    onColorsChange(colorScope, nextColors)
+  const toggleMaterial = (value: string) => {
+    const nextMaterials = selectedMaterials.includes(value)
+      ? selectedMaterials.filter((material) => material !== value)
+      : [...selectedMaterials, value]
+    onMaterialsChange?.(nextMaterials)
   }
 
   const renderMenuItem = (item: ProductFilterMenuItem, index: number) => {
@@ -315,11 +332,11 @@ export default function ProductFilterDrawer({
     <div className={`fixed inset-0 ${zIndexClass} transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150 ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}>
       <button type="button" aria-label="Close product filters" tabIndex={open ? 0 : -1} className="absolute inset-0 h-full w-full bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className={`absolute bottom-0 left-0 top-0 flex w-[92%] max-w-[380px] touch-manipulation overflow-hidden shadow-2xl transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:duration-150 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <aside id={categoryDrawerId} aria-label={colorScope ? "เลือกสีสินค้า" : "Product filters"} aria-hidden={!open} className="flex h-full w-full shrink-0 flex-col bg-[#EFE9E1]">
+        <aside id={categoryDrawerId} aria-label={currentPanel === 'color' ? "เลือกสีสินค้า" : currentPanel === 'material' ? "เลือกวัสดุสินค้า" : "Product filters"} aria-hidden={!open} className="flex h-full w-full shrink-0 flex-col bg-[#EFE9E1]">
           <div className="relative mb-4 flex min-h-[77px] items-center justify-between border-b border-[#C4B5A5]/30 px-4 sm:px-8">
             <div className="flex items-center z-10">
-              {colorScope && (
-                <button type="button" onClick={() => setColorScope(null)} aria-label="กลับไปตัวกรองหมวดหมู่" className="-ml-2 flex min-h-11 items-center gap-1.5 text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C]">
+              {currentPanel !== 'category' && (
+                <button type="button" onClick={() => setCurrentPanel('category')} aria-label="กลับไปตัวกรองหมวดหมู่" className="-ml-2 flex min-h-11 items-center gap-1.5 text-[#3A3835] outline-none transition-colors hover:text-[#B8834A] focus-visible:ring-2 focus-visible:ring-[#84492C]">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-5 w-5" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
                   </svg>
@@ -331,7 +348,7 @@ export default function ProductFilterDrawer({
             {/* 🌟 จัดตำแหน่งกึ่งกลาง 100% ด้วย Absolute Center */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
               <span className="whitespace-nowrap text-[12px] font-medium uppercase tracking-[0.25em] text-[#3A3835] sm:text-[13px] sm:tracking-[0.3em]">
-                {colorScope ? "Color" : "Filters"}
+                {currentPanel === 'color' ? "Color" : currentPanel === 'material' ? "Material" : "Filters"}
               </span>
             </div>
 
@@ -344,10 +361,10 @@ export default function ProductFilterDrawer({
             </div>
           </div>
           <div className="product-filter-scroll flex-1 overflow-y-auto px-5 pb-12 pt-2 text-left sm:px-8">
-            {colorScope ? (
+            {currentPanel === 'color' ? (
               <div id={colorDrawerId} aria-label="Filter products by color">
                 {colorOptions.length > 0 ? colorOptions.map((option) => {
-                  const isSelected = scopedSelectedColors.includes(option.value)
+                  const isSelected = selectedColors.includes(option.value)
                   return (
                     <button key={option.value} type="button" onClick={() => toggleColor(option.value)} aria-pressed={isSelected} className={`group flex min-h-11 w-full items-center gap-2 px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] sm:gap-3 sm:px-2 ${isSelected ? "font-semibold text-[#84492C]" : "font-normal text-[#6F6861] hover:text-[#3A3835]"}`}>
                       <span aria-hidden="true" className="h-5 w-5 shrink-0 rounded-full border border-[#8F857D]/45 shadow-[inset_0_0_0_1px_oklch(98%_0.006_80_/_0.45)]" style={option.swatch ? { backgroundColor: option.swatch } : undefined}>
@@ -361,6 +378,30 @@ export default function ProductFilterDrawer({
                     </button>
                   )
                 }) : <p className="px-2 py-6 text-[9px] uppercase tracking-[0.14em] text-[#8C8A86]">No color data</p>}
+              </div>
+            ) : currentPanel === 'material' ? (
+              <div id={materialDrawerId} aria-label="Filter products by material">
+                {materialOptions.length > 0 ? materialOptions.map((option) => {
+                  const isSelected = selectedMaterials.includes(option.value)
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleMaterial(option.value)}
+                      aria-pressed={isSelected}
+                      className={`group flex min-h-11 w-full items-center gap-2 px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#84492C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE9E1] sm:gap-3 sm:px-2 ${isSelected ? "font-semibold text-[#84492C]" : "font-normal text-[#6F6861] hover:text-[#3A3835]"}`}
+                    >
+                      <span aria-hidden="true" className="h-5 w-5 shrink-0 rounded-full border border-[#8F857D]/45 shadow-[inset_0_0_0_1px_oklch(98%_0.006_80_/_0.45)] grid place-items-center">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#84492C]/40" />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate whitespace-nowrap text-[10px] uppercase tracking-[0.16em]">{option.label}</span>
+                      <span className="shrink-0 font-mono text-[9px] tabular-nums text-[#8C8A86]">{option.count}</span>
+                      <span aria-hidden="true" className={`grid h-4 w-4 shrink-0 place-items-center text-[#84492C] ${isSelected ? "opacity-100" : "opacity-0"}`}>
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="m4 10 4 4 8-9" /></svg>
+                      </span>
+                    </button>
+                  )
+                }) : <p className="px-2 py-6 text-[9px] uppercase tracking-[0.14em] text-[#8C8A86]">No material data</p>}
               </div>
             ) : (
               <>

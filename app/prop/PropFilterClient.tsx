@@ -11,7 +11,9 @@ import {
   filterCollectionsByCategory,
   isNoCategoryFilter,
   productColorValues,
+  productMaterialValues,
   selectedAttributeValues,
+  selectedMaterialValues,
 } from "./productFilterModel"
 
 export default function PropFilterClient({ collections, branches, hotProductIds = [] }: { collections: any[], branches: any[], hotProductIds?: number[] }) {
@@ -23,6 +25,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const initialPage = Number(searchParams.get('page')) || 1
   const initialSearch = searchParams.get('search') || "" // 🌟 1. ดึงค่าค้นหาเริ่มต้นจาก URL
   const initialAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
+  const initialMaterial = searchParams.get('material') || ""
   const initialFilterOpen = searchParams.get('filter') === "open"
 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
@@ -30,15 +33,18 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const [searchQuery, setSearchQuery] = useState(initialSearch) // 🌟 2. เพิ่ม State สำหรับเก็บบล็อกคำค้นหา
   const [activeImageSearch, setActiveImageSearch] = useState<ImageSearchResult | null>(null)
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
+  const [materialFilter, setMaterialFilter] = useState(initialMaterial)
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialFilterOpen)
   const [openColorPanel, setOpenColorPanel] = useState(false)
+  const [openMaterialPanel, setOpenMaterialPanel] = useState(false)
   const [isNavigationPending, setIsNavigationPending] = useState(false)
   const isFilterOpen = isSidebarOpen
 
   const closeSidebar = () => {
     setIsSidebarOpen(false)
     setOpenColorPanel(false)
+    setOpenMaterialPanel(false)
     if (searchParams.get('filter') === 'open') {
       const params = new URLSearchParams(searchParams.toString())
       params.delete('filter')
@@ -49,11 +55,19 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
   const handleOpenFilter = () => {
     setOpenColorPanel(false)
+    setOpenMaterialPanel(false)
     setIsSidebarOpen(true)
   }
 
   const handleOpenColorPanel = () => {
     setOpenColorPanel(true)
+    setOpenMaterialPanel(false)
+    setIsSidebarOpen(true)
+  }
+
+  const handleOpenMaterialPanel = () => {
+    setOpenColorPanel(false)
+    setOpenMaterialPanel(true)
     setIsSidebarOpen(true)
   }
 
@@ -62,9 +76,11 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setSearchQuery('')
     setActiveImageSearch(null)
     setAttributeFilter('ALL_ATTRIBUTE')
+    setMaterialFilter('')
     setCurrentPage(1)
     setOpenColorPanel(false)
-    updateURL('All', 1, '', 'ALL_ATTRIBUTE', false)
+    setOpenMaterialPanel(false)
+    updateURL('All', 1, '', 'ALL_ATTRIBUTE', '', false)
     closeSidebar()
   }
 
@@ -77,13 +93,15 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     const urlPage = Number(searchParams.get('page')) || 1
     const urlSearch = searchParams.get('search') || ""
     const urlAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
+    const urlMaterial = searchParams.get('material') || ""
     setActiveFilter(urlCategory)
     setCurrentPage(urlPage)
     setSearchQuery(urlSearch)
     setAttributeFilter(urlAttribute)
+    setMaterialFilter(urlMaterial)
   }, [searchParams])
 
-  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter, showLoading = true) => {
+  const updateURL = (newFilter: string, newPage: number, newSearch: string, newAttribute = attributeFilter, newMaterial = materialFilter, showLoading = true) => {
     const params = new URLSearchParams(searchParams.toString())
 
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
@@ -97,6 +115,9 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
     if (newAttribute && newAttribute !== "ALL_ATTRIBUTE") params.set('attribute', newAttribute)
     else params.delete('attribute')
+
+    if (newMaterial && newMaterial !== "ALL_MATERIAL") params.set('material', newMaterial)
+    else params.delete('material')
 
     // Choosing a filter is an in-page action; the explicit open state belongs only to the navbar/filter entry point.
     params.delete('filter')
@@ -113,15 +134,17 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setActiveFilter(filterValue)
     setCurrentPage(1)
     setAttributeFilter("ALL_ATTRIBUTE")
+    setMaterialFilter("")
     setOpenColorPanel(false)
-    updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE")
+    setOpenMaterialPanel(false)
+    updateURL(filterValue, 1, searchQuery, "ALL_ATTRIBUTE", "")
     closeSidebar()
   }
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
     setCurrentPage(1)
-    updateURL(activeFilter, 1, val, attributeFilter, false)
+    updateURL(activeFilter, 1, val, attributeFilter, materialFilter, false)
   }
 
   const categoryFilteredCollections = useMemo(
@@ -130,14 +153,22 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   )
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
-  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
+  const selectedMaterials = useMemo(() => selectedMaterialValues(materialFilter), [materialFilter])
+  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
     if (filterValue !== activeFilter) setActiveFilter(filterValue)
     setAttributeFilter(nextAttribute)
     setCurrentPage(1)
-    updateURL(filterValue, 1, searchQuery, nextAttribute)
+    updateURL(filterValue, 1, searchQuery, nextAttribute, materialFilter)
+  }
+
+  const handleMaterialsChange = (materials: string[]) => {
+    const nextMaterial = materials.length > 0 ? materials.join(",") : ""
+    setMaterialFilter(nextMaterial)
+    setCurrentPage(1)
+    updateURL(activeFilter, 1, searchQuery, attributeFilter, nextMaterial)
   }
 
   const handlePageChange = (page: number) => {
@@ -157,6 +188,18 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
           ...group,
           products: (group.products || []).filter((product: any) =>
             product.category_id === 'prop' && productColorValues(product).some((color) => selectedColorSet.has(color))
+          ),
+        }))
+        .filter((group) => group.products.length > 0)
+    }
+
+    if (selectedMaterials.length > 0) {
+      const selectedMaterialSet = new Set(selectedMaterials)
+      result = result
+        .map((group) => ({
+          ...group,
+          products: (group.products || []).filter((product: any) =>
+            product.category_id === 'prop' && productMaterialValues(product).some((mat) => selectedMaterialSet.has(mat))
           ),
         }))
         .filter((group) => group.products.length > 0)
@@ -198,7 +241,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     }
 
     return result
-  }, [categoryFilteredCollections, searchQuery, selectedColors, activeImageSearch])
+  }, [categoryFilteredCollections, searchQuery, selectedColors, selectedMaterials, activeImageSearch])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -268,12 +311,15 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
       <ProductFilterDrawer
         open={isFilterOpen}
         openColorPanel={openColorPanel}
+        openMaterialPanel={openMaterialPanel}
         collections={collections}
         activeCategory={activeFilter}
         selectedColors={selectedColors}
+        selectedMaterials={selectedMaterials}
         onClose={() => closeSidebar()}
         onCategoryChange={handleCategoryChange}
         onColorsChange={handleColorsChange}
+        onMaterialsChange={handleMaterialsChange}
         hotProductIds={hotProductIds}
         idPrefix="prop-product-filter"
       />
@@ -352,7 +398,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                   aria-label="Open color filter"
                   aria-expanded={isFilterOpen && openColorPanel}
                   aria-controls="prop-product-filter-color-drawer"
-                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] text-[#6F6861] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : ''}`}
+                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : selectedColors.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
@@ -362,6 +408,20 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
                     <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
                   </svg>
                   <span>COLOR</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenMaterialPanel}
+                  aria-label="Open material filter"
+                  aria-expanded={isFilterOpen && openMaterialPanel}
+                  aria-controls="prop-product-filter-material-drawer"
+                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openMaterialPanel ? 'text-[#84492C]' : selectedMaterials.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                  </svg>
+                  <span>MATERIAL</span>
                 </button>
 
                 {branches && branches.length > 0 && (

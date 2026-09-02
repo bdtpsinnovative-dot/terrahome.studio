@@ -14,6 +14,13 @@ export type ProductColorOption = {
   swatch: string | null
 }
 
+export type ProductMaterialOption = {
+  value: string
+  label: string
+  thaiLabel?: string
+  count: number
+}
+
 export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
   { label: "ALL", displayLabel: "ALL", thaiLabel: "สินค้าทั้งหมด", fullValue: "All" },
   {
@@ -326,4 +333,120 @@ export function getColorOptions(
       swatch: COLOR_PRESENTATION[value]?.swatch || null,
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export const MATERIAL_PRESENTATION: Record<string, { label: string; thaiLabel: string; aliases: string[] }> = {
+  ceramic: {
+    label: "Ceramic",
+    thaiLabel: "เซรามิก",
+    aliases: ["ceramic", "ceramic handmade", "ceramic printing", "ceramic hand drawn", "porcelain"],
+  },
+  glass: {
+    label: "Glass",
+    thaiLabel: "แก้ว",
+    aliases: ["glass", "glass handmade", "crystal"],
+  },
+  resin: {
+    label: "Resin",
+    thaiLabel: "เรซิ่น",
+    aliases: ["resin"],
+  },
+  metal: {
+    label: "Metal & Alloy",
+    thaiLabel: "โลหะและอัลลอยด์",
+    aliases: ["metal", "alloy", "stainless steel"],
+  },
+  stone: {
+    label: "Stone & Marble",
+    thaiLabel: "หินอ่อนและหินธรรมชาติ",
+    aliases: ["marble", "travertine", "natural stone", "alloy & marble"],
+  },
+  wood: {
+    label: "Wood",
+    thaiLabel: "ไม้",
+    aliases: ["wood", "mdf", "bamboo weaving"],
+  },
+  canvas: {
+    label: "Canvas",
+    thaiLabel: "ผ้าใบ / แคนวาส",
+    aliases: ["canvas"],
+  },
+  cement: {
+    label: "Cement",
+    thaiLabel: "ปูนและซีเมนต์",
+    aliases: ["cement"],
+  },
+  leather: {
+    label: "Leather",
+    thaiLabel: "หนัง",
+    aliases: ["leather"],
+  },
+  acrylic: {
+    label: "Acrylic",
+    thaiLabel: "อะคริลิก",
+    aliases: ["acrylic"],
+  },
+}
+
+export function productMaterialValues(product: any): string[] {
+  const specs = product?.specs && typeof product.specs === "object" ? product.specs : {}
+  const rawValues = [
+    product?.material,
+    product?.materials,
+    specs.material,
+    specs.materials,
+  ]
+  const result = new Set<string>()
+
+  for (const raw of rawValues.flatMap(attributeValues)) {
+    const lower = raw.trim().toLowerCase()
+    if (!lower) continue
+    result.add(lower)
+
+    for (const [key, config] of Object.entries(MATERIAL_PRESENTATION)) {
+      if (config.aliases.some((alias) => lower === alias || lower.includes(alias))) {
+        result.add(key)
+      }
+    }
+  }
+
+  return Array.from(result)
+}
+
+export function selectedMaterialValues(value: string): string[] {
+  if (!value || value === "ALL_MATERIAL") return []
+  return Array.from(new Set(value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)))
+}
+
+export function getMaterialOptions(
+  collections: any[],
+  category: string,
+  hotProductIds: number[] = [],
+): ProductMaterialOption[] {
+  const counts = new Map<string, number>()
+  for (const group of filterCollectionsByCategory(collections, category, hotProductIds)) {
+    for (const product of group.products || []) {
+      if (product?.category_id && product.category_id !== "prop") continue
+      const values = productMaterialValues(product)
+      for (const value of values) {
+        // Only count primary canonical categories or unknown raw values
+        if (MATERIAL_PRESENTATION[value] || !Object.values(MATERIAL_PRESENTATION).some((cfg) => cfg.aliases.includes(value))) {
+          counts.set(value, (counts.get(value) || 0) + 1)
+        }
+      }
+    }
+  }
+
+  return Array.from(counts.entries())
+    .map(([value, count]) => {
+      const presentation = MATERIAL_PRESENTATION[value]
+      return {
+        value,
+        count,
+        label: presentation?.label || value.replace(/\b\w/g, (c) => c.toUpperCase()),
+        thaiLabel: presentation?.thaiLabel,
+      }
+    })
+    .filter((opt) => opt.count > 0)
+    .sort((a, b) => b.count - a.count)
 }
