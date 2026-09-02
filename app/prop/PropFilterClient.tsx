@@ -4,11 +4,13 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
+import PropBanner from "./PropBanner"
 import { CATEGORY_DISPLAY_NAMES } from "@/app/constants/categories"
 import ProductFilterDrawer from "@/app/components/ProductFilterDrawer"
 import VisualImageSearch, { type ImageSearchResult } from "@/app/components/VisualImageSearch"
 import {
   filterCollectionsByCategory,
+  getBannerImageForCategory,
   isNoCategoryFilter,
   productColorValues,
   productMaterialValues,
@@ -16,7 +18,19 @@ import {
   selectedMaterialValues,
 } from "./productFilterModel"
 
-export default function PropFilterClient({ collections, branches, hotProductIds = [] }: { collections: any[], branches: any[], hotProductIds?: number[] }) {
+export default function PropFilterClient({
+  collections,
+  branches,
+  hotProductIds = [],
+  bannerGroups = [],
+  allBannerImages = [],
+}: {
+  collections: any[]
+  branches: any[]
+  hotProductIds?: number[]
+  bannerGroups?: any[]
+  allBannerImages?: string[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -40,6 +54,12 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   const [openMaterialPanel, setOpenMaterialPanel] = useState(false)
   const [isNavigationPending, setIsNavigationPending] = useState(false)
   const isFilterOpen = isSidebarOpen
+
+  const activeBannerImage = useMemo(() => {
+    return getBannerImageForCategory(activeFilter, bannerGroups)
+  }, [activeFilter, bannerGroups])
+
+  const hasBanner = !!activeBannerImage || (allBannerImages && allBannerImages.length > 0)
 
   const closeSidebar = () => {
     setIsSidebarOpen(false)
@@ -101,18 +121,35 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
     setMaterialFilter(urlMaterial)
   }, [searchParams])
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const url = new URL(window.location.href)
+      const urlCategory = url.searchParams.get('category') || "All"
+      const urlPage = Number(url.searchParams.get('page')) || 1
+      const urlSearch = url.searchParams.get('search') || ""
+      const urlAttribute = url.searchParams.get('attribute') || "ALL_ATTRIBUTE"
+      const urlMaterial = url.searchParams.get('material') || ""
+      setActiveFilter(urlCategory)
+      setCurrentPage(urlPage)
+      setSearchQuery(urlSearch)
+      setAttributeFilter(urlAttribute)
+      setMaterialFilter(urlMaterial)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
   const updateURL = (
     newFilter: string,
     newPage: number,
     newSearch: string,
     newAttribute = attributeFilter,
     newMaterial: string | boolean = materialFilter,
-    showLoading = true
+    _showLoading = false
   ) => {
     const actualMaterial = typeof newMaterial === 'string' ? newMaterial : materialFilter
-    const actualShowLoading = typeof newMaterial === 'boolean' ? newMaterial : showLoading
 
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString())
 
     if (newFilter && newFilter !== "All") params.set('category', newFilter)
     else params.delete('category')
@@ -134,10 +171,15 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
     const query = params.toString()
     const targetPath = `${pathname}${query ? `?${query}` : ''}`
-    const currentPath = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    const currentPath = typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+
     if (targetPath === currentPath) return
-    if (actualShowLoading) setIsNavigationPending(true)
-    router.push(targetPath, { scroll: false })
+
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, '', targetPath)
+    }
   }
 
   const handleCategoryChange = (filterValue: string) => {
@@ -308,7 +350,21 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
   };
 
   return (
-    <div className="w-full scroll-mt-32" ref={topRef}>
+    <>
+      {/* 1. ตัวแบนเนอร์ด้านบน — Navbar กลางอยู่ใน app/layout.tsx */}
+      {hasBanner && (
+        <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
+          <PropBanner
+            allImages={allBannerImages}
+            activeImage={activeBannerImage}
+            categoryName={activeFilter || "All"}
+          />
+        </div>
+      )}
+
+      {/* 2. โซนเนื้อหาสินค้าด้านล่าง */}
+      <div className={`max-w-[1600px] mx-auto w-full px-4 lg:py-16 pb-24 ${hasBanner ? 'pt-4 lg:pt-0' : 'pt-24 lg:pt-28'}`}>
+        <div className="w-full scroll-mt-32" ref={topRef}>
       {isNavigationPending && (
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-[#EFE9E1]/65 backdrop-blur-[2px]" role="status" aria-live="polite">
           <div className="flex min-w-[150px] flex-col items-center gap-3 rounded-sm border border-[#C4B5A5]/50 bg-[#F9F6F0]/95 px-8 py-6 shadow-[0_12px_40px_rgba(58,56,53,0.12)]">
@@ -503,5 +559,7 @@ export default function PropFilterClient({ collections, branches, hotProductIds 
 
       </div>
     </div>
+      </div>
+    </>
   )
 }

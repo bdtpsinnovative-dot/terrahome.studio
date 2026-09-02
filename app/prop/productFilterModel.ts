@@ -450,3 +450,19 @@ export function getMaterialOptions(
     .filter((opt) => opt.count > 0)
     .sort((a, b) => b.count - a.count)
 }
+
+export function getBannerImageForCategory(
+  categoryParam: string | null | undefined,
+  bannerGroups: Array<{ product_sup?: string | null; image_url?: string | null }>
+): string | null {
+  const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT" || isNoCategoryFilter(categoryParam);
+  if (isSpecialFilter || !bannerGroups || bannerGroups.length === 0) return null;
+
+  const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());
+  const matchedGroup = bannerGroups.find(c => {
+    const sup = (c.product_sup || "").trim().toLowerCase();
+    return allowedSups.includes(sup) && !!c.image_url;
+  });
+  return matchedGroup?.image_url || null;
+}
+

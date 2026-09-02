@@ -1,17 +1,14 @@
 import Link from "next/link"
-import { connection } from "next/server"
 import { createClient } from "../../src/supabase/server"
 import PropFilterClient from "./PropFilterClient"
-import PropBanner from "./PropBanner"
 
 export const runtime = 'edge'
 import { CATEGORY_MAP, isNoCategoryFilter } from "./productFilterModel"
 import Footer from "../components/Footer"
 import type { Metadata } from "next"
 
-// Hot-item scores are time-sensitive. Keep this route fresh so the RPC result
-// is not cached for an hour while the catalog query remains optimized.
-export const revalidate = 0
+// Cache the catalog response for 60 seconds at the edge to prevent Worker CPU limit exhaustion
+export const revalidate = 60
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
 
@@ -72,93 +69,72 @@ interface PageProps {
 }
 
 export default async function PropCollectionsPage({ searchParams }: PageProps) {
-  // The hot-item RPC depends on recent events and must not be served from a
-  // previously prerendered route response.
-  await connection()
   const supabase = await createClient()
 
   const resolvedParams = await searchParams
   const branchId = resolvedParams.branch as string | undefined
-  const categoryParam = resolvedParams.category as string | undefined
 
-  // 1. ดึงข้อมูลสาขาทั้งหมด
-  const { data: branches } = await supabase
-    .from("branches")
-    .select("id, branch_code, branch_name, latitude, longitude")
-    .not("latitude", "is", null)
-    .not("longitude", "is", null)
-    .order("branch_name", { ascending: true })
+  const productSelectStr = `id, collection_group_id, sku, name, image_url, price, status, category_id, color, specs, stock ( branch_id, qty )`
 
-  // 🌟 [ไม้ตายแก้บั๊กแบนเนอร์หาย!] ดึงข้อมูลเฉพาะรูปแบนเนอร์แยกต่างหาก (ดึงครบทุกแถวด้วย Pagination)
-  // เพื่อให้มั่นใจว่ารูปจะไม่โดนตัดทิ้ง แม้สินค้านั้นจะไม่มีสต็อกในสาขาที่เลือกก็ตาม!
-  const bannerGroups: any[] = [];
-  const bannerPageSize = 1000;
-  for (let from = 0; ; from += bannerPageSize) {
-    const { data: pageData } = await supabase
+  // 1. Fetch metadata, banner groups, discounts, hot items, and product count in parallel
+  const [branchesRes, bannerRes, discountsRes, hotRes, productsCountRes] = await Promise.all([
+    supabase
+      .from("branches")
+      .select("id, branch_code, branch_name, latitude, longitude")
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .order("branch_name", { ascending: true }),
+    supabase
       .from("collection_groups")
       .select("product_sup, image_url")
       .ilike("tag", "%prop%")
       .not("image_url", "is", null)
-      .range(from, from + bannerPageSize - 1);
-
-    bannerGroups.push(...(pageData || []));
-    if (!pageData || pageData.length < bannerPageSize) break;
-  }
-
-  let activeBannerImage = null;
-  let allBannerImages: string[] = [];
-
-  if (bannerGroups && bannerGroups.length > 0) {
-    // 🌟 รวบรวมรูปแบนเนอร์ทั้งหมดไว้เสมอ สำหรับเล่นสไลด์โชว์แบบ ALL เมื่อกด IN STOCK, PRE-ORDER หรือหมวดรวม
-    allBannerImages = Array.from(new Set(
-      bannerGroups.map(c => c.image_url).filter((url): url is string => !!url && url !== "")
-    ));
-
-    const isSpecialFilter = !categoryParam || categoryParam === "All" || categoryParam === "IN_STOCK" || categoryParam === "PRE_ORDER" || categoryParam === "SPECIAL_DISCOUNT" || isNoCategoryFilter(categoryParam);
-
-    if (!isSpecialFilter) {
-      const allowedSups = (CATEGORY_MAP[categoryParam] || CATEGORY_MAP[categoryParam.toUpperCase()] || [categoryParam.toLowerCase()]).map(s => s.trim().toLowerCase());
-      const matchedGroup = bannerGroups.find(c => {
-        const sup = (c.product_sup || "").trim().toLowerCase();
-        return allowedSups.includes(sup) && !!c.image_url;
-      });
-      if (matchedGroup) {
-        activeBannerImage = matchedGroup.image_url;
-      }
-    }
-  }
-
-  // 2. ดึงข้อมูลสินค้าและกรองตามสาขา (เฉพาะส่วนเนื้อหาสินค้าด้านล่าง)
-  // `products.color` is the catalog's source of truth for colour. Keep specs
-  // as a fallback for older rows, but always select the real column so the
-  // client-side filter cannot silently lose a colour that exists in the DB.
-  const productSelectStr = `id, collection_group_id, sku, name, image_url, price, status, category_id, color, specs, stock ( branch_id, qty )`
-
-  let collections: any[] | null = null
-  let error = null
-
-  // Start from the shared catalog's canonical boundary. This avoids scanning
-  // every collection group with `%prop%` and also lets us page past PostgREST's
-  // default 1,000-row response limit.
-  const productPageSize = 500
-  const propProducts: any[] = []
-  for (let from = 0; ; from += productPageSize) {
-    const { data: productPage, error: pageError } = await supabase
+      .limit(300),
+    supabase
+      .from("discounts")
+      .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
+      .eq("active", true),
+    supabase
+      .rpc('get_prop_hot_items', { limit_count: 20 }),
+    supabase
       .from("products")
-      .select(productSelectStr)
-      .eq("category_id", "prop")
-      .order("id", { ascending: true })
-      .range(from, from + productPageSize - 1)
+      .select("id", { count: "exact", head: true })
+      .eq("category_id", "prop"),
+  ])
 
-    if (pageError) {
-      error = pageError
-      break
-    }
-
-    propProducts.push(...(productPage || []))
-    if (!productPage || productPage.length < productPageSize) break
+  const branches = branchesRes.data || []
+  const bannerGroups = bannerRes.data || []
+  const activeDiscounts = discountsRes.data || []
+  const hotItems = hotRes.data || []
+  if (hotRes.error) {
+    console.warn('[PropCollectionsPage] Hot Item ranking unavailable:', hotRes.error.message)
   }
 
+  const allBannerImages = Array.from(new Set(
+    bannerGroups.map((c: any) => c.image_url).filter((url: any): url is string => !!url && url !== "")
+  ))
+
+  // 2. Fetch products in parallel chunks of 1,000
+  const productCount = productsCountRes.count || 0
+  const productPageSize = 1000
+  const numProductPages = Math.max(1, Math.ceil(productCount / productPageSize))
+  const productPagePromises = []
+  for (let i = 0; i < numProductPages; i++) {
+    productPagePromises.push(
+      supabase
+        .from("products")
+        .select(productSelectStr)
+        .eq("category_id", "prop")
+        .order("id", { ascending: true })
+        .range(i * productPageSize, (i + 1) * productPageSize - 1)
+    )
+  }
+  const productPages = await Promise.all(productPagePromises)
+  let error = productPages.find((p: any) => p.error)?.error || null
+  const propProducts = productPages.flatMap((p: any) => p.data || [])
+
+  // 3. Fetch referenced collection groups in parallel chunks
+  let collections: any[] | null = null
   if (!error && propProducts.length > 0) {
     const groupIds = Array.from(new Set(
       propProducts
@@ -166,28 +142,24 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
         .filter((id: unknown): id is string | number => typeof id === "string" || typeof id === "number")
         .map((id) => String(id))
     ))
-    const propGroups: any[] = []
     const groupChunkSize = 500
-
-    // Fetch only groups referenced by Prop products. The tag check remains a
-    // defense-in-depth boundary for the shared collection_groups table.
+    const groupChunkPromises = []
     for (let from = 0; from < groupIds.length; from += groupChunkSize) {
-      const groupChunk = groupIds.slice(from, from + groupChunkSize)
-      const { data: groupPage, error: pageError } = await supabase
-        .from("collection_groups")
-        .select("*")
-        .in("id", groupChunk)
-        .ilike("tag", "%prop%")
-
-      if (pageError) {
-        error = pageError
-        break
-      }
-
-      propGroups.push(...(groupPage || []))
+      const chunk = groupIds.slice(from, from + groupChunkSize)
+      groupChunkPromises.push(
+        supabase
+          .from("collection_groups")
+          .select("*")
+          .in("id", chunk)
+          .ilike("tag", "%prop%")
+      )
     }
-
-    if (!error) {
+    const groupPages = await Promise.all(groupChunkPromises)
+    const groupError = groupPages.find((p: any) => p.error)?.error
+    if (groupError) {
+      error = groupError
+    } else {
+      const propGroups = groupPages.flatMap((p: any) => p.data || [])
       const productsByGroup = new Map<string, any[]>()
       for (const product of propProducts) {
         const groupKey = String(product.collection_group_id)
@@ -225,20 +197,6 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     )
   }
 
-  const { data: activeDiscounts } = await supabase
-    .from("discounts")
-    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
-    .eq("active", true)
-
-  // Hot Item ranking is computed from the raw event table by the migration's
-  // RPC. Keep the catalog usable if the migration has not been run yet.
-  const { data: hotItems, error: hotItemsError } = await supabase
-    .rpc('get_prop_hot_items', { limit_count: 20 })
-
-  if (hotItemsError) {
-    console.warn('[PropCollectionsPage] Hot Item ranking unavailable:', hotItemsError.message)
-  }
-
   const hotRankByProductId = new Map<number, number>()
   const hotScoreByProductId = new Map<number, number>()
   ;(hotItems || []).forEach((item: any, index: number) => {
@@ -249,6 +207,11 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
   })
 
   const now = new Date()
+  const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
+    const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+    const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+    return isStarted && isNotEnded
+  })
 
   // กรอง Collection ที่มีสินค้าอยู่จริงๆ และดึงเฉพาะสินค้าที่ Active เพื่อส่งให้ส่วนเนื้อหาด้านล่าง
   const activeCollections = collections?.map(collection => {
@@ -267,13 +230,10 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
         : (product.stock || [])
       const totalStock = stockItems.reduce((sum: number, stockItem: any) => sum + Number(stockItem.qty || 0), 0) || 0
       let applicableDiscount = null
-      if (activeDiscounts && activeDiscounts.length > 0) {
-        applicableDiscount = activeDiscounts.find(discount => {
-          const isStarted = !discount.start_date || new Date(discount.start_date) <= now
-          const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
-          if (!isStarted || !isNotEnded) return false
-          return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
-        })
+      if (validDiscounts.length > 0) {
+        applicableDiscount = validDiscounts.find((discount: any) =>
+          discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
+        )
       }
 
       const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
@@ -375,33 +335,16 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       return shuffleCollections(items)
     })
 
-  // เช็คว่ามีรูปแบนเนอร์ที่จะแสดงไหม? (ใช้ข้อมูลจาก bannerGroups ที่ดึงแยกมา)
-  const hasBanner = activeBannerImage || allBannerImages.length > 0;
-
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-
-      {/* 1. ตัวแบนเนอร์ด้านบน — Navbar กลางอยู่ใน app/layout.tsx */}
-      {hasBanner && (
-        <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
-          <PropBanner
-            allImages={allBannerImages}
-            activeImage={activeBannerImage}
-            categoryName={categoryParam || "All"}
-          />
-        </div>
-      )}
-
-      {/* 2. โซนเนื้อหาสินค้าด้านล่าง */}
-      <div className={`max-w-[1600px] mx-auto w-full px-4 lg:py-16 pb-24 ${hasBanner ? 'pt-4 lg:pt-0' : 'pt-24 lg:pt-28'}`}>
-        <PropFilterClient
-          collections={orderedCollections}
-          branches={branches || []}
-          hotProductIds={(hotItems || []).map((item: any) => Number(item.product_id)).filter(Number.isSafeInteger)}
-        />
-      </div>
+      <PropFilterClient
+        collections={orderedCollections}
+        branches={branches || []}
+        hotProductIds={(hotItems || []).map((item: any) => Number(item.product_id)).filter(Number.isSafeInteger)}
+        bannerGroups={bannerGroups}
+        allBannerImages={allBannerImages}
+      />
       <Footer />
     </div>
-
   )
 }
