@@ -100,19 +100,19 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
 
 export const CATEGORY_MAP: Record<string, string[]> = {
   // 1. Vase & Vessels
-  "VASE & VESSELS": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal", "vase and flower", "flower"],
-  "Ceramic Vases": ["ceramic handmade", "ceramic 3d"],
-  "Glass Vases": ["glass handmade", "vase glass handmade"],
-  "Vessels": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "VASE & VESSELS": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d", "glass vases", "glass vase", "glass handmade", "vase glass handmade", "vessels", "vessel", "vase", "vase normal", "vase and flower", "flower", "others vase"],
+  "Ceramic Vases": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d"],
+  "Glass Vases": ["glass vases", "glass vase", "glass handmade", "vase glass handmade"],
+  "Vessels": ["vessels", "vessel", "ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
   "Vase and Flower": ["vase and flower", "flower"],
-  "Others Vase": ["vase", "vase normal"],
+  "Others Vase": ["others vase", "vase", "vase normal"],
 
   // 2. Figure
-  "FIGURE": ["doll animal", "animal", "doll human", "human", "doll plant", "plant", "doll object", "figure", "art object"],
-  "Animal Figure": ["doll animal", "animal"],
-  "Human Figure": ["doll human", "human"],
-  "Plant Figure": ["doll plant", "plant"],
-  "Others Figure": ["doll object", "figure", "art object"],
+  "FIGURE": ["animal figure", "doll animal", "animal", "human figure", "doll human", "human", "plant figure", "doll plant", "plant", "others figure", "doll object", "figure", "art object"],
+  "Animal Figure": ["animal figure", "doll animal", "animal"],
+  "Human Figure": ["human figure", "doll human", "human"],
+  "Plant Figure": ["plant figure", "doll plant", "plant"],
+  "Others Figure": ["others figure", "doll object", "figure", "art object"],
 
   // 3. Sculpture
   "Sculpture": ["sculpture"],
@@ -133,26 +133,26 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Toy": ["decorative toy", "toy"],
 
   // 7. Dining & Tableware
-  "DINING & TABLEWARE": ["plates & dishes", "bowls", "glassware", "cups & mugs", "trays & servingware", "kitchenware"],
+  "DINING & TABLEWARE": ["plates & dishes", "bowls", "bowl", "glassware", "cups & mugs", "cups & mug", "trays & servingware", "kitchenware", "other dining & tableware"],
   "Plates & Dishes": ["plates & dishes"],
-  "Bowls": ["bowls"],
+  "Bowls": ["bowls", "bowl"],
   "Glassware": ["glassware"],
-  "Cups & Mugs": ["cups & mugs"],
+  "Cups & Mugs": ["cups & mugs", "cups & mug"],
   "Trays & Servingware": ["trays & servingware"],
-  "Other Dining & Tableware": ["kitchenware"],
+  "Other Dining & Tableware": ["kitchenware", "other dining & tableware"],
 
   // 8. Dressing & Bath
-  "DRESSING & BATH": ["decorative bath", "bath", "dressing room", "dressing"],
-  "Bath Room": ["decorative bath", "bath"],
+  "DRESSING & BATH": ["decorative bath", "bath", "bath room", "dressing room", "dressing"],
+  "Bath Room": ["bath room", "decorative bath", "bath"],
   "Dressing Room": ["dressing room", "dressing"],
 
   // 9. Art & walldecor
-  "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame"],
+  "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame", "photo frame"],
   "Handmade": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%"],
   "3D Handmade": ["3d handmade", "wall art 3d material", "wall art 3d physical painting"],
   "Digital print": ["wall art digital print", "digital print"],
   "Mixed Media Art": ["mixed media art"],
-  "Photo Frame": ["frame"],
+  "Photo Frame": ["frame", "photo frame"],
 
   // Legacy mappings for backwards compatibility
   "Art Object": ["art object"],
@@ -160,7 +160,7 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Doll": ["doll animal", "animal", "doll human", "human", "doll plant", "plant", "doll object", "figure"],
   "Kitchenware": ["kitchenware", "plates & dishes", "bowls", "glassware", "cups & mugs", "trays & servingware"],
   "Tray": ["tray", "trays"],
-  "Vase": ["ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
+  "Vase": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d", "glass vases", "glass vase", "glass handmade", "vase glass handmade", "vase", "vase normal"],
   "Wall Art": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame"],
 }
 
