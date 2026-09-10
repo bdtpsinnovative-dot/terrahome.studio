@@ -99,8 +99,12 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   const darkBannerPages = ['/', '/prop', '/about', '/journal'];
   const isDarkBannerPage = darkBannerPages.some(path => pathname === path || pathname.startsWith('/prop') || pathname.startsWith('/journal'));
+  // Product details have a light canvas rather than the dark catalog hero.
+  // Keep the shared header readable there while retaining the white header on
+  // the /prop landing banner.
+  const isProductDetailPage = /^\/prop\/[^/]+\/[^/]+\/?$/.test(pathname);
 
-  const activeLightMode = !isDarkBannerPage || isLightMode;
+  const activeLightMode = isProductDetailPage || !isDarkBannerPage || isLightMode;
 
   const textColor = isScrolled
     ? 'text-[#84492C]'

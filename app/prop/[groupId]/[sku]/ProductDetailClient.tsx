@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation" 
 import dynamic from "next/dynamic"
-import { ArrowLeft, CheckCircle2, MapPin, Navigation } from "lucide-react"
+import { CheckCircle2, MapPin, Navigation } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
 import { createClient, getSafeSession } from '@/src/supabase/client'
 import { trackAnalyticsCta } from '@/app/components/AnalyticsTracker'
@@ -291,28 +290,8 @@ export default function ProductDetailClient({
   }
 
   return (
-    <div data-prop-product-id={String(activeProduct.id)} className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-      
-      <nav className="w-full py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 bg-[#EAE7E0] z-[10000]">
-        
-        <button 
-          onClick={() => router.back()} 
-          className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] uppercase text-[#8C8A86] hover:text-[#3A3835] flex items-center gap-2 transition-colors group cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> 
-          <span>BACK</span>
-        </button>
-        
-        <div className="font-serif text-sm sm:text-base tracking-[0.25em] uppercase text-center truncate px-4">
-          COLLECTION SHOWROOM
-        </div>
-        
-        <div className="text-[9px] sm:text-[10px] text-[#8C8A86] font-medium tracking-[0.15em] text-right truncate max-w-[120px] sm:max-w-none">
-          GROUP: {currentGroupId}
-        </div>
-      </nav>
-
-      <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
+    <div data-prop-product-id={String(activeProduct.id)} className="relative min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
+      <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch pt-24 pb-4 lg:pt-28">
         
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
