@@ -44,6 +44,32 @@ function analyticsTrackingUrl() {
   return `${url.origin}${url.pathname}${query.toString() ? `?${query.toString()}` : ''}`
 }
 
+type GalleryImage = { src: string; sort: number }
+
+function getProductGalleryImages(product: { image_url?: unknown; specs?: unknown }): string[] {
+  const mainImage = typeof product.image_url === 'string' ? product.image_url.trim() : ''
+  const storedImages =
+    typeof product.specs === 'object' &&
+    product.specs !== null &&
+    Array.isArray((product.specs as { images?: unknown }).images)
+      ? (product.specs as { images: unknown[] }).images
+      : []
+
+  const extraImages = storedImages
+    .map((image, index) => {
+      const value = typeof image === 'object' && image !== null
+        ? (image as { path?: unknown; sort?: unknown })
+        : {}
+      const src = typeof value.path === 'string' ? value.path.trim() : ''
+      return { src, sort: Number(value.sort) || index + 1 }
+    })
+    .filter((image): image is GalleryImage => Boolean(image.src))
+    .sort((a, b) => a.sort - b.sort)
+    .map(image => image.src)
+
+  return Array.from(new Set([mainImage, ...extraImages].filter(Boolean)))
+}
+
 export default function ProductDetailClient({
   groupProducts,
   currentGroupId,
@@ -61,6 +87,7 @@ export default function ProductDetailClient({
   const [activeProduct, setActiveProduct] = useState(() => {
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
   })
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const getDiscountedPrice = (product: any) => {
     const originalPrice = Number(product?.price || 0)
@@ -144,6 +171,7 @@ export default function ProductDetailClient({
 
   const handleSelectProduct = (product: any) => {
     setActiveProduct(product)
+    setSelectedImageIndex(0)
     setShowStock(false)
     const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(product.sku)}`
     
@@ -242,6 +270,8 @@ export default function ProductDetailClient({
   }
 
   const specs = activeProduct.specs || {}
+  const galleryImages = getProductGalleryImages(activeProduct)
+  const selectedImage = galleryImages[selectedImageIndex] || galleryImages[0]
   
   let activeStock = activeProduct.stock?.filter((s: any) => s.qty > 0).map((s: any) => {
     if (userLocation && s.branches?.latitude && s.branches?.longitude) {
@@ -286,12 +316,12 @@ export default function ProductDetailClient({
         
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
-            {activeProduct.image_url ? (
+            {selectedImage ? (
               <img 
-                src={activeProduct.image_url} 
+                src={selectedImage}
                 alt={activeProduct.name} 
                 title={activeProduct.name} 
-                key={activeProduct.id}
+                key={`${activeProduct.id}-${selectedImage}`}
                 className="w-full h-full absolute inset-0 object-contain p-10 lg:p-16 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
@@ -300,6 +330,30 @@ export default function ProductDetailClient({
               </div>
             )}
           </div>
+          {galleryImages.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Product image gallery">
+              {galleryImages.map((image, index) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setSelectedImageIndex(index)}
+                  aria-label={`View product image ${index + 1}`}
+                  aria-pressed={selectedImage === image}
+                  className={`relative h-16 w-14 shrink-0 overflow-hidden rounded-[2px] border bg-[#F4F1EB] transition-colors ${
+                    selectedImage === image
+                      ? 'border-[#84492C] ring-1 ring-[#84492C]/40'
+                      : 'border-[#3A3835]/10 hover:border-[#84492C]/50'
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`${activeProduct.name} - image ${index + 1}`}
+                    className="h-full w-full object-contain p-1 mix-blend-multiply"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-7 p-4 lg:p-6 xl:p-8 flex flex-col gap-6">
