@@ -466,3 +466,76 @@ export function getBannerImageForCategory(
   return matchedGroup?.image_url || null;
 }
 
+export type DimensionFilter = {
+  minHeight: string
+  maxHeight: string
+  minWidth: string
+  maxWidth: string
+  minDepth: string
+  maxDepth: string
+}
+
+export const EMPTY_DIMENSION_FILTER: DimensionFilter = {
+  minHeight: "",
+  maxHeight: "",
+  minWidth: "",
+  maxWidth: "",
+  minDepth: "",
+  maxDepth: "",
+}
+
+export function hasActiveDimensions(filter: DimensionFilter): boolean {
+  return Boolean(
+    filter.minHeight || filter.maxHeight ||
+    filter.minWidth || filter.maxWidth ||
+    filter.minDepth || filter.maxDepth
+  )
+}
+
+export function productDimensions(product: any): { width: number | null; depth: number | null; height: number | null } {
+  const specs = product?.specs && typeof product.specs === "object" ? product.specs : {}
+  const w = Number(specs.width_cm ?? product.width_cm)
+  const d = Number(specs.length_cm ?? product.length_cm)
+  const h = Number(specs.thickness_cm ?? product.thickness_cm)
+  return {
+    width: !isNaN(w) && w > 0 ? w : null,
+    depth: !isNaN(d) && d > 0 ? d : null,
+    height: !isNaN(h) && h > 0 ? h : null,
+  }
+}
+
+export function productMatchesDimensions(product: any, filter: DimensionFilter): boolean {
+  if (!hasActiveDimensions(filter)) return true
+
+  const dims = productDimensions(product)
+
+  const minH = filter.minHeight !== "" ? Number(filter.minHeight) : null
+  const maxH = filter.maxHeight !== "" ? Number(filter.maxHeight) : null
+  const minW = filter.minWidth !== "" ? Number(filter.minWidth) : null
+  const maxW = filter.maxWidth !== "" ? Number(filter.maxWidth) : null
+  const minD = filter.minDepth !== "" ? Number(filter.minDepth) : null
+  const maxD = filter.maxDepth !== "" ? Number(filter.maxDepth) : null
+
+  if (minH !== null && !isNaN(minH)) {
+    if (dims.height === null || dims.height < minH) return false
+  }
+  if (maxH !== null && !isNaN(maxH)) {
+    if (dims.height === null || dims.height > maxH) return false
+  }
+  if (minW !== null && !isNaN(minW)) {
+    if (dims.width === null || dims.width < minW) return false
+  }
+  if (maxW !== null && !isNaN(maxW)) {
+    if (dims.width === null || dims.width > maxW) return false
+  }
+  if (minD !== null && !isNaN(minD)) {
+    if (dims.depth === null || dims.depth < minD) return false
+  }
+  if (maxD !== null && !isNaN(maxD)) {
+    if (dims.depth === null || dims.depth > maxD) return false
+  }
+
+  return true
+}
+
+

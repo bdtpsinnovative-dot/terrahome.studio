@@ -16,6 +16,10 @@ import {
   productMaterialValues,
   selectedAttributeValues,
   selectedMaterialValues,
+  type DimensionFilter,
+  EMPTY_DIMENSION_FILTER,
+  hasActiveDimensions,
+  productMatchesDimensions,
 } from "./productFilterModel"
 
 export default function PropFilterClient({
@@ -41,6 +45,12 @@ export default function PropFilterClient({
   const initialAttribute = searchParams.get('attribute') || "ALL_ATTRIBUTE"
   const initialMaterial = searchParams.get('material') || ""
   const initialFilterOpen = searchParams.get('filter') === "open"
+  const initialMinH = searchParams.get('min_h') || ""
+  const initialMaxH = searchParams.get('max_h') || ""
+  const initialMinW = searchParams.get('min_w') || ""
+  const initialMaxW = searchParams.get('max_w') || ""
+  const initialMinD = searchParams.get('min_d') || ""
+  const initialMaxD = searchParams.get('max_d') || ""
 
   const [activeFilter, setActiveFilter] = useState(initialCategory)
   const [currentPage, setCurrentPage] = useState(initialPage)
@@ -48,10 +58,19 @@ export default function PropFilterClient({
   const [activeImageSearch, setActiveImageSearch] = useState<ImageSearchResult | null>(null)
   const [attributeFilter, setAttributeFilter] = useState(initialAttribute)
   const [materialFilter, setMaterialFilter] = useState(initialMaterial)
+  const [dimensionFilter, setDimensionFilter] = useState<DimensionFilter>({
+    minHeight: initialMinH,
+    maxHeight: initialMaxH,
+    minWidth: initialMinW,
+    maxWidth: initialMaxW,
+    minDepth: initialMinD,
+    maxDepth: initialMaxD,
+  })
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialFilterOpen)
   const [openColorPanel, setOpenColorPanel] = useState(false)
   const [openMaterialPanel, setOpenMaterialPanel] = useState(false)
+  const [openSizePanel, setOpenSizePanel] = useState(false)
   const [isNavigationPending, setIsNavigationPending] = useState(false)
   const isFilterOpen = isSidebarOpen
 
@@ -65,6 +84,7 @@ export default function PropFilterClient({
     setIsSidebarOpen(false)
     setOpenColorPanel(false)
     setOpenMaterialPanel(false)
+    setOpenSizePanel(false)
     if (searchParams.get('filter') === 'open') {
       const params = new URLSearchParams(searchParams.toString())
       params.delete('filter')
@@ -76,18 +96,28 @@ export default function PropFilterClient({
   const handleOpenFilter = () => {
     setOpenColorPanel(false)
     setOpenMaterialPanel(false)
+    setOpenSizePanel(false)
     setIsSidebarOpen(true)
   }
 
   const handleOpenColorPanel = () => {
     setOpenColorPanel(true)
     setOpenMaterialPanel(false)
+    setOpenSizePanel(false)
     setIsSidebarOpen(true)
   }
 
   const handleOpenMaterialPanel = () => {
     setOpenColorPanel(false)
     setOpenMaterialPanel(true)
+    setOpenSizePanel(false)
+    setIsSidebarOpen(true)
+  }
+
+  const handleOpenSizePanel = () => {
+    setOpenColorPanel(false)
+    setOpenMaterialPanel(false)
+    setOpenSizePanel(true)
     setIsSidebarOpen(true)
   }
 
@@ -97,11 +127,19 @@ export default function PropFilterClient({
     setActiveImageSearch(null)
     setAttributeFilter('ALL_ATTRIBUTE')
     setMaterialFilter('')
+    setDimensionFilter(EMPTY_DIMENSION_FILTER)
     setCurrentPage(1)
     setOpenColorPanel(false)
     setOpenMaterialPanel(false)
-    updateURL('All', 1, '', 'ALL_ATTRIBUTE', '', false)
+    setOpenSizePanel(false)
+    updateURL('All', 1, '', 'ALL_ATTRIBUTE', '', EMPTY_DIMENSION_FILTER, false)
     closeSidebar()
+  }
+
+  const handleDimensionsChange = (newDims: DimensionFilter) => {
+    setDimensionFilter(newDims)
+    setCurrentPage(1)
+    updateURL(activeFilter, 1, searchQuery, attributeFilter, materialFilter, newDims)
   }
 
   const itemsPerPage = 40
@@ -119,6 +157,14 @@ export default function PropFilterClient({
     setSearchQuery(urlSearch)
     setAttributeFilter(urlAttribute)
     setMaterialFilter(urlMaterial)
+    setDimensionFilter({
+      minHeight: searchParams.get('min_h') || "",
+      maxHeight: searchParams.get('max_h') || "",
+      minWidth: searchParams.get('min_w') || "",
+      maxWidth: searchParams.get('max_w') || "",
+      minDepth: searchParams.get('min_d') || "",
+      maxDepth: searchParams.get('max_d') || "",
+    })
   }, [searchParams])
 
   useEffect(() => {
@@ -134,6 +180,14 @@ export default function PropFilterClient({
       setSearchQuery(urlSearch)
       setAttributeFilter(urlAttribute)
       setMaterialFilter(urlMaterial)
+      setDimensionFilter({
+        minHeight: url.searchParams.get('min_h') || "",
+        maxHeight: url.searchParams.get('max_h') || "",
+        minWidth: url.searchParams.get('min_w') || "",
+        maxWidth: url.searchParams.get('max_w') || "",
+        minDepth: url.searchParams.get('min_d') || "",
+        maxDepth: url.searchParams.get('max_d') || "",
+      })
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -145,6 +199,7 @@ export default function PropFilterClient({
     newSearch: string,
     newAttribute = attributeFilter,
     newMaterial: string | boolean = materialFilter,
+    newDims: DimensionFilter = dimensionFilter,
     _showLoading = false
   ) => {
     const actualMaterial = typeof newMaterial === 'string' ? newMaterial : materialFilter
@@ -165,6 +220,19 @@ export default function PropFilterClient({
 
     if (actualMaterial && actualMaterial !== "ALL_MATERIAL") params.set('material', actualMaterial)
     else params.delete('material')
+
+    if (newDims.minHeight) params.set('min_h', newDims.minHeight)
+    else params.delete('min_h')
+    if (newDims.maxHeight) params.set('max_h', newDims.maxHeight)
+    else params.delete('max_h')
+    if (newDims.minWidth) params.set('min_w', newDims.minWidth)
+    else params.delete('min_w')
+    if (newDims.maxWidth) params.set('max_w', newDims.maxWidth)
+    else params.delete('max_w')
+    if (newDims.minDepth) params.set('min_d', newDims.minDepth)
+    else params.delete('min_d')
+    if (newDims.maxDepth) params.set('max_d', newDims.maxDepth)
+    else params.delete('max_d')
 
     // Choosing a filter is an in-page action; the explicit open state belongs only to the navbar/filter entry point.
     params.delete('filter')
@@ -196,7 +264,7 @@ export default function PropFilterClient({
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
     setCurrentPage(1)
-    updateURL(activeFilter, 1, val, attributeFilter, materialFilter, false)
+    updateURL(activeFilter, 1, val, attributeFilter, materialFilter, dimensionFilter)
   }
 
   const categoryFilteredCollections = useMemo(
@@ -206,7 +274,7 @@ export default function PropFilterClient({
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
   const selectedMaterials = useMemo(() => selectedMaterialValues(materialFilter), [materialFilter])
-  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
+  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || hasActiveDimensions(dimensionFilter) || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
@@ -257,6 +325,17 @@ export default function PropFilterClient({
         .filter((group) => group.products.length > 0)
     }
 
+    if (hasActiveDimensions(dimensionFilter)) {
+      result = result
+        .map((group) => ({
+          ...group,
+          products: (group.products || []).filter((product: any) =>
+            product.category_id === 'prop' && productMatchesDimensions(product, dimensionFilter)
+          ),
+        }))
+        .filter((group) => group.products.length > 0)
+    }
+
     if (activeImageSearch) {
       const matchedIds = new Set(activeImageSearch.matchedProductIds || [])
       const similarityMap = new Map((activeImageSearch.matches || []).map((m) => [Number(m.id), Number(m.similarity)]))
@@ -293,7 +372,7 @@ export default function PropFilterClient({
     }
 
     return result
-  }, [categoryFilteredCollections, searchQuery, selectedColors, selectedMaterials, activeImageSearch])
+  }, [categoryFilteredCollections, searchQuery, selectedColors, selectedMaterials, dimensionFilter, activeImageSearch])
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
@@ -378,14 +457,17 @@ export default function PropFilterClient({
         open={isFilterOpen}
         openColorPanel={openColorPanel}
         openMaterialPanel={openMaterialPanel}
+        openSizePanel={openSizePanel}
         collections={collections}
         activeCategory={activeFilter}
         selectedColors={selectedColors}
         selectedMaterials={selectedMaterials}
+        dimensionFilter={dimensionFilter}
         onClose={() => closeSidebar()}
         onCategoryChange={handleCategoryChange}
         onColorsChange={handleColorsChange}
         onMaterialsChange={handleMaterialsChange}
+        onDimensionFilterChange={handleDimensionsChange}
         hotProductIds={hotProductIds}
         idPrefix="prop-product-filter"
       />
@@ -422,10 +504,12 @@ export default function PropFilterClient({
                       setActiveFilter('All')
                       setAttributeFilter('ALL_ATTRIBUTE')
                       setMaterialFilter('')
+                      setDimensionFilter(EMPTY_DIMENSION_FILTER)
                       setOpenColorPanel(false)
                       setOpenMaterialPanel(false)
+                      setOpenSizePanel(false)
                       setIsSidebarOpen(false)
-                      updateURL('All', 1, searchQuery, 'ALL_ATTRIBUTE', '', false)
+                      updateURL('All', 1, searchQuery, 'ALL_ATTRIBUTE', '', EMPTY_DIMENSION_FILTER, false)
                     }
                     setActiveImageSearch(img)
                     setCurrentPage(1)
@@ -433,13 +517,13 @@ export default function PropFilterClient({
                 />
               </div>
 
-              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none">
+              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-2.5 sm:gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <button
                   type="button"
                   onClick={handleOpenFilter}
-                  aria-expanded={isFilterOpen && !openColorPanel}
+                  aria-expanded={isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel}
                   aria-controls="prop-product-filter-drawer"
-                  className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && !openColorPanel ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                  className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
@@ -490,6 +574,23 @@ export default function PropFilterClient({
                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
                   </svg>
                   <span>MATERIAL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenSizePanel}
+                  aria-label="Open size filter"
+                  aria-expanded={isFilterOpen && openSizePanel}
+                  aria-controls="prop-product-filter-size-drawer"
+                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openSizePanel ? 'text-[#84492C]' : hasActiveDimensions(dimensionFilter) ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[15px] w-[15px]">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                  </svg>
+                  <span>SIZE</span>
+                  {hasActiveDimensions(dimensionFilter) && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#84492C]" />
+                  )}
                 </button>
 
                 {branches && branches.length > 0 && (

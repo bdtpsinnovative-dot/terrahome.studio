@@ -9,20 +9,26 @@ import {
   isNoCategoryFilter,
   type ProductFilterMenuItem,
   type ProductMaterialOption,
+  type DimensionFilter,
+  EMPTY_DIMENSION_FILTER,
+  hasActiveDimensions,
 } from "@/app/prop/productFilterModel"
 
 type ProductFilterDrawerProps = {
   open: boolean
   openColorPanel?: boolean
   openMaterialPanel?: boolean
+  openSizePanel?: boolean
   collections: any[]
   activeCategory: string
   selectedColors?: string[]
   selectedMaterials?: string[]
+  dimensionFilter?: DimensionFilter
   onClose: () => void
   onCategoryChange: (category: string) => void
   onColorsChange: (category: string, colors: string[]) => void
   onMaterialsChange?: (materials: string[]) => void
+  onDimensionFilterChange?: (dimensions: DimensionFilter) => void
   hotProductIds?: number[]
   idPrefix?: string
   zIndexClass?: string
@@ -44,27 +50,32 @@ export default function ProductFilterDrawer({
   open,
   openColorPanel = false,
   openMaterialPanel = false,
+  openSizePanel = false,
   collections,
   activeCategory,
   selectedColors = [],
   selectedMaterials = [],
+  dimensionFilter = EMPTY_DIMENSION_FILTER,
   onClose,
   onCategoryChange,
   onColorsChange,
   onMaterialsChange,
+  onDimensionFilterChange,
   hotProductIds = [],
   idPrefix = "product-filter",
   zIndexClass = "z-[9999]",
 }: ProductFilterDrawerProps) {
   const activeGroup = groupForCategory(activeCategory)
   const [expandedGroups, setExpandedGroups] = useState<string[]>(activeGroup ? [activeGroup] : [])
-  const [currentPanel, setCurrentPanel] = useState<'category' | 'color' | 'material'>('category')
+  const [currentPanel, setCurrentPanel] = useState<'category' | 'color' | 'material' | 'size'>('category')
+  const [localDimensions, setLocalDimensions] = useState<DimensionFilter>(dimensionFilter)
   const [isLocal, setIsLocal] = useState(false)
   const onCloseRef = useRef(onClose)
   const wasOpenRef = useRef(false)
   const categoryDrawerId = `${idPrefix}-drawer`
   const colorDrawerId = `${idPrefix}-color-drawer`
   const materialDrawerId = `${idPrefix}-material-drawer`
+  const sizeDrawerId = `${idPrefix}-size-drawer`
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -136,6 +147,12 @@ export default function ProductFilterDrawer({
   }, [onClose])
 
   useEffect(() => {
+    if (dimensionFilter) {
+      setLocalDimensions(dimensionFilter)
+    }
+  }, [dimensionFilter])
+
+  useEffect(() => {
     if (!open) {
       setCurrentPanel('category')
       wasOpenRef.current = false
@@ -146,12 +163,14 @@ export default function ProductFilterDrawer({
       setCurrentPanel('color')
     } else if (openMaterialPanel) {
       setCurrentPanel('material')
+    } else if (openSizePanel) {
+      setCurrentPanel('size')
     } else {
       setCurrentPanel('category')
     }
 
     wasOpenRef.current = true
-  }, [activeCategory, open, openColorPanel, openMaterialPanel])
+  }, [activeCategory, open, openColorPanel, openMaterialPanel, openSizePanel])
 
   useEffect(() => {
     if (!open) {
@@ -348,7 +367,7 @@ export default function ProductFilterDrawer({
             {/* 🌟 จัดตำแหน่งกึ่งกลาง 100% ด้วย Absolute Center */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
               <span className="whitespace-nowrap text-[12px] font-medium uppercase tracking-[0.25em] text-[#3A3835] sm:text-[13px] sm:tracking-[0.3em]">
-                {currentPanel === 'color' ? "Color" : currentPanel === 'material' ? "Material" : "Filters"}
+                {currentPanel === 'color' ? "Color" : currentPanel === 'material' ? "Material" : currentPanel === 'size' ? "Dimensions" : "Filters"}
               </span>
             </div>
 
@@ -402,6 +421,155 @@ export default function ProductFilterDrawer({
                     </button>
                   )
                 }) : <p className="px-2 py-6 text-[9px] uppercase tracking-[0.14em] text-[#8C8A86]">No material data</p>}
+              </div>
+            ) : currentPanel === 'size' ? (
+              <div id={sizeDrawerId} aria-label="Filter products by dimensions" className="space-y-6 pt-1">
+                <div className="pb-1 border-b border-[#C4B5A5]/25">
+                  <p className="text-[11px] font-medium text-[#84492C] uppercase tracking-[0.16em]">
+                    Custom Dimensions
+                  </p>
+                  <p className="text-[10px] text-[#6F6861] mt-0.5 font-light">
+                    ระบุขนาดความสูง ความกว้าง หรือความลึก (ซม.) ตามพื้นที่ที่ต้องการ
+                  </p>
+                </div>
+
+                {/* HEIGHT (ความสูง) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-[#3A3835]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5 text-[#84492C]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7l4-4m0 0l4 4m-4-4v18m4-4l-4 4m0 0l-4-4" />
+                      </svg>
+                      <span>Height (ความสูง)</span>
+                    </label>
+                    <span className="text-[9px] text-[#8C8A86] tracking-wider font-mono">CM</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Min (ต่ำสุด)"
+                        value={localDimensions.minHeight}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, minHeight: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Max (สูงสุด)"
+                        value={localDimensions.maxHeight}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, maxHeight: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* WIDTH (ความกว้าง) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-[#3A3835]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5 text-[#84492C]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18m-4-4l4 4m0 0l-4 4" />
+                      </svg>
+                      <span>Width (ความกว้าง)</span>
+                    </label>
+                    <span className="text-[9px] text-[#8C8A86] tracking-wider font-mono">CM</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Min (ต่ำสุด)"
+                        value={localDimensions.minWidth}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, minWidth: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Max (สูงสุด)"
+                        value={localDimensions.maxWidth}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, maxWidth: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* DEPTH / LENGTH (ความลึก/ยาว) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-[#3A3835]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5 text-[#84492C]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                      </svg>
+                      <span>Depth / Length (ความลึก)</span>
+                    </label>
+                    <span className="text-[9px] text-[#8C8A86] tracking-wider font-mono">CM</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Min (ต่ำสุด)"
+                        value={localDimensions.minDepth}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, minDepth: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Max (สูงสุด)"
+                        value={localDimensions.maxDepth}
+                        onChange={(e) => setLocalDimensions(prev => ({ ...prev, maxDepth: e.target.value }))}
+                        className="w-full h-10 px-3 text-xs bg-white/70 border border-[#C4B5A5]/60 rounded-lg text-[#3A3835] placeholder:text-[#8C8A86]/60 focus:outline-none focus:border-[#84492C] focus:ring-1 focus:ring-[#84492C] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-4 flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDimensionFilterChange?.(localDimensions)
+                      onClose()
+                    }}
+                    className="w-full h-11 bg-[#84492C] hover:bg-[#6c3a22] text-white text-[11px] font-medium uppercase tracking-[0.2em] rounded-lg transition-all shadow-sm active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Apply Filter</span>
+                  </button>
+
+                  {hasActiveDimensions(localDimensions) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocalDimensions(EMPTY_DIMENSION_FILTER)
+                        onDimensionFilterChange?.(EMPTY_DIMENSION_FILTER)
+                      }}
+                      className="w-full h-9 border border-[#84492C]/30 text-[#84492C] hover:bg-[#84492C]/5 text-[10px] font-medium uppercase tracking-[0.18em] rounded-lg transition-colors cursor-pointer"
+                    >
+                      Clear Dimensions
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <>
