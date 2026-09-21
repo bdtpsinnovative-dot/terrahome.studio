@@ -111,30 +111,32 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     .single()
 
   const now = new Date()
+  const mapProductDiscount = (product: any) => {
+    let applicableDiscount = null
+    if (activeDiscounts && activeDiscounts.length > 0) {
+      applicableDiscount = activeDiscounts.find((discount: any) => {
+        const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+        const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+        if (!isStarted || !isNotEnded) return false
+        return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
+      })
+    }
+
+    const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
+      ? Number(applicableDiscount.value)
+      : null
+    const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
+
+    return {
+      ...product,
+      discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
+      discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+    }
+  }
+
   const groupProducts = (groupData?.products || [])
     .filter((p: any) => p.category_id === 'prop' && (p.status === 'active' || !p.status))
-    .map((product: any) => {
-      let applicableDiscount = null
-      if (activeDiscounts && activeDiscounts.length > 0) {
-        applicableDiscount = activeDiscounts.find((discount: any) => {
-          const isStarted = !discount.start_date || new Date(discount.start_date) <= now
-          const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
-          if (!isStarted || !isNotEnded) return false
-          return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
-        })
-      }
-
-      const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
-        ? Number(applicableDiscount.value)
-        : null
-      const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
-
-      return {
-        ...product,
-        discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
-        discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
-      }
-    })
+    .map(mapProductDiscount)
 
   if (error || !groupData || !groupProducts || groupProducts.length === 0) {
     return (
@@ -231,7 +233,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   if (relatedProductIds.length > 0) {
     const { data: relatedCollectionsRaw } = await supabase
       .from("collection_groups")
-      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id )`)
+      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
       .ilike("tag", "%prop%")
       .eq("products.category_id", "prop")
       .in("products.id", relatedProductIds)
@@ -241,6 +243,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
       .map((collection: any) => {
         const products = (collection.products || [])
           .filter((product: any) => (product.status === 'active' || !product.status) && relatedRank.has(Number(product.id)))
+          .map(mapProductDiscount)
           .sort((a: any, b: any) => (relatedRank.get(Number(a.id)) ?? Infinity) - (relatedRank.get(Number(b.id)) ?? Infinity))
         return { ...collection, products }
       })
@@ -252,7 +255,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   if (recommendedCollections.length === 0 && groupData.product_sup) {
     const { data: fallbackCollectionsRaw } = await supabase
       .from("collection_groups")
-      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id )`)
+      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
       .ilike("tag", "%prop%")
       .eq("products.category_id", "prop")
       .eq("product_sup", groupData.product_sup)
@@ -262,7 +265,9 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
 
     recommendedCollections = (fallbackCollectionsRaw || []).map((collection: any) => ({
       ...collection,
-      products: (collection.products || []).filter((product: any) => product.status === 'active' || !product.status),
+      products: (collection.products || [])
+        .filter((product: any) => product.status === 'active' || !product.status)
+        .map(mapProductDiscount),
     })).filter((collection: any) => collection.products.length > 0)
   }
 
