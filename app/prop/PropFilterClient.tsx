@@ -517,84 +517,90 @@ export default function PropFilterClient({
                 />
               </div>
 
-              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-2.5 sm:gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  type="button"
-                  onClick={handleOpenFilter}
-                  aria-expanded={isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel}
-                  aria-controls="prop-product-filter-drawer"
-                  className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                  </svg>
-                  <span>FILTER</span>
-                </button>
+              <div className="flex min-w-0 items-center justify-between sm:justify-end gap-2 sm:gap-4 shrink-0 pb-0.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#D5D2CA]/20 sm:border-none w-full sm:w-auto sm:overflow-visible">
+                {/* 🌟 ปุ่มตัวกรองสินค้า เลื่อนแนวนอนได้อย่างราบรื่นบนหน้าจอมือถือ */}
+                <div className="flex min-w-0 items-center gap-2.5 sm:gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink">
+                  <button
+                    type="button"
+                    onClick={handleOpenFilter}
+                    aria-expanded={isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel}
+                    aria-controls="prop-product-filter-drawer"
+                    className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && !openColorPanel && !openMaterialPanel && !openSizePanel ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                    </svg>
+                    <span>FILTER</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  disabled={!hasActiveFilters}
-                  className={`flex h-10 shrink-0 items-center justify-center border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 touch-manipulation select-none ${hasActiveFilters
-                    ? 'text-[#B5473C] hover:border-[#B5473C]/50 hover:text-[#8F2F29]'
-                    : 'cursor-not-allowed text-[#B7B0A8]/70'
-                    }`}
-                  aria-label="Clear filters"
-                >
-                  CLEAR
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleClearFilters}
+                    disabled={!hasActiveFilters}
+                    className={`flex h-10 shrink-0 items-center justify-center border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 touch-manipulation select-none ${hasActiveFilters
+                      ? 'text-[#B5473C] hover:border-[#B5473C]/50 hover:text-[#8F2F29]'
+                      : 'cursor-not-allowed text-[#B7B0A8]/70'
+                      }`}
+                    aria-label="Clear filters"
+                  >
+                    CLEAR
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleOpenColorPanel}
-                  aria-label="Open color filter"
-                  aria-expanded={isFilterOpen && openColorPanel}
-                  aria-controls="prop-product-filter-color-drawer"
-                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : selectedColors.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
-                    <circle cx="8" cy="9" r="1.15" fill="#C26E4B" stroke="none" />
-                    <circle cx="12" cy="6.8" r="1.15" fill="#8EA6B8" stroke="none" />
-                    <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
-                    <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
-                  </svg>
-                  <span>COLOR</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenColorPanel}
+                    aria-label="Open color filter"
+                    aria-expanded={isFilterOpen && openColorPanel}
+                    aria-controls="prop-product-filter-color-drawer"
+                    className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openColorPanel ? 'text-[#84492C]' : selectedColors.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 3.9 3 6.5 6.4 6.5h1.2c.8 0 1.4.6 1.4 1.4 0 .6.5 1.1 1.1 1.1h.7c3.8 0 6.7-3 6.7-6.8 0-5.4-4-9.7-9-9.7Z" />
+                      <circle cx="8" cy="9" r="1.15" fill="#C26E4B" stroke="none" />
+                      <circle cx="12" cy="6.8" r="1.15" fill="#8EA6B8" stroke="none" />
+                      <circle cx="16.2" cy="8.2" r="1.15" fill="#B99A65" stroke="none" />
+                      <circle cx="17" cy="12.2" r="1.15" fill="#7F8F6C" stroke="none" />
+                    </svg>
+                    <span>COLOR</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleOpenMaterialPanel}
-                  aria-label="Open material filter"
-                  aria-expanded={isFilterOpen && openMaterialPanel}
-                  aria-controls="prop-product-filter-material-drawer"
-                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openMaterialPanel ? 'text-[#84492C]' : selectedMaterials.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                  </svg>
-                  <span>MATERIAL</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenMaterialPanel}
+                    aria-label="Open material filter"
+                    aria-expanded={isFilterOpen && openMaterialPanel}
+                    aria-controls="prop-product-filter-material-drawer"
+                    className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openMaterialPanel ? 'text-[#84492C]' : selectedMaterials.length > 0 ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[16px] w-[16px]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                    </svg>
+                    <span>MATERIAL</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleOpenSizePanel}
-                  aria-label="Open size filter"
-                  aria-expanded={isFilterOpen && openSizePanel}
-                  aria-controls="prop-product-filter-size-drawer"
-                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openSizePanel ? 'text-[#84492C]' : hasActiveDimensions(dimensionFilter) ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[15px] w-[15px]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                  </svg>
-                  <span>SIZE</span>
-                  {hasActiveDimensions(dimensionFilter) && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#84492C]" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenSizePanel}
+                    aria-label="Open size filter"
+                    aria-expanded={isFilterOpen && openSizePanel}
+                    aria-controls="prop-product-filter-size-drawer"
+                    className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b border-transparent px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[#84492C]/40 hover:text-[#84492C] touch-manipulation select-none ${isFilterOpen && openSizePanel ? 'text-[#84492C]' : hasActiveDimensions(dimensionFilter) ? 'text-[#84492C]' : 'text-[#6F6861]'}`}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" className="h-[15px] w-[15px]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
+                    <span>SIZE</span>
+                    {hasActiveDimensions(dimensionFilter) && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#84492C]" />
+                    )}
+                  </button>
+                </div>
 
+                {/* 🌟 ปุ่มเลือกสาขา: ยึดขวา ไม่ถูกดันตกขอบจอ บนมือถือมองเห็นและกดเลือกได้ทันที */}
                 {branches && branches.length > 0 && (
-                  <BranchSelector branches={branches} isLightPage={true} />
+                  <div className="shrink-0 flex items-center pl-2 sm:pl-0 border-l border-[#D5D2CA]/40 sm:border-l-0">
+                    <BranchSelector branches={branches} isLightPage={true} />
+                  </div>
                 )}
               </div>
             </div>
