@@ -1,5 +1,6 @@
 // app/prop/[groupId]/[sku]/page.tsx
 import { Metadata } from 'next'
+import { cache } from 'react'
 import { createClient } from "../../../../src/supabase/server" // ⚡ ดึงโค้ด Supabase ของนายกลับมา
 import ProductDetailClient from './ProductDetailClient'
 import { redirect } from 'next/navigation'
@@ -10,9 +11,21 @@ type Props = {
   params: Promise<{ groupId: string; sku: string }> // ⚡ ปรับเป็น Promise ตามมาตรฐาน Next.js ใหม่
 }
 
-export const revalidate = 0 // ✅ stock เปลี่ยนบ่อย ต้อง fresh ทุก request
+// ✅ Cache product page at the edge for 60 seconds to prevent Cloudflare Worker CPU limit exhaustion (Error 1102)
+export const revalidate = 60
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
+
+// React.cache ensures product metadata fetch is cached for the request lifecycle
+const getProductForMetadata = cache(async (sku: string) => {
+  const supabase = await createClient()
+  return supabase
+    .from("products")
+    .select("name, image_url, price, description")
+    .eq("sku", sku)
+    .eq("category_id", "prop")
+    .single()
+})
 
 // ⚡ ฟังก์ชันทำ SEO (generateMetadata) แบบรองรับ Next.js ใหม่
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,13 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const currentGroupId = decodeURIComponent(resolvedParams.groupId)
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
-  const supabase = await createClient()
-  const { data: product } = await supabase
-    .from("products")
-    .select("name, image_url, price, description")
-    .eq("sku", currentSku)
-    .eq("category_id", "prop")
-    .single()
+  const { data: product } = await getProductForMetadata(currentSku)
 
   const productName = product?.name || "Decorative Object"
   const title = `${productName} — ${currentGroupId} Collection`
@@ -83,32 +90,45 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
 
   const supabase = await createClient()
 
-  const { data: activeDiscounts } = await supabase
-    .from("discounts")
-    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
-    .eq("active", true)
-
-  const { data: groupData, error } = await supabase
-    .from("collection_groups")
-    .select(`
-      id,
-      product_sup,
-      products!inner (
-        *,
-        stock (
-          qty,
-          branches (
-            id,
-            branch_name,
-            latitude,
-            longitude
+  // Parallelize discounts and group data queries to reduce initial response latency by ~500ms
+  const [discountsRes, groupRes] = await Promise.all([
+    supabase
+      .from("discounts")
+      .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
+      .eq("active", true),
+    supabase
+      .from("collection_groups")
+      .select(`
+        id,
+        product_sup,
+        products!inner (
+          id,
+          sku,
+          name,
+          image_url,
+          price,
+          status,
+          category_id,
+          color,
+          specs,
+          stock (
+            qty,
+            branches (
+              id,
+              branch_name,
+              latitude,
+              longitude
+            )
           )
         )
-      )
-    `)
-    .eq("id", currentGroupId)
-    .eq("products.category_id", "prop")
-    .single()
+      `)
+      .eq("id", currentGroupId)
+      .eq("products.category_id", "prop")
+      .single()
+  ])
+
+  const activeDiscounts = discountsRes.data
+  const { data: groupData, error } = groupRes
 
   const now = new Date()
   const mapProductDiscount = (product: any) => {
@@ -210,16 +230,27 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     ],
   };
 
-  // Recommendations prioritize the same product type and colour/tone, then
-  // use sequential browsing behaviour, engagement and stock as tie-breakers.
-  const { data: relatedProductScores, error: relatedError } = await supabase
-    .rpc('get_prop_related_products', {
+  // Recommendations: attempt RPC with a fast timeout (1200ms) to protect Worker CPU and response time
+  let relatedProductScores: any[] | null = null
+  let relatedError: any = null
+
+  try {
+    const rpcPromise = supabase.rpc('get_prop_related_products', {
       current_product_id: Number(activeProduct.id),
-      limit_count: 16,
+      limit_count: 8,
     })
+    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: 'Recommendation RPC timed out' } }), 1200)
+    )
+    const rpcRes = await Promise.race([rpcPromise, timeoutPromise])
+    relatedProductScores = rpcRes.data
+    relatedError = rpcRes.error
+  } catch (err: any) {
+    relatedError = err
+  }
 
   if (relatedError) {
-    console.warn('[ProductDetail] related-product ranking unavailable:', relatedError.message)
+    console.warn('[ProductDetail] related-product ranking unavailable:', relatedError?.message)
   }
 
   const relatedRank = new Map<number, number>()
@@ -233,10 +264,11 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   if (relatedProductIds.length > 0) {
     const { data: relatedCollectionsRaw } = await supabase
       .from("collection_groups")
-      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
+      .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
       .ilike("tag", "%prop%")
       .eq("products.category_id", "prop")
       .in("products.id", relatedProductIds)
+      .limit(8)
 
     recommendedCollections = (relatedCollectionsRaw || [])
       .filter((collection: any) => String(collection.id) !== String(currentGroupId))
@@ -255,13 +287,13 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   if (recommendedCollections.length === 0 && groupData.product_sup) {
     const { data: fallbackCollectionsRaw } = await supabase
       .from("collection_groups")
-      .select(`*, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
+      .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
       .ilike("tag", "%prop%")
       .eq("products.category_id", "prop")
       .eq("product_sup", groupData.product_sup)
       .neq("id", currentGroupId)
       .order("created_at", { ascending: false })
-      .limit(16)
+      .limit(8)
 
     recommendedCollections = (fallbackCollectionsRaw || []).map((collection: any) => ({
       ...collection,

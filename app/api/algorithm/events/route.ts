@@ -137,8 +137,14 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient()
-  let relation: ProductRelation | null = null
-  if (Number.isSafeInteger(payload.product_id)) {
+  const cookieStore = await cookies()
+  const allCookies = cookieStore.getAll()
+  const hasAuthCookie = allCookies.some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))
+
+  const clientIp = getTrustedClientIp(request.headers)
+
+  const fetchRelation = async () => {
+    if (!Number.isSafeInteger(payload.product_id)) return { data: null, error: null }
     let relationQuery = supabase
       .from('collection_groups')
       .select('id, tag, product_sup, products!inner(id, category_id, name, sku, price, color, specs, collection_group_id)')
@@ -146,8 +152,20 @@ export async function POST(request: Request) {
       .eq('products.category_id', 'prop')
       .ilike('tag', '%prop%')
     if (payload.collection_group_id) relationQuery = relationQuery.eq('id', payload.collection_group_id)
-    const { data, error } = await relationQuery.maybeSingle()
+    return relationQuery.maybeSingle()
+  }
 
+  // Concurrently resolve product relation, auth user, IP location, and IP hash
+  const [relationRes, userData, location, ipHash] = await Promise.all([
+    fetchRelation(),
+    hasAuthCookie ? supabase.auth.getUser() : Promise.resolve({ data: { user: null } }),
+    getLocationData(request.headers, clientIp),
+    hashClientIp(clientIp),
+  ])
+
+  let relation: ProductRelation | null = null
+  if (Number.isSafeInteger(payload.product_id)) {
+    const { data, error } = relationRes
     if (error || !data) {
       if (error && process.env.NODE_ENV !== 'production') {
         console.error('[algorithm-events] relation query error:', error)
@@ -157,7 +175,6 @@ export async function POST(request: Request) {
     relation = data as unknown as ProductRelation
   }
 
-  const cookieStore = await cookies()
   let visitorId = cookieStore.get(VISITOR_COOKIE_NAME)?.value
   if (!isUuid(visitorId)) visitorId = crypto.randomUUID()
 
@@ -166,15 +183,12 @@ export async function POST(request: Request) {
   const sessionId = hadSessionCookie ? sessionCookie! : crypto.randomUUID()
 
   const previousProductId = Number(cookieStore.get(LAST_PRODUCT_COOKIE_NAME)?.value)
-  const userData = await supabase.auth.getUser()
-  const userId = userData.data.user?.id || null
+  const userId = userData.data?.user?.id || null
   const identityType = userId ? 'user' : 'visitor'
   const identityKey = userId ? `user:${userId}` : `visitor:${visitorId}`
-  const clientIp = getTrustedClientIp(request.headers)
   const internal = isInternalIp(clientIp)
   const userAgent = request.headers.get('user-agent')
   const traffic = classifyTraffic(userAgent, internal)
-  const location = await getLocationData(request.headers, clientIp)
   const clientProfile = getClientProfile(userAgent)
   const referrer = request.headers.get('referer')
   const trackingUrl = safeText(payload.tracking_url, 4000) || request.url
@@ -189,8 +203,6 @@ export async function POST(request: Request) {
     cookieStore.get(SOURCE_REFERRER_COOKIE_NAME)?.value || null,
   )
   const productSnapshot = relation ? getProductSnapshot(relation, Number.isSafeInteger(payload.product_id) ? payload.product_id! : null) : {}
-
-  const ipHash = await hashClientIp(clientIp)
 
   const eventData = {
     event_type: eventType,
