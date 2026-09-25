@@ -14,9 +14,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.c
 
 function getCategoryOrder(productSup: string | null | undefined): number {
   const value = (productSup || '').trim().toLowerCase()
-  if (value.startsWith('vase')) return 1
-  if (value.startsWith('doll') || value.startsWith('decorative') || value.startsWith('decotative')) return 2
-  if (value.includes('ornament') || value.startsWith('art object')) return 3
+  // 1: Hero Vases and Vessels (Ceramic Vases, Glass Vases, Vessels)
+  if ((value.includes('vase') || value.includes('vessel')) && !value.includes('flower')) return 1
+  // 2: Sculptures, Figures, Art, Handmade
+  if (value.includes('sculpture') || value.includes('figure') || value.startsWith('doll') || value.startsWith('decorative') || value.includes('art') || value.includes('handmade')) return 2
+  // 3: Functional Decor & Tableware (Candle holders, Trays, Boxes, Booked, Bowls, Dishes, Bath)
+  if (!value.includes('flower')) return 3
+  // 4: Flower props and accessories (Vase and Flower)
   return 4
 }
 
@@ -95,7 +99,7 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
       .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
       .eq("active", true),
     supabase
-      .rpc('get_prop_hot_items', { limit_count: 20 }),
+      .rpc('get_prop_hot_items', { limit_count: 80 }),
     supabase
       .from("products")
       .select("id", { count: "exact", head: true })
@@ -325,15 +329,56 @@ export default async function PropCollectionsPage({ searchParams }: PageProps) {
     collectionBuckets.set(bucket, items)
   })
 
-  const orderedCollections = Array.from(collectionBuckets.keys())
-    .sort((a, b) => a - b)
-    .flatMap((bucket) => {
-      const items = collectionBuckets.get(bucket) || []
-      if (bucket === 0 || bucket === 200) {
-        return items.sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity))
+  // Smart interleaving: spreads flowers evenly among available products so they serve as complementary styling props
+  const interleaveWithAccent = (mainItems: any[], accentItems: any[], ratio = 6) => {
+    const result: any[] = []
+    let accentIdx = 0
+    for (let i = 0; i < mainItems.length; i++) {
+      result.push(mainItems[i])
+      if ((i + 1) % ratio === 0 && accentIdx < accentItems.length) {
+        result.push(accentItems[accentIdx++])
       }
-      return shuffleCollections(items)
-    })
+    }
+    while (accentIdx < accentItems.length) {
+      result.push(accentItems[accentIdx++])
+    }
+    return result
+  }
+
+  // 1) Hot + Available (Strictly ordered by actual traffic / engagement score from database)
+  const hotAvailableCollections = (collectionBuckets.get(0) || [])
+    .sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity))
+
+  // 2) Non-hot available main decor items (Category 1: Vases, 2: Sculptures/Figures, 3: Accessories)
+  const availableMainCollections = [
+    ...shuffleCollections(collectionBuckets.get(101) || []),
+    ...shuffleCollections(collectionBuckets.get(102) || []),
+    ...shuffleCollections(collectionBuckets.get(103) || []),
+  ]
+
+  // 3) Available flower styling props (Category 4)
+  const availableFlowerCollections = shuffleCollections(collectionBuckets.get(104) || [])
+
+  // Evenly blend flower stems into the available products feed (1 flower every 6 main items for cross-selling)
+  const availableInterleaved = interleaveWithAccent(availableMainCollections, availableFlowerCollections, 6)
+
+  // 4) Pre-order sections (Hot preorder first, then category preorder)
+  const hotPreorderCollections = (collectionBuckets.get(200) || [])
+    .sort((a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity))
+
+  const preorderOtherCollections = [
+    ...shuffleCollections(collectionBuckets.get(301) || []),
+    ...shuffleCollections(collectionBuckets.get(302) || []),
+    ...shuffleCollections(collectionBuckets.get(303) || []),
+    ...shuffleCollections(collectionBuckets.get(304) || []),
+  ]
+
+  const orderedCollections = [
+    ...hotAvailableCollections,
+    ...availableInterleaved,
+    ...hotPreorderCollections,
+    ...preorderOtherCollections,
+  ]
 
   return (
     <div className="min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
