@@ -159,23 +159,20 @@ export default async function RootLayout({
         <link rel="preload" href="/OPTIMA.TTF" as="font" type="font/ttf" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col">
-        {/* Google Analytics Setup */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="lazyOnload"
-            />
-            <Script id="google-analytics" strategy="lazyOnload">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
+        {/* Google Tag (gtag.js) - Google Ads & Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18479841401"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-18479841401');
+            ${process.env.NEXT_PUBLIC_GA_ID ? `gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');` : ''}
+          `}
+        </Script>
 
         {/* Meta Pixel (Facebook Pixel) */}
         <Script id="meta-pixel" strategy="afterInteractive">
