@@ -131,6 +131,7 @@ export default function MessengerInquiryButton({
               rel="noopener noreferrer"
               role="menuitem"
               data-analytics-event={preview ? undefined : 'open_line_contact'}
+              data-analytics-product-name={productName || undefined}
               className={styles.channel}
               onClick={() => setOpen(false)}
             >
@@ -154,6 +155,7 @@ export default function MessengerInquiryButton({
               rel="noopener noreferrer"
               role="menuitem"
               data-analytics-event={preview ? undefined : 'open_messenger_inquiry'}
+              data-analytics-product-name={productName || undefined}
               className={`${styles.channel} ${styles.channelMessenger}`}
               onClick={() => setOpen(false)}
             >
@@ -177,6 +179,7 @@ export default function MessengerInquiryButton({
               rel="noopener noreferrer"
               role="menuitem"
               data-analytics-event={preview ? undefined : 'open_instagram_profile'}
+              data-analytics-product-name={productName || undefined}
               className={`${styles.channel} ${styles.channelInstagram}`}
               onClick={() => setOpen(false)}
             >
@@ -212,6 +215,7 @@ export default function MessengerInquiryButton({
         aria-expanded={open}
         aria-controls="contact-channel-menu"
         data-analytics-event={isUnavailable || preview ? undefined : 'open_contact_channels'}
+        data-analytics-product-name={productName || undefined}
         data-state={visualState}
         data-preview-state={preview ? previewState : undefined}
         data-open={open ? 'true' : 'false'}

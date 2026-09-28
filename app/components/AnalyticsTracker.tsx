@@ -2,6 +2,8 @@
 
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef } from 'react'
+import { createClient } from '@/src/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type AnalyticsEvent = {
   event_type: 'page_view' | 'session_start' | 'session_heartbeat' | 'session_end' | 'cta' | 'journey'
@@ -33,7 +35,7 @@ type ActivePage = {
 
 const TAB_KEY = 'prop_analytics_tab_id'
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000
-const HEARTBEAT_MS = 15 * 1000
+const SAFETY_FLUSH_INTERVAL_MS = 3 * 60 * 1000
 
 function uuid() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
@@ -90,10 +92,13 @@ export default function AnalyticsTracker() {
   const pageInstanceRef = useRef<string | null>(null)
   const intervalIdRef = useRef<string | null>(null)
   const activeSecondsRef = useRef(0)
+  const lastFlushedActiveRef = useRef(0)
   const sendRef = useRef<(event: AnalyticsEvent) => void>(() => undefined)
   const activePageRef = useRef<ActivePage | null>(null)
   const startedSessionRef = useRef(false)
   const pageCountRef = useRef(0)
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const isSubscribedRef = useRef(false)
 
   const send = useCallback((event: AnalyticsEvent) => {
     const body = {
@@ -106,7 +111,7 @@ export default function AnalyticsTracker() {
       headers: { 'content-type': 'application/json' },
       credentials: 'same-origin',
       cache: 'no-store',
-      keepalive: event.event_type === 'session_end',
+      keepalive: event.event_type === 'session_end' || event.event_type === 'cta',
       body: JSON.stringify(body),
     }).catch(() => undefined)
   }, [])
@@ -115,6 +120,40 @@ export default function AnalyticsTracker() {
     sendRef.current = send
   }, [send])
 
+  // Setup Supabase Realtime Presence channel for live audience tracking
+  useEffect(() => {
+    const supabase = createClient()
+    const tabId = getTabId()
+    const channel = supabase.channel('prop-live-audience', {
+      config: { presence: { key: tabId } },
+    })
+    channelRef.current = channel
+
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true
+        const { pageType } = classifyPage(window.location.pathname)
+        await channel.track({
+          tab_id: tabId,
+          page_type: pageType,
+          page_path: window.location.pathname,
+          product_id: currentProductId() || null,
+          device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+          online_at: new Date().toISOString(),
+        })
+      }
+    })
+
+    return () => {
+      if (channelRef.current) {
+        void channelRef.current.untrack()
+        void supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+        isSubscribedRef.current = false
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (!pathname) return
     const { pageType, entityId } = classifyPage(pathname)
@@ -122,13 +161,29 @@ export default function AnalyticsTracker() {
     const intervalId = uuid()
     const previousPage = activePageRef.current
     const previousStartedAt = pageStartedAtRef.current
+    const previousIntervalId = intervalIdRef.current
+    const previousActiveSeconds = Math.floor(activeSecondsRef.current)
     const now = Date.now()
+
     pageInstanceRef.current = pageInstanceId
     intervalIdRef.current = intervalId
     pageStartedAtRef.current = now
     lastActivityAtRef.current = now
     activeSecondsRef.current = 0
+    lastFlushedActiveRef.current = 0
     pageCountRef.current += 1
+
+    // Update Realtime Presence state on route change
+    if (channelRef.current && isSubscribedRef.current) {
+      void channelRef.current.track({
+        tab_id: getTabId(),
+        page_type: pageType,
+        page_path: pathname,
+        product_id: currentProductId() || null,
+        device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        online_at: new Date().toISOString(),
+      })
+    }
 
     if (previousPage) {
       sendRef.current({
@@ -137,8 +192,10 @@ export default function AnalyticsTracker() {
         page_path: previousPage.pagePath,
         page_entity_id: previousPage.pageEntityId || undefined,
         page_instance_id: previousPage.pageInstanceId,
+        activity_interval_id: previousIntervalId || undefined,
         product_id: previousPage.productId || undefined,
         duration_seconds: Math.min(Math.max(0, Math.floor((now - previousStartedAt) / 1000)), 86400),
+        active_seconds: previousActiveSeconds,
         next_page_type: pageType,
         journey_outcome: pageType,
       })
@@ -170,11 +227,23 @@ export default function AnalyticsTracker() {
     const markActivity = () => { lastActivityAtRef.current = Date.now() }
     const activityEvents = ['pointerdown', 'keydown', 'touchstart', 'scroll']
     activityEvents.forEach((event) => window.addEventListener(event, markActivity, { passive: true }))
-    const heartbeat = window.setInterval(() => {
+
+    // Local in-memory active time counter (0 network traffic, 0 DB writes)
+    const localTimer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible' || !pageInstanceRef.current) return
+      const now = Date.now()
+      if (now - lastActivityAtRef.current > ACTIVE_WINDOW_MS) return
+      activeSecondsRef.current += 1
+    }, 1000)
+
+    // Relaxed safety flush (every 3 minutes instead of 15 seconds) for long single-page stays
+    const safetyFlush = window.setInterval(() => {
       if (document.visibilityState !== 'visible' || !pageInstanceRef.current || !intervalIdRef.current) return
       const now = Date.now()
       if (now - lastActivityAtRef.current > ACTIVE_WINDOW_MS) return
-      activeSecondsRef.current = Math.min(86400, activeSecondsRef.current + HEARTBEAT_MS / 1000)
+      const currentActive = Math.floor(activeSecondsRef.current)
+      if (currentActive - lastFlushedActiveRef.current < 30) return
+      lastFlushedActiveRef.current = currentActive
       const { pageType } = classifyPage(pathname || window.location.pathname)
       sendRef.current({
         event_type: 'session_heartbeat',
@@ -183,9 +252,9 @@ export default function AnalyticsTracker() {
         page_instance_id: pageInstanceRef.current,
         activity_interval_id: intervalIdRef.current,
         product_id: currentProductId(),
-        active_seconds: activeSecondsRef.current,
+        active_seconds: currentActive,
       })
-    }, HEARTBEAT_MS)
+    }, SAFETY_FLUSH_INTERVAL_MS)
 
     const handlePageHide = () => {
       if (!pageInstanceRef.current) return
@@ -197,6 +266,7 @@ export default function AnalyticsTracker() {
         page_type: pageType,
         page_path: window.location.pathname,
         page_instance_id: pageInstanceRef.current,
+        activity_interval_id: intervalIdRef.current || undefined,
         product_id: currentProductId(),
         active_seconds: activeSeconds,
         duration_seconds: activeSeconds,
@@ -209,12 +279,14 @@ export default function AnalyticsTracker() {
       const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-analytics-event]') : null
       const eventName = target?.dataset.analyticsEvent
       if (!eventName) return
+      const customProductName = target?.dataset.analyticsProductName
       sendRef.current({
         event_type: 'cta',
         page_type: classifyPage(window.location.pathname).pageType,
         page_path: window.location.pathname,
         product_id: currentProductId(),
         event_name: eventName,
+        metadata: customProductName ? { target_product_name: customProductName } : undefined,
       })
     }
     const handleProductSelected = (event: Event) => {
@@ -223,6 +295,9 @@ export default function AnalyticsTracker() {
       if (!Number.isSafeInteger(productId) || !productId || activePageRef.current?.productId === productId) return
       const previousPage = activePageRef.current
       const now = Date.now()
+      const previousIntervalId = intervalIdRef.current
+      const previousActiveSeconds = Math.floor(activeSecondsRef.current)
+
       if (previousPage) {
         sendRef.current({
           event_type: 'journey',
@@ -230,8 +305,10 @@ export default function AnalyticsTracker() {
           page_path: previousPage.pagePath,
           page_entity_id: previousPage.pageEntityId || undefined,
           page_instance_id: previousPage.pageInstanceId,
+          activity_interval_id: previousIntervalId || undefined,
           product_id: previousPage.productId || undefined,
           duration_seconds: Math.min(Math.max(0, Math.floor((now - pageStartedAtRef.current) / 1000)), 86400),
+          active_seconds: previousActiveSeconds,
           next_page_type: 'product',
           next_product_id: productId,
           journey_outcome: 'product',
@@ -244,8 +321,22 @@ export default function AnalyticsTracker() {
       pageStartedAtRef.current = now
       lastActivityAtRef.current = now
       activeSecondsRef.current = 0
+      lastFlushedActiveRef.current = 0
       activePageRef.current = { pageType: 'product', pagePath: window.location.pathname, pageInstanceId, pageEntityId: detail.sku || null, productId }
       pageCountRef.current += 1
+
+      // Update Realtime Presence on product selection
+      if (channelRef.current && isSubscribedRef.current) {
+        void channelRef.current.track({
+          tab_id: getTabId(),
+          page_type: 'product',
+          page_path: window.location.pathname,
+          product_id: productId,
+          device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+          online_at: new Date().toISOString(),
+        })
+      }
+
       sendRef.current({
         event_type: 'page_view',
         page_type: 'product',
@@ -256,14 +347,15 @@ export default function AnalyticsTracker() {
         event_name: 'product_selected_without_reload',
       })
     }
-    document.addEventListener('click', handleTrackedClick)
+    document.addEventListener('click', handleTrackedClick, true)
     window.addEventListener('prop-product-selected', handleProductSelected)
     window.addEventListener('pagehide', handlePageHide)
     return () => {
       window.removeEventListener('pagehide', handlePageHide)
-      document.removeEventListener('click', handleTrackedClick)
+      document.removeEventListener('click', handleTrackedClick, true)
       window.removeEventListener('prop-product-selected', handleProductSelected)
-      window.clearInterval(heartbeat)
+      window.clearInterval(localTimer)
+      window.clearInterval(safetyFlush)
       activityEvents.forEach((event) => window.removeEventListener(event, markActivity))
     }
   }, [pathname])
