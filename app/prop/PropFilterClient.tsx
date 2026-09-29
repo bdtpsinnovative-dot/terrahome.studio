@@ -8,6 +8,7 @@ import PropBanner from "./PropBanner"
 import { CATEGORY_DISPLAY_NAMES } from "@/app/constants/categories"
 import ProductFilterDrawer from "@/app/components/ProductFilterDrawer"
 import VisualImageSearch, { type ImageSearchResult } from "@/app/components/VisualImageSearch"
+import PageScreenshotShare, { type CatalogItem } from "@/app/components/PageScreenshotShare"
 import {
   filterCollectionsByCategory,
   getBannerImageForCategory,
@@ -21,16 +22,22 @@ import {
   hasActiveDimensions,
   productMatchesDimensions,
 } from "./productFilterModel"
+import {
+  getCachedRawCatalog,
+  getOrderedCollectionsForBranch,
+  loadRawCatalog,
+  type RawCatalogData,
+} from "./catalogClient"
 
 export default function PropFilterClient({
-  collections,
-  branches,
-  hotProductIds = [],
-  bannerGroups = [],
-  allBannerImages = [],
+  collections: initialCollections,
+  branches: initialBranches,
+  hotProductIds: initialHotProductIds = [],
+  bannerGroups: initialBannerGroups = [],
+  allBannerImages: initialAllBannerImages = [],
 }: {
-  collections: any[]
-  branches: any[]
+  collections?: any[]
+  branches?: any[]
   hotProductIds?: number[]
   bannerGroups?: any[]
   allBannerImages?: string[]
@@ -38,6 +45,52 @@ export default function PropFilterClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  const hasServerCatalog = Array.isArray(initialCollections) && initialCollections.length > 0
+  const [rawCatalog, setRawCatalog] = useState<RawCatalogData | null>(() => getCachedRawCatalog())
+  const [isCatalogLoading, setIsCatalogLoading] = useState<boolean>(() => !hasServerCatalog && !getCachedRawCatalog())
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (hasServerCatalog) return
+    const cached = getCachedRawCatalog()
+    if (cached) {
+      setRawCatalog(cached)
+      setIsCatalogLoading(false)
+      return
+    }
+    let cancelled = false
+    setIsCatalogLoading(true)
+    loadRawCatalog()
+      .then((data) => {
+        if (cancelled) return
+        setRawCatalog(data)
+        setCatalogError(null)
+        setIsCatalogLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error("[PropFilterClient] Failed to load catalog:", err)
+        setCatalogError(err?.message || String(err))
+        setIsCatalogLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [hasServerCatalog])
+
+  const currentBranchId = searchParams.get("branch") || "all"
+
+  const collections = useMemo(() => {
+    if (hasServerCatalog) return initialCollections!
+    if (!rawCatalog) return []
+    return getOrderedCollectionsForBranch(rawCatalog, currentBranchId)
+  }, [hasServerCatalog, initialCollections, rawCatalog, currentBranchId])
+
+  const branches = hasServerCatalog ? (initialBranches || []) : (rawCatalog?.branches || [])
+  const hotProductIds = hasServerCatalog ? initialHotProductIds : (rawCatalog?.hotProductIds || [])
+  const bannerGroups = hasServerCatalog ? initialBannerGroups : (rawCatalog?.bannerGroups || [])
+  const allBannerImages = hasServerCatalog ? initialAllBannerImages : (rawCatalog?.allBannerImages || [])
 
   const initialCategory = searchParams.get('category') || "All"
   const initialPage = Number(searchParams.get('page')) || 1
@@ -78,7 +131,7 @@ export default function PropFilterClient({
     return getBannerImageForCategory(activeFilter, bannerGroups)
   }, [activeFilter, bannerGroups])
 
-  const hasBanner = !!activeBannerImage || (allBannerImages && allBannerImages.length > 0)
+  const hasBanner = isCatalogLoading || !!activeBannerImage || (allBannerImages && allBannerImages.length > 0)
 
   const closeSidebar = () => {
     setIsSidebarOpen(false)
@@ -274,7 +327,7 @@ export default function PropFilterClient({
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
   const selectedMaterials = useMemo(() => selectedMaterialValues(materialFilter), [materialFilter])
-  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || hasActiveDimensions(dimensionFilter) || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
+    const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || hasActiveDimensions(dimensionFilter) || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
@@ -376,6 +429,37 @@ export default function PropFilterClient({
 
   const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
 
+  const currentDisplayedGroups = filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const currentCatalogItems: CatalogItem[] = currentDisplayedGroups.map((group) => {
+    const preferredProducts = group.products?.filter((product: any) => {
+      const stockQty = (product.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+      return stockQty > 0
+    }) || []
+
+    const firstProduct = preferredProducts[0] || group.products?.[0] || {}
+    const productWithImage = (group.products || []).find((p: any) => p.image_url && String(p.image_url).trim() !== "")
+    const resolvedImageUrl = group.cover_image_url || firstProduct.image_url || productWithImage?.image_url || ""
+    const originalPrice = Number(firstProduct.price || 0)
+    const discountVal = Number(firstProduct.discount_value)
+    const discountType = firstProduct.discount_type
+    const hasDiscount = Number.isFinite(discountVal) && discountVal > 0 && !!discountType
+    const discountedPrice = hasDiscount
+      ? (discountType === 'PERCENT' ? originalPrice * (1 - (discountVal / 100)) : Math.max(0, originalPrice - discountVal))
+      : null
+
+    return {
+      id: group.id,
+      name: group.name || firstProduct.name || 'PRODUCT',
+      sku: firstProduct.sku,
+      imageUrl: resolvedImageUrl,
+      price: originalPrice,
+      discountedPrice,
+      discountValue: discountVal,
+      discountType,
+      outOfStock: preferredProducts.length === 0,
+    }
+  })
+
   const renderPagination = () => {
     const pageItems: Array<number | 'ellipsis-left' | 'ellipsis-right'> = []
 
@@ -432,7 +516,7 @@ export default function PropFilterClient({
     <>
       {/* 1. ตัวแบนเนอร์ด้านบน — Navbar กลางอยู่ใน app/layout.tsx */}
       {hasBanner && (
-        <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
+        <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden bg-[#2F2420]">
           <PropBanner
             allImages={allBannerImages}
             activeImage={activeBannerImage}
@@ -602,12 +686,41 @@ export default function PropFilterClient({
                     <BranchSelector branches={branches} isLightPage={true} />
                   </div>
                 )}
+
+                {/* 🌟 ปุ่มแชร์ภาพหน้าเว็บ (เลือกแบบมือถือ หรือ คอมพิวเตอร์) */}
+                <div className="shrink-0 flex items-center pl-1 sm:pl-2">
+                  <PageScreenshotShare
+                    categoryName={activeFilter === 'All' ? 'ALL COLLECTIONS' : activeFilter}
+                    items={currentCatalogItems}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    showFloatingButton={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           <div className="w-full border-t border-[#D5D2CA]/70 mt-0">
-            {filteredCollections.length === 0 ? (
+            {isCatalogLoading ? (
+              <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div key={idx} className="border-b border-r border-[#D5D2CA]/70 py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative animate-pulse">
+                    <div className="w-full aspect-square mb-5 bg-[#E2DED5]/70" />
+                    <div className="h-3 w-28 bg-[#E2DED5] mb-2" />
+                    <div className="h-3 w-20 bg-[#E2DED5]/80" />
+                  </div>
+                ))}
+              </div>
+            ) : catalogError ? (
+              <div className="text-center py-24 px-4">
+                <p className="text-[#3A3835] font-serif text-xl mb-2">Unavailable</p>
+                <p className="text-[#8C8A86] text-sm font-light tracking-wide mb-2">Unable to load the collections at this time.</p>
+                <p className="text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200 break-all font-mono max-w-md mx-auto">
+                  {catalogError}
+                </p>
+              </div>
+            ) : filteredCollections.length === 0 ? (
               <div className="text-center py-24">
                 <span className="text-[#8C8A86] text-[10px] uppercase tracking-[0.3em] font-light">No Collections Discovered</span>
               </div>

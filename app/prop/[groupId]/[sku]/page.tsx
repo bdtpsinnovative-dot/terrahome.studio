@@ -1,39 +1,85 @@
 // app/prop/[groupId]/[sku]/page.tsx
 import { Metadata } from 'next'
 import { cache } from 'react'
-import { createClient } from "../../../../src/supabase/server" // ⚡ ดึงโค้ด Supabase ของนายกลับมา
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import ProductDetailClient from './ProductDetailClient'
 import { redirect } from 'next/navigation'
 
 export const runtime = 'edge'
 
 type Props = {
-  params: Promise<{ groupId: string; sku: string }> // ⚡ ปรับเป็น Promise ตามมาตรฐาน Next.js ใหม่
+  params: Promise<{ groupId: string; sku: string }>
 }
 
-// ✅ Cache product page at the edge for 60 seconds to prevent Cloudflare Worker CPU limit exhaustion (Error 1102)
-export const revalidate = 60
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zexflchjcycxrpjkuews.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleGZsY2hqY3ljeHJwamt1ZXdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzMyNTEsImV4cCI6MjA4MDc0OTI1MX0.Hw3dJqP6-bpmqMW56pGHB1-Y2hN9tjCKNq9u2BnyeTk'
 
-// React.cache ensures product metadata fetch is cached for the request lifecycle
-const getProductForMetadata = cache(async (sku: string) => {
-  const supabase = await createClient()
-  return supabase
-    .from("products")
-    .select("name, image_url, price, description")
-    .eq("sku", sku)
-    .eq("category_id", "prop")
-    .single()
+const supabaseAnon = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
 })
 
-// ⚡ ฟังก์ชันทำ SEO (generateMetadata) แบบรองรับ Next.js ใหม่
+let cachedDiscounts: { data: any[]; expiresAt: number } | null = null
+
+async function getActiveDiscounts() {
+  if (cachedDiscounts && Date.now() < cachedDiscounts.expiresAt) {
+    return cachedDiscounts.data
+  }
+  const { data } = await supabaseAnon
+    .from("discounts")
+    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
+    .eq("active", true)
+  const list = data || []
+  cachedDiscounts = { data: list, expiresAt: Date.now() + 60_000 }
+  return list
+}
+
+// React.cache ensures generateMetadata and Page share the exact same single fetch per request
+const getGroupDetailData = cache(async (groupId: string) => {
+  const [activeDiscounts, groupRes] = await Promise.all([
+    getActiveDiscounts(),
+    supabaseAnon
+      .from("collection_groups")
+      .select(`
+        id,
+        product_sup,
+        products!inner (
+          id,
+          sku,
+          name,
+          image_url,
+          price,
+          status,
+          category_id,
+          color,
+          specs,
+          stock (
+            qty,
+            branches (
+              id,
+              branch_name,
+              latitude,
+              longitude
+            )
+          )
+        )
+      `)
+      .eq("id", groupId)
+      .eq("products.category_id", "prop")
+      .single(),
+  ])
+
+  return { activeDiscounts, groupData: groupRes.data, error: groupRes.error }
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const resolvedParams = await params // 👈 แก้ตรงนี้: ต้องใช้ await เพื่อแกะข้อมูลออกมาก่อนครับนาย!
+  const resolvedParams = await params
   const currentGroupId = decodeURIComponent(resolvedParams.groupId)
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
-  const { data: product } = await getProductForMetadata(currentSku)
+  const { groupData } = await getGroupDetailData(currentGroupId)
+  const products: any[] = groupData?.products || []
+  const product = products.find((p: any) => p.sku === currentSku) || products[0] || null
 
   const productName = product?.name || "Decorative Object"
   const title = `${productName} — ${currentGroupId} Collection`
@@ -82,53 +128,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-// ⚡ หน้าตา Page หลัก (ปรับใช้ await params เหมือนกัน)
 export default async function ProductDetailWithGroupSidebarPage({ params }: Props) {
-  const resolvedParams = await params // 👈 แก้ตรงนี้: แกะ Promise ออกมาให้เรียบร้อย
+  const resolvedParams = await params
   const currentGroupId = decodeURIComponent(resolvedParams.groupId)
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
-  const supabase = await createClient()
-
-  // Parallelize discounts and group data queries to reduce initial response latency by ~500ms
-  const [discountsRes, groupRes] = await Promise.all([
-    supabase
-      .from("discounts")
-      .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
-      .eq("active", true),
-    supabase
-      .from("collection_groups")
-      .select(`
-        id,
-        product_sup,
-        products!inner (
-          id,
-          sku,
-          name,
-          image_url,
-          price,
-          status,
-          category_id,
-          color,
-          specs,
-          stock (
-            qty,
-            branches (
-              id,
-              branch_name,
-              latitude,
-              longitude
-            )
-          )
-        )
-      `)
-      .eq("id", currentGroupId)
-      .eq("products.category_id", "prop")
-      .single()
-  ])
-
-  const activeDiscounts = discountsRes.data
-  const { data: groupData, error } = groupRes
+  const { activeDiscounts, groupData, error } = await getGroupDetailData(currentGroupId)
 
   const now = new Date()
   const mapProductDiscount = (product: any) => {
@@ -166,18 +171,15 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
     )
   }
 
-  // Generate dynamic Product Schema for search engine/LLM crawler analysis
-  const activeProduct = groupProducts.find(p => p.sku === currentSku);
+  const activeProduct = groupProducts.find((p: any) => p.sku === currentSku)
 
-  // If the specific requested SKU is not active or not found, redirect to the first available product in this group
   if (!activeProduct && groupProducts.length > 0) {
     redirect(`/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(groupProducts[0].sku)}`)
   }
 
-  const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0;
-  const canonicalUrl = `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`;
+  const totalStock = activeProduct?.stock?.reduce((sum: number, s: any) => sum + (s.qty || 0), 0) || 0
+  const canonicalUrl = `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`
 
-  // ✅ Product schema ที่ครบถ้วนกว่าเดิม พร้อม brand, category, itemCondition
   const productSchema = {
     "@context": "https://schema.org/",
     "@type": "Product",
@@ -202,9 +204,8 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
         "name": "Terra Home Studio",
       },
     },
-  };
+  }
 
-  // ✅ BreadcrumbList schema สำหรับ navigation signal
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -228,79 +229,6 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
         "item": `${SITE_URL}/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(currentSku)}`,
       },
     ],
-  };
-
-  // Recommendations: attempt RPC with a fast timeout (1200ms) to protect Worker CPU and response time
-  let relatedProductScores: any[] | null = null
-  let relatedError: any = null
-
-  try {
-    const rpcPromise = supabase.rpc('get_prop_related_products', {
-      current_product_id: Number(activeProduct.id),
-      limit_count: 8,
-    })
-    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: 'Recommendation RPC timed out' } }), 1200)
-    )
-    const rpcRes = await Promise.race([rpcPromise, timeoutPromise])
-    relatedProductScores = rpcRes.data
-    relatedError = rpcRes.error
-  } catch (err: any) {
-    relatedError = err
-  }
-
-  if (relatedError) {
-    console.warn('[ProductDetail] related-product ranking unavailable:', relatedError?.message)
-  }
-
-  const relatedRank = new Map<number, number>()
-  ;(relatedProductScores || []).forEach((item: any, index: number) => {
-    const productId = Number(item.product_id)
-    if (Number.isSafeInteger(productId)) relatedRank.set(productId, index)
-  })
-  const relatedProductIds = Array.from(relatedRank.keys())
-
-  let recommendedCollections: any[] = []
-  if (relatedProductIds.length > 0) {
-    const { data: relatedCollectionsRaw } = await supabase
-      .from("collection_groups")
-      .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
-      .ilike("tag", "%prop%")
-      .eq("products.category_id", "prop")
-      .in("products.id", relatedProductIds)
-      .limit(8)
-
-    recommendedCollections = (relatedCollectionsRaw || [])
-      .filter((collection: any) => String(collection.id) !== String(currentGroupId))
-      .map((collection: any) => {
-        const products = (collection.products || [])
-          .filter((product: any) => (product.status === 'active' || !product.status) && relatedRank.has(Number(product.id)))
-          .map(mapProductDiscount)
-          .sort((a: any, b: any) => (relatedRank.get(Number(a.id)) ?? Infinity) - (relatedRank.get(Number(b.id)) ?? Infinity))
-        return { ...collection, products }
-      })
-      .filter((collection: any) => collection.products.length > 0)
-      .sort((a: any, b: any) => (relatedRank.get(Number(a.products[0].id)) ?? Infinity) - (relatedRank.get(Number(b.products[0].id)) ?? Infinity))
-  }
-
-  // Deterministic same-category fallback until enough sequential events exist.
-  if (recommendedCollections.length === 0 && groupData.product_sup) {
-    const { data: fallbackCollectionsRaw } = await supabase
-      .from("collection_groups")
-      .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
-      .ilike("tag", "%prop%")
-      .eq("products.category_id", "prop")
-      .eq("product_sup", groupData.product_sup)
-      .neq("id", currentGroupId)
-      .order("created_at", { ascending: false })
-      .limit(8)
-
-    recommendedCollections = (fallbackCollectionsRaw || []).map((collection: any) => ({
-      ...collection,
-      products: (collection.products || [])
-        .filter((product: any) => product.status === 'active' || !product.status)
-        .map(mapProductDiscount),
-    })).filter((collection: any) => collection.products.length > 0)
   }
 
   return (
@@ -317,7 +245,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
         groupProducts={groupProducts}
         currentGroupId={currentGroupId}
         initialSku={currentSku}
-        recommendedCollections={recommendedCollections}
+        productSup={groupData.product_sup}
       />
     </>
   )

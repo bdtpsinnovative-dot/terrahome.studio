@@ -4,15 +4,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../tokens.css";
 import "./globals.css";
 import Navbar from "./components/Navbar";
-import { unstable_cache } from "next/cache";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Suspense } from "react"; // 1. นำเข้า Suspense เพิ่มเข้ามาครับนาย
 import Script from "next/script";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GlobalMessengerInquiryButton from "./components/GlobalMessengerInquiryButton";
-
-// Cache Navbar category data for 1 hour; product categories rarely change.
-export const revalidate = 3600;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,58 +20,6 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://terrahome-studio.com';
-
-const getNavbarFilterCollections = unstable_cache(
-  async () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseAnonKey) return [];
-
-    const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: propGroups, error: groupsError } = await supabase
-      .from('collection_groups')
-      .select('id, product_sup')
-      .ilike('tag', '%prop%');
-
-    if (groupsError) {
-      console.error('[navbar-filter] Unable to load Prop groups', { code: groupsError.code, message: groupsError.message });
-      return [];
-    }
-
-    const groupIds = (propGroups || []).map((group) => group.id).filter(Boolean);
-    if (groupIds.length === 0) return [];
-
-    const { data: propProducts, error: productsError } = await supabase
-      .from('products')
-      .select('collection_group_id, id, color, specs, category_id')
-      .eq('category_id', 'prop')
-      .in('collection_group_id', groupIds);
-
-    if (productsError) {
-      console.error('[navbar-filter] Unable to load Prop colours', { code: productsError.code, message: productsError.message });
-      return [];
-    }
-
-    const productsByGroup = new Map<string, typeof propProducts>();
-    for (const product of propProducts || []) {
-      const key = String(product.collection_group_id);
-      const groupProducts = productsByGroup.get(key) || [];
-      groupProducts.push(product);
-      productsByGroup.set(key, groupProducts);
-    }
-
-    return (propGroups || []).map((group) => ({
-      ...group,
-      products: productsByGroup.get(String(group.id)) || [],
-    }));
-  },
-  // Bump the cache key when the filter payload changes so an older empty
-  // colour payload cannot keep the global Product drawer stale.
-  ['navbar-prop-filter-collections-v2'],
-  { revalidate: 3600 },
-);
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -140,14 +83,11 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  const navbarFilterCollections = await getNavbarFilterCollections();
-
   return (
     <html
       lang="en"
@@ -242,7 +182,7 @@ export default async function RootLayout({
         />
         {/* 2. ห่อหุ้ม Navbar ด้วย Suspense เพื่อให้ฝั่ง Client สามารถดึง searchParams มาใช้ได้ตอน build */}
         <Suspense fallback={<div className="h-20 bg-[#F9F6F0] w-full animate-pulse" />}>
-          <Navbar collections={navbarFilterCollections} />
+          <Navbar />
         </Suspense>
 
         <Suspense fallback={null}>

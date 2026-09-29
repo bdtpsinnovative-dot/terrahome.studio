@@ -73,12 +73,14 @@ export default function ProductDetailClient({
   groupProducts,
   currentGroupId,
   initialSku,
-  recommendedCollections
+  recommendedCollections: initialRecommendedCollections,
+  productSup,
 }: {
   groupProducts: any[]
   currentGroupId: string
   initialSku: string
   recommendedCollections?: any[]
+  productSup?: string | null
 }) {
   const router = useRouter()
   const supabase = createClient() // ⚡ เรียกใช้ Supabase
@@ -87,6 +89,86 @@ export default function ProductDetailClient({
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
   })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [recommendedCollections, setRecommendedCollections] = useState<any[]>(
+    () => initialRecommendedCollections || []
+  )
+
+  useEffect(() => {
+    if (initialRecommendedCollections && initialRecommendedCollections.length > 0) return
+    let cancelled = false
+
+    const fetchRecommendations = async () => {
+      try {
+        const productId = Number(activeProduct?.id)
+        let relatedRank = new Map<number, number>()
+
+        if (Number.isSafeInteger(productId)) {
+          const { data: relatedScores } = await supabase.rpc('get_prop_related_products', {
+            current_product_id: productId,
+            limit_count: 8,
+          })
+          ;(relatedScores || []).forEach((item: any, index: number) => {
+            const pid = Number(item.product_id)
+            if (Number.isSafeInteger(pid)) relatedRank.set(pid, index)
+          })
+        }
+
+        const relatedProductIds = Array.from(relatedRank.keys())
+        let recs: any[] = []
+
+        if (relatedProductIds.length > 0) {
+          const { data: relatedCollectionsRaw } = await supabase
+            .from("collection_groups")
+            .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
+            .ilike("tag", "%prop%")
+            .eq("products.category_id", "prop")
+            .in("products.id", relatedProductIds)
+            .limit(8)
+
+          recs = (relatedCollectionsRaw || [])
+            .filter((collection: any) => String(collection.id) !== String(currentGroupId))
+            .map((collection: any) => {
+              const products = (collection.products || [])
+                .filter((p: any) => (p.status === 'active' || !p.status) && relatedRank.has(Number(p.id)))
+                .sort((a: any, b: any) => (relatedRank.get(Number(a.id)) ?? Infinity) - (relatedRank.get(Number(b.id)) ?? Infinity))
+              return { ...collection, products }
+            })
+            .filter((collection: any) => collection.products.length > 0)
+            .sort((a: any, b: any) => (relatedRank.get(Number(a.products[0].id)) ?? Infinity) - (relatedRank.get(Number(b.products[0].id)) ?? Infinity))
+        }
+
+        if (recs.length === 0 && productSup) {
+          const { data: fallbackCollectionsRaw } = await supabase
+            .from("collection_groups")
+            .select(`id, name, cover_image_url, product_sup, products!inner ( id, sku, name, image_url, price, status, category_id, stock ( branch_id, qty ) )`)
+            .ilike("tag", "%prop%")
+            .eq("products.category_id", "prop")
+            .eq("product_sup", productSup)
+            .neq("id", currentGroupId)
+            .order("created_at", { ascending: false })
+            .limit(8)
+
+          recs = (fallbackCollectionsRaw || [])
+            .map((collection: any) => ({
+              ...collection,
+              products: (collection.products || []).filter((p: any) => p.status === 'active' || !p.status),
+            }))
+            .filter((collection: any) => collection.products.length > 0)
+        }
+
+        if (!cancelled) {
+          setRecommendedCollections(recs)
+        }
+      } catch (err) {
+        console.warn('[ProductDetailClient] Failed to load recommendations:', err)
+      }
+    }
+
+    fetchRecommendations()
+    return () => {
+      cancelled = true
+    }
+  }, [activeProduct?.id, currentGroupId, initialRecommendedCollections, productSup, supabase])
 
   const getDiscountedPrice = (product: any) => {
     const originalPrice = Number(product?.price || 0)
