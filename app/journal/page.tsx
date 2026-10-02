@@ -12,6 +12,15 @@ const HERO_BANNERS = [
   "https://pub-258bd10e7e8c4a7690a74c54cfbdef93.r2.dev/original/1781493997242-568.webp",
 ];
 
+interface JournalProductItem {
+  id: number;
+  name: string;
+  sku: string | null;
+  price: number | null;
+  image_url: string | null;
+  status?: string | null;
+}
+
 interface JournalCategoryItem {
   id: string;
   number: string;
@@ -22,15 +31,21 @@ interface JournalCategoryItem {
   description_en: string;
   description_th: string;
   cover_image_url: string | null;
-  images: { id: number; image_url: string; alt_text?: string }[];
+  images: {
+    id: number;
+    image_url: string;
+    alt_text?: string;
+    products: JournalProductItem[];
+  }[];
 }
 
 /**
- * คำนวณตำแหน่ง Grid ให้มีรูปใหญ่ 2x2 ถึง 3 รูปต่อหมวดหมู่ สลับซ้าย-ขวาลงตัว
+ * คำนวณตำแหน่ง Grid ให้มีรูปใหญ่ 2x2 สลับซ้าย-ขวาอย่างสมดุล ต่อเนื่องไปตลอดทั้งหมวดหมู่
+ * รองรับรูปจำนวนมาก (เช่น 10 - 60+ รูป) โดยรูปใหญ่จะโผล่มาสม่ำเสมอทุกๆ 6 รูป
  */
 function getImageGridStyle(imgIdx: number, isEven: boolean, totalImages: number) {
-  // หากรูปน้อยกว่า 6 รูป ให้แสดงตามปกติ
-  if (totalImages < 6) {
+  // หากรูปน้อยกว่า 4 รูป ให้รูปแรกเป็นรูปใหญ่
+  if (totalImages < 4) {
     if (imgIdx === 0) {
       return {
         className: "col-span-2 md:col-span-2 md:row-span-2 aspect-square",
@@ -43,53 +58,38 @@ function getImageGridStyle(imgIdx: number, isEven: boolean, totalImages: number)
     };
   }
 
-  // รูปแบบการวางรูปใหญ่ 3 รูป (Left -> Right -> Left หรือ Right -> Left -> Right)
-  if (isEven) {
-    switch (imgIdx) {
-      case 0:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-1 md:row-start-1 aspect-square", isHero: true };
-      case 1:
-        return { className: "col-span-1 md:col-start-3 md:row-start-1 aspect-square", isHero: false };
-      case 2:
-        return { className: "col-span-1 md:col-start-3 md:row-start-2 aspect-square", isHero: false };
-      case 3:
-        return { className: "col-span-1 md:col-start-1 md:row-start-3 aspect-square", isHero: false };
-      case 4:
-        return { className: "col-span-1 md:col-start-1 md:row-start-4 aspect-square", isHero: false };
-      case 5:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-2 md:row-start-3 aspect-square", isHero: true };
-      case 6:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-1 md:row-start-5 aspect-square", isHero: true };
-      case 7:
-        return { className: "col-span-1 md:col-start-3 md:row-start-5 aspect-square", isHero: false };
-      case 8:
-        return { className: "col-span-1 md:col-start-3 md:row-start-6 aspect-square", isHero: false };
-      default:
-        return { className: "col-span-1 aspect-square", isHero: false };
+  // รอบละ 6 รูป (Repeating Magazine Pattern Loop)
+  const blockSize = 6;
+  const blockIdx = Math.floor(imgIdx / blockSize);
+  const posInBlock = imgIdx % blockSize;
+
+  // สลับตำแหน่งรูปใหญ่ ซ้าย-ขวา ตามรอบ block และลำดับหมวดหมู่
+  const isLeftHeroBlock = (blockIdx + (isEven ? 0 : 1)) % 2 === 0;
+
+  if (isLeftHeroBlock) {
+    // บล็อก A: รูปใหญ่อยู่ซ้าย (รูปที่ 0 ของบล็อกเป็นรูปใหญ่ 2x2)
+    if (posInBlock === 0) {
+      return {
+        className: "col-span-2 md:col-span-2 md:row-span-2 aspect-square",
+        isHero: true,
+      };
     }
+    return {
+      className: "col-span-1 aspect-square",
+      isHero: false,
+    };
   } else {
-    switch (imgIdx) {
-      case 0:
-        return { className: "col-span-1 md:col-start-1 md:row-start-1 aspect-square", isHero: false };
-      case 1:
-        return { className: "col-span-1 md:col-start-1 md:row-start-2 aspect-square", isHero: false };
-      case 2:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-2 md:row-start-1 aspect-square", isHero: true };
-      case 3:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-1 md:row-start-3 aspect-square", isHero: true };
-      case 4:
-        return { className: "col-span-1 md:col-start-3 md:row-start-3 aspect-square", isHero: false };
-      case 5:
-        return { className: "col-span-1 md:col-start-3 md:row-start-4 aspect-square", isHero: false };
-      case 6:
-        return { className: "col-span-1 md:col-start-1 md:row-start-5 aspect-square", isHero: false };
-      case 7:
-        return { className: "col-span-1 md:col-start-1 md:row-start-6 aspect-square", isHero: false };
-      case 8:
-        return { className: "col-span-2 md:col-span-2 md:row-span-2 md:col-start-2 md:row-start-5 aspect-square", isHero: true };
-      default:
-        return { className: "col-span-1 aspect-square", isHero: false };
+    // บล็อก B: รูปใหญ่อยู่ขวา (รูปที่ 2 ของบล็อกเป็นรูปใหญ่ 2x2)
+    if (posInBlock === 2) {
+      return {
+        className: "col-span-2 md:col-span-2 md:row-span-2 aspect-square",
+        isHero: true,
+      };
     }
+    return {
+      className: "col-span-1 aspect-square",
+      isHero: false,
+    };
   }
 }
 
@@ -120,7 +120,24 @@ export default function JournalPage() {
             .from("journal_categories")
             .select(`
               *,
-              images:journal_images ( id, image_url, sort_order, alt_text, is_active )
+              images:journal_images (
+                id,
+                image_url,
+                sort_order,
+                alt_text,
+                is_active,
+                products_link:journal_image_products (
+                  sort_order,
+                  product:products (
+                    id,
+                    name,
+                    sku,
+                    price,
+                    image_url,
+                    status
+                  )
+                )
+              )
             `)
             .eq("is_active", true)
             .order("sort_order", { ascending: true }),
@@ -164,6 +181,26 @@ export default function JournalPage() {
             const rawImgs = (cat.images || []).filter((i: any) => i.is_active);
             rawImgs.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 
+            const imagesWithProds = rawImgs.map((img: any) => {
+              const pLinks = (img.products_link || []).filter((pl: any) => pl && pl.product);
+              pLinks.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+              const prods: JournalProductItem[] = pLinks.map((pl: any) => ({
+                id: Number(pl.product.id),
+                name: pl.product.name || "ไม่มีชื่อสินค้า",
+                sku: pl.product.sku || null,
+                price: pl.product.price !== null && pl.product.price !== undefined ? Number(pl.product.price) : null,
+                image_url: pl.product.image_url || null,
+                status: pl.product.status || null,
+              }));
+
+              return {
+                id: img.id,
+                image_url: img.image_url,
+                alt_text: img.alt_text,
+                products: prods,
+              };
+            });
+
             return {
               id: cat.id,
               number: String(cat.sort_order || 1).padStart(2, "0"),
@@ -174,10 +211,10 @@ export default function JournalPage() {
               description_en: cat.description_en || "",
               description_th: cat.description_th || "",
               cover_image_url: cat.cover_image_url || (rawImgs[0]?.image_url ?? null),
-              images: rawImgs,
+              images: imagesWithProds,
             };
           });
-          setCategories(mapped);
+          setCategories(mapped.filter((c) => c.images.length > 0));
         }
       } catch (err) {
         console.error("Failed to fetch live journal categories:", err);
@@ -274,13 +311,9 @@ export default function JournalPage() {
               const isEven = catIndex % 2 === 0;
 
               return (
-                <motion.section
+                <section
                   key={category.id}
                   id={category.slug}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px", amount: 0.08 }}
-                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
                   className="space-y-8 md:space-y-12"
                 >
                   {/* Section Header สไตล์ Luxury Editorial สลับฝั่ง ซ้าย-ขวา */}
@@ -290,11 +323,7 @@ export default function JournalPage() {
                     }`}
                   >
                     {/* Text Block */}
-                    <motion.div
-                      initial={{ opacity: 0, x: isEven ? -25 : 25 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    <div
                       className={`space-y-3 ${isEven ? "text-left" : "md:text-right"}`}
                     >
                       {/* Number + Thai Title Badge */}
@@ -326,16 +355,10 @@ export default function JournalPage() {
                           </p>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
 
                     {/* Explore Link */}
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.6, delay: 0.25 }}
-                      className="shrink-0 pb-1"
-                    >
+                    <div className="shrink-0 pb-1">
                       <Link
                         href={`/prop?category=${encodeURIComponent(category.category_query)}`}
                         className={`group inline-flex items-center gap-2 text-[11px] sm:text-[12px] font-medium tracking-[0.25em] uppercase text-[#84492C] border-b border-[#84492C]/40 pb-1 hover:border-[#84492C] transition-all duration-300 ${
@@ -345,13 +368,18 @@ export default function JournalPage() {
                         <span>Explore {category.title_en}</span>
                         <ArrowUpRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
                       </Link>
-                    </motion.div>
+                    </div>
                   </div>
 
-                  {/* Grid of Images with Multiple 2x2 Feature Tiles (Scroll Reveal แบบ Cascade Stagger) */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                  {/* Grid of Images with Multiple 2x2 Feature Tiles (Dense Packing) */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 grid-flow-dense gap-4 sm:gap-6 md:gap-8">
                     {category.images.map((img, imgIdx) => {
                       const { className: gridPlacement, isHero } = getImageGridStyle(imgIdx, isEven, category.images.length);
+                      const validPrices = (img.products || [])
+                        .map((p) => p.price)
+                        .filter((p): p is number => typeof p === "number" && p > 0);
+                      const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : null;
+                      const promo = setPromotionsMap[String(img.id)];
 
                       return (
                         <Link
@@ -360,47 +388,116 @@ export default function JournalPage() {
                           className={`group relative rounded-2xl md:rounded-3xl overflow-hidden bg-[#F4EFEA] border border-[#E7E2D9]/80 shadow-xs hover:shadow-2xl transition-all duration-500 cursor-pointer block ${gridPlacement}`}
                         >
                           <motion.div
-                            initial={{ opacity: 0, y: 35, scale: 0.97 }}
-                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                            viewport={{ once: true, margin: "-40px", amount: 0.12 }}
-                            transition={{
-                              duration: 0.7,
-                              delay: (imgIdx % 3) * 0.1,
-                              ease: [0.22, 1, 0.36, 1],
-                            }}
                             whileHover={{ y: -6, transition: { duration: 0.3, ease: "easeOut" } }}
                             className="w-full h-full relative"
                           >
                             <img
                               src={img.image_url}
                               alt={img.alt_text || `${category.title_en} image ${imgIdx + 1}`}
-                              loading="lazy"
+                              loading={imgIdx < 6 ? "eager" : "lazy"}
                               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106 select-none"
                             />
 
-                            {/* Hero Badge for 2x2 Feature Images */}
-                            {isHero && (
-                              <div className="absolute top-4 left-4 z-10 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[10px] font-medium tracking-[0.2em] uppercase border border-white/20">
-                                <Sparkles size={11} className="text-[#F2C94C]" />
-                                <span>Featured Collection</span>
+                            {/* Top Badges */}
+                            <div className="absolute top-2.5 sm:top-3.5 left-2.5 sm:left-3.5 right-2.5 sm:right-3.5 z-20 flex items-center justify-between pointer-events-none">
+                              {isHero ? (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-medium tracking-[0.18em] uppercase border border-white/20 shadow-md">
+                                  <Sparkles size={11} className="text-[#F2C94C]" />
+                                  <span>Featured Look</span>
+                                </div>
+                              ) : <span />}
+
+                              {promo && (
+                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#84492C] text-white text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase shadow-md border border-white/20">
+                                  <span>เซ็ตลด {promo.discount_type === "percentage" ? `${promo.discount_value}%` : `฿${Number(promo.discount_value).toLocaleString()}`}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Dark Gradient Overlay for bottom readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
+
+                            {/* Bottom Product Info Glass Tray */}
+                            {img.products && img.products.length > 0 ? (
+                              <div className="absolute bottom-2.5 sm:bottom-3.5 left-2.5 sm:left-3.5 right-2.5 sm:right-3.5 z-20">
+                                <div className="bg-[#1C1A18]/80 backdrop-blur-md border border-white/20 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-white transition-all duration-300 group-hover:bg-[#1C1A18]/92 group-hover:border-white/30 shadow-xl">
+                                  <div className="flex items-center justify-between gap-2">
+                                    {/* Products Thumbnail Strip */}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="flex -space-x-2 shrink-0">
+                                        {img.products.slice(0, 3).map((prod, pIdx) => (
+                                          <div
+                                            key={prod.id || pIdx}
+                                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#1C1A18] overflow-hidden bg-white/20 shrink-0 shadow-xs"
+                                          >
+                                            {prod.image_url ? (
+                                              <img
+                                                src={prod.image_url}
+                                                alt={prod.name}
+                                                className="w-full h-full object-cover"
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center text-[10px] text-white/70">
+                                                🏺
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <p className="text-[11px] sm:text-[12px] font-medium text-white truncate leading-tight">
+                                          {img.products.length === 1 ? img.products[0].name : `${img.products.length} ชิ้นในลุคนี้`}
+                                        </p>
+                                        <p className="text-[10px] sm:text-[11px] text-[#E5DDD3]/80 leading-tight">
+                                          {minPrice !== null ? `เริ่มต้น ฿${minPrice.toLocaleString()}` : "ดูรายละเอียดสินค้า"}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* View Arrow Icon */}
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#1C1A18] flex items-center justify-center shrink-0 group-hover:bg-[#84492C] group-hover:text-white transition-colors duration-300 shadow-sm">
+                                      <ArrowUpRight size={14} className="transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    </div>
+                                  </div>
+
+                                  {/* Hover Product List Tray (Desktop) */}
+                                  <div className="max-h-0 opacity-0 overflow-hidden group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-2.5 pt-0 group-hover:pt-2 border-t border-white/0 group-hover:border-white/10 transition-all duration-300 hidden sm:block">
+                                    <div className="space-y-1.5">
+                                      {img.products.slice(0, 3).map((prod) => (
+                                        <div key={prod.id} className="flex items-center justify-between text-[11px] text-white/90">
+                                          <span className="truncate max-w-[70%] font-light">{prod.name}</span>
+                                          <span className="font-semibold text-[#F2C94C] shrink-0">
+                                            {prod.price !== null && prod.price > 0 ? `฿${prod.price.toLocaleString()}` : "สอบถามราคา"}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      {img.products.length > 3 && (
+                                        <p className="text-[10px] text-[#E5DDD3]/60 tracking-wider">
+                                          +{img.products.length - 3} สินค้าเพิ่มเติม...
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Fallback overlay if no products linked */
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4 sm:p-6 z-20">
+                                <span className="text-[11px] sm:text-xs tracking-[0.25em] text-white uppercase font-medium drop-shadow-sm">
+                                  ดูสินค้าในภาพนี้
+                                </span>
+                                <div className="p-2 rounded-full bg-white/95 text-[#1C1A18] shadow-md backdrop-blur-xs">
+                                  <ArrowUpRight size={16} />
+                                </div>
                               </div>
                             )}
-
-                            {/* Subtle Luxury Gradient Overlay on Hover */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4 sm:p-6">
-                              <span className="text-[11px] sm:text-xs tracking-[0.25em] text-white uppercase font-medium drop-shadow-sm">
-                                ดูสินค้าในภาพนี้
-                              </span>
-                              <div className="p-2 rounded-full bg-white/95 text-[#1C1A18] shadow-md backdrop-blur-xs">
-                                <ArrowUpRight size={16} />
-                              </div>
-                            </div>
                           </motion.div>
                         </Link>
                       );
                     })}
                   </div>
-                </motion.section>
+                </section>
               );
             })}
           </div>
