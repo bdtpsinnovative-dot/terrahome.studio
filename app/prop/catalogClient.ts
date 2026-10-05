@@ -12,6 +12,8 @@ export interface RawCatalogData {
   discountByProductId: Map<number, any>
   propGroups: any[]
   productsByGroup: Map<string, any[]>
+  groupById: Map<string, any>
+  allProducts: any[]
   fetchedAt: number
 }
 
@@ -41,21 +43,6 @@ function getCategoryOrder(productSup: string | null | undefined): number {
   return 4
 }
 
-function getCollectionSubOrder(collection: any): number {
-  const products = collection.products || []
-  const hasHotAvailable = products.some(
-    (product: any) => product.hot_rank !== null && product.availability_status === "available"
-  )
-  const hasAvailable = products.some((product: any) => product.availability_status === "available")
-  const hasHotPreorder = products.some(
-    (product: any) => product.hot_rank !== null && product.availability_status === "preorder"
-  )
-
-  if (hasHotAvailable) return 0
-  if (hasAvailable) return 1
-  if (hasHotPreorder) return 2
-  return 3
-}
 
 function shuffleArray<T>(items: T[]): T[] {
   const copy = [...items]
@@ -234,14 +221,22 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
       }
     }
 
+    const groupById = new Map<string, any>()
+    for (const group of rawGroups) {
+      groupById.set(String(group.id), group)
+    }
+
+    const allProducts: any[] = []
     const productsByGroup = new Map<string, any[]>()
     for (const rawProduct of propProducts) {
       if (rawProduct.status && rawProduct.status !== "active") continue
+      if (!rawProduct.image_url || String(rawProduct.image_url).trim() === "") continue
       const product = {
         ...rawProduct,
         color: rawProduct.color ?? rawProduct.specs_color ?? rawProduct.specs_colour ?? rawProduct.specs_tone ?? null,
         colors: rawProduct.specs_colors ?? null,
       }
+      allProducts.push(product)
       const groupKey = String(product.collection_group_id)
       const list = productsByGroup.get(groupKey)
       if (list) {
@@ -277,6 +272,8 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
       discountByProductId,
       propGroups,
       productsByGroup,
+      groupById,
+      allProducts,
       fetchedAt: Date.now(),
     }
 
@@ -303,133 +300,111 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       return rankDiff !== 0 ? rankDiff : Number(a.id) - Number(b.id)
     })
 
-  const mappedCollections = raw.propGroups.map((collection: any) => {
-    const rawGroupProducts = raw.productsByGroup.get(String(collection.id)) || []
-    const mappedProducts = rawGroupProducts.map((product: any) => {
-      const stockItems =
-        normalizedBranch !== "all"
-          ? (product.stock || []).filter(
-              (stockItem: any) => String(stockItem.branch_id) === normalizedBranch
-            )
-          : product.stock || []
-      const totalStock =
-        stockItems.reduce((sum: number, stockItem: any) => sum + Number(stockItem.qty || 0), 0) || 0
+  const mappedProductItems = (raw.allProducts || []).map((product: any) => {
+    const stockItems =
+      normalizedBranch !== "all"
+        ? (product.stock || []).filter(
+            (stockItem: any) => String(stockItem.branch_id) === normalizedBranch
+          )
+        : product.stock || []
+    const totalStock =
+      stockItems.reduce((sum: number, stockItem: any) => sum + Number(stockItem.qty || 0), 0) || 0
 
-      const applicableDiscount =
-        raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null
+    const applicableDiscount =
+      raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null
 
-      const normalizedDiscountValue =
-        applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
-          ? Number(applicableDiscount.value)
-          : null
-      const hasValidDiscountValue =
-        normalizedDiscountValue !== null &&
-        Number.isFinite(normalizedDiscountValue) &&
-        normalizedDiscountValue > 0
+    const normalizedDiscountValue =
+      applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
+        ? Number(applicableDiscount.value)
+        : null
+    const hasValidDiscountValue =
+      normalizedDiscountValue !== null &&
+      Number.isFinite(normalizedDiscountValue) &&
+      normalizedDiscountValue > 0
 
-      return {
-        ...product,
-        stock: stockItems,
-        total_stock: totalStock,
-        availability_status: totalStock > 0 ? "available" : "preorder",
-        hot_rank: raw.hotRankByProductId.get(Number(product.id)) || null,
-        hot_score: raw.hotScoreByProductId.get(Number(product.id)) || null,
-        discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
-        discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
-      }
-    })
+    const hotRank = raw.hotRankByProductId.get(Number(product.id)) || null
+    const hotScore = raw.hotScoreByProductId.get(Number(product.id)) || null
+    const availabilityStatus: "available" | "preorder" = totalStock > 0 ? "available" : "preorder"
 
-    const hotAvailableProducts = mappedProducts.filter(
-      (product: any) => product.hot_rank !== null && product.availability_status === "available"
-    )
-    const availableProducts = mappedProducts.filter(
-      (product: any) => product.hot_rank === null && product.availability_status === "available"
-    )
-    const hotPreorderProducts = mappedProducts.filter(
-      (product: any) => product.hot_rank !== null && product.availability_status === "preorder"
-    )
-    const preorderProducts = mappedProducts.filter(
-      (product: any) => product.hot_rank === null && product.availability_status === "preorder"
-    )
+    const productObj = {
+      ...product,
+      stock: stockItems,
+      total_stock: totalStock,
+      availability_status: availabilityStatus,
+      hot_rank: hotRank,
+      hot_score: hotScore,
+      discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
+      discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+    }
+
+    const group = product.collection_group_id ? raw.groupById?.get(String(product.collection_group_id)) : null
+    const productSup = group?.product_sup ?? product.product_sup ?? null
 
     return {
-      ...collection,
-      products: [
-        ...sortHot(hotAvailableProducts),
-        ...shuffleArray(availableProducts),
-        ...sortHot(hotPreorderProducts),
-        ...shuffleArray(preorderProducts),
-      ],
-      has_available_products: hotAvailableProducts.length + availableProducts.length > 0,
-      is_preorder_only:
-        hotAvailableProducts.length + availableProducts.length === 0 &&
-        hotPreorderProducts.length + preorderProducts.length > 0,
-      hot_rank: mappedProducts.reduce((best: number | null, product: any) => {
-        if (!product.hot_rank) return best
-        return best === null ? product.hot_rank : Math.min(best, product.hot_rank)
-      }, null),
-      hot_score: mappedProducts.reduce(
-        (best: number, product: any) => best + (product.hot_score || 0),
-        0
-      ),
+      id: String(product.id),
+      collection_group_id: product.collection_group_id ? String(product.collection_group_id) : String(product.id),
+      name: product.name || group?.name || "PRODUCT",
+      product_sup: productSup,
+      cover_image_url: null,
+      image_url: product.image_url,
+      created_at: product.created_at || group?.created_at,
+      products: [productObj],
+      has_available_products: availabilityStatus === "available",
+      is_preorder_only: availabilityStatus === "preorder",
+      hot_rank: hotRank,
+      hot_score: hotScore,
+      availability_status: availabilityStatus,
     }
   })
 
-  const collectionBuckets = new Map<number, any[]>()
-  mappedCollections.forEach((collection: any) => {
-    const categoryOrder = getCategoryOrder(collection.product_sup)
-    const subOrder = getCollectionSubOrder(collection)
-    const hasHotAvailable = subOrder === 0
-    const hasAvailableProducts = collection.has_available_products === true
-    const hasHotPreorder = collection.products?.some(
-      (product: any) => product.hot_rank !== null && product.availability_status === "preorder"
-    )
+  const productBuckets = new Map<number, any[]>()
+  mappedProductItems.forEach((item: any) => {
+    const categoryOrder = getCategoryOrder(item.product_sup)
+    const isHotAvailable = item.hot_rank !== null && item.availability_status === "available"
+    const isAvailable = item.availability_status === "available"
+    const isHotPreorder = item.hot_rank !== null && item.availability_status === "preorder"
 
-    const bucket = hasHotAvailable
+    const bucket = isHotAvailable
       ? 0
-      : hasAvailableProducts
+      : isAvailable
         ? 100 + categoryOrder
-        : hasHotPreorder
+        : isHotPreorder
           ? 200
           : 300 + categoryOrder
-    const items = collectionBuckets.get(bucket) || []
-    items.push(collection)
-    collectionBuckets.set(bucket, items)
+    const items = productBuckets.get(bucket) || []
+    items.push(item)
+    productBuckets.set(bucket, items)
   })
 
-  const hotAvailableCollections = (collectionBuckets.get(0) || []).sort(
-    (a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity)
-  )
+  const hotAvailableProducts = sortHot(productBuckets.get(0) || [])
 
-  const availableMainCollections = [
-    ...shuffleArray(collectionBuckets.get(101) || []),
-    ...shuffleArray(collectionBuckets.get(102) || []),
-    ...shuffleArray(collectionBuckets.get(103) || []),
+  const availableMainProducts = [
+    ...shuffleArray(productBuckets.get(101) || []),
+    ...shuffleArray(productBuckets.get(102) || []),
+    ...shuffleArray(productBuckets.get(103) || []),
   ]
 
-  const availableFlowerCollections = shuffleArray(collectionBuckets.get(104) || [])
+  const availableFlowerProducts = shuffleArray(productBuckets.get(104) || [])
   const availableInterleaved = interleaveWithAccent(
-    availableMainCollections,
-    availableFlowerCollections,
+    availableMainProducts,
+    availableFlowerProducts,
     6
   )
 
-  const hotPreorderCollections = (collectionBuckets.get(200) || []).sort(
-    (a: any, b: any) => (a.hot_rank || Infinity) - (b.hot_rank || Infinity)
-  )
+  const hotPreorderProducts = sortHot(productBuckets.get(200) || [])
 
-  const preorderOtherCollections = [
-    ...shuffleArray(collectionBuckets.get(301) || []),
-    ...shuffleArray(collectionBuckets.get(302) || []),
-    ...shuffleArray(collectionBuckets.get(303) || []),
-    ...shuffleArray(collectionBuckets.get(304) || []),
+  const preorderOtherProducts = [
+    ...shuffleArray(productBuckets.get(301) || []),
+    ...shuffleArray(productBuckets.get(302) || []),
+    ...shuffleArray(productBuckets.get(303) || []),
+    ...shuffleArray(productBuckets.get(304) || []),
   ]
 
   const ordered = [
-    ...hotAvailableCollections,
+    ...hotAvailableProducts,
     ...availableInterleaved,
-    ...hotPreorderCollections,
-    ...preorderOtherCollections,
+    ...hotPreorderProducts,
+    ...preorderOtherProducts,
   ]
 
   orderedCollectionsByBranch.set(normalizedBranch, ordered)

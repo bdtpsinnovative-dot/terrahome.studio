@@ -141,9 +141,10 @@ export default function CollectionCard({
   const targetSku = groupCoverImage
     ? (firstAvailableProduct?.sku || currentSlide.sku)
     : (currentSlide.sku || firstAvailableProduct?.sku)
+  const targetGroupId = group.collection_group_id || group.id
   const targetHref = targetSku
-    ? `/prop/${encodeURIComponent(group.id)}/${encodeURIComponent(targetSku)}`
-    : `/prop/${encodeURIComponent(group.id)}`
+    ? `/prop/${encodeURIComponent(targetGroupId)}/${encodeURIComponent(targetSku)}`
+    : `/prop/${encodeURIComponent(targetGroupId)}`
 
   const handleNavigate = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
