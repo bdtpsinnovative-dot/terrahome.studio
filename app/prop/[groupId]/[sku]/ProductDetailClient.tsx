@@ -677,10 +677,19 @@ export default function ProductDetailClient({
                   ?.filter((p: any) => p.image_url !== null && p.image_url !== "")
                   .map((p: any) => ({
                     image_url: p.image_url, price: p.price, sku: p.sku, name: p.name, 
+                    width_cm: p.width_cm ?? p.specs?.width_cm ?? null,
+                    length_cm: p.length_cm ?? p.specs?.length_cm ?? null,
+                    thickness_cm: p.thickness_cm ?? p.specs?.thickness_cm ?? null,
                     discount_value: p.discount_value, discount_type: p.discount_type
                   })) || []
                 if (slides.length === 0 && group.cover_image_url) {
-                  slides.push({ image_url: group.cover_image_url, price: null, sku: "", name: "", discount_value: null, discount_type: null })
+                  slides.push({
+                    image_url: group.cover_image_url, price: null, sku: "", name: "",
+                    width_cm: group.products?.[0]?.width_cm ?? group.products?.[0]?.specs?.width_cm ?? null,
+                    length_cm: group.products?.[0]?.length_cm ?? group.products?.[0]?.specs?.length_cm ?? null,
+                    thickness_cm: group.products?.[0]?.thickness_cm ?? group.products?.[0]?.specs?.thickness_cm ?? null,
+                    discount_value: null, discount_type: null
+                  })
                 }
                 return (
                   <div key={group.id} className="border-b border-[#D5D2CA]/70 [&:not(:nth-child(2n))]:border-r lg:[&:not(:nth-child(4n))]:border-r py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative">

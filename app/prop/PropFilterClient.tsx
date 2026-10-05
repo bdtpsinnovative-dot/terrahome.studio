@@ -723,18 +723,24 @@ export default function PropFilterClient({
               <>
                 <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
-                    const preferredProducts = group.products?.filter((product: any) => {
-                      const stockQty = (product.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
-                      return stockQty > 0
-                    }) || []
+                    const sortedGroupProducts = [...(group.products || [])].sort((a: any, b: any) => {
+                      const stockA = (a.stock || []).reduce((sum: number, s: any) => sum + Number(s?.qty || 0), 0)
+                      const stockB = (b.stock || []).reduce((sum: number, s: any) => sum + Number(s?.qty || 0), 0)
+                      if (stockA > 0 && stockB <= 0) return -1
+                      if (stockA <= 0 && stockB > 0) return 1
+                      return 0
+                    })
 
-                    const productSlides = (preferredProducts.length > 0 ? preferredProducts : group.products || [])
-                      .filter((p: any) => p.image_url !== null && p.image_url !== "")
+                    const productSlides = sortedGroupProducts
+                      .filter((p: any) => p.image_url !== null && String(p.image_url).trim() !== "")
                       .map((p: any) => ({
                         image_url: p.image_url,
                         price: p.price,
                         sku: p.sku,
                         name: p.name,
+                        width_cm: p.width_cm ?? p.specs?.width_cm ?? null,
+                        length_cm: p.length_cm ?? p.specs?.length_cm ?? null,
+                        thickness_cm: p.thickness_cm ?? p.specs?.thickness_cm ?? null,
                         discount_value: p.discount_value,
                         discount_type: p.discount_type,
                         availability_status: p.availability_status,
@@ -746,9 +752,12 @@ export default function PropFilterClient({
                         price: null,
                         sku: "",
                         name: group.name || "",
+                        width_cm: group.products?.[0]?.width_cm ?? group.products?.[0]?.specs?.width_cm ?? null,
+                        length_cm: group.products?.[0]?.length_cm ?? group.products?.[0]?.specs?.length_cm ?? null,
+                        thickness_cm: group.products?.[0]?.thickness_cm ?? group.products?.[0]?.specs?.thickness_cm ?? null,
                         discount_value: null,
                         discount_type: null,
-                        availability_status: preferredProducts[0]?.availability_status || group.products?.[0]?.availability_status,
+                        availability_status: sortedGroupProducts[0]?.availability_status || group.products?.[0]?.availability_status,
                       }
                     ] : [])
 
