@@ -723,15 +723,13 @@ export default function PropFilterClient({
               <>
                 <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
-                    const sortedGroupProducts = [...(group.products || [])].sort((a: any, b: any) => {
-                      const stockA = (a.stock || []).reduce((sum: number, s: any) => sum + Number(s?.qty || 0), 0)
-                      const stockB = (b.stock || []).reduce((sum: number, s: any) => sum + Number(s?.qty || 0), 0)
-                      if (stockA > 0 && stockB <= 0) return -1
-                      if (stockA <= 0 && stockB > 0) return 1
-                      return 0
+                    const availableProducts = (group.products || []).filter((product: any) => {
+                      const stockQty = (product.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+                      return stockQty > 0
                     })
+                    const targetProducts = availableProducts.length > 0 ? availableProducts : (group.products || [])
 
-                    const productSlides = sortedGroupProducts
+                    const productSlides = targetProducts
                       .filter((p: any) => p.image_url !== null && String(p.image_url).trim() !== "")
                       .map((p: any) => ({
                         image_url: p.image_url,
@@ -757,7 +755,7 @@ export default function PropFilterClient({
                         thickness_cm: group.products?.[0]?.thickness_cm ?? group.products?.[0]?.specs?.thickness_cm ?? null,
                         discount_value: null,
                         discount_type: null,
-                        availability_status: sortedGroupProducts[0]?.availability_status || group.products?.[0]?.availability_status,
+                        availability_status: targetProducts[0]?.availability_status || group.products?.[0]?.availability_status,
                       }
                     ] : [])
 

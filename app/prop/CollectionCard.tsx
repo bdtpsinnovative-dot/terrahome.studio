@@ -36,16 +36,14 @@ export default function CollectionCard({
   const availableProducts = (group.products || []).filter((product: any) => stockQtyForProduct(product) > 0)
   const isPreOrderGroup = availableProducts.length === 0
 
-  // เรียงสไลด์ให้สินค้าที่มีสต็อกพร้อมส่งขึ้นก่อน แต่ยังเก็บสไลด์ทั้งหมดไว้เพื่อให้หมุนเวียนรูปได้ครบทุกชิ้น
-  const resolvedSlides = [...slides].sort((a, b) => {
-    const matchedA = (group.products || []).find((product: any) => product?.sku === a.sku)
-    const matchedB = (group.products || []).find((product: any) => product?.sku === b.sku)
-    const stockA = matchedA ? stockQtyForProduct(matchedA) : 0
-    const stockB = matchedB ? stockQtyForProduct(matchedB) : 0
-    if (stockA > 0 && stockB <= 0) return -1
-    if (stockA <= 0 && stockB > 0) return 1
-    return 0
+  // ถ้ามีสินค้าพร้อมส่ง ให้คัดเฉพาะสินค้าที่มีสต็อกพร้อมส่งมาทำสไลด์ (ไม่นำสินค้าหมด/พรีออเดอร์มาสไลด์ปน)
+  const preferredSlides = slides.filter((slide) => {
+    const matchedProduct = (group.products || []).find((product: any) => product?.sku === slide.sku)
+    if (!matchedProduct) return availableProducts.length === 0
+    return stockQtyForProduct(matchedProduct) > 0
   })
+
+  const resolvedSlides = preferredSlides.length > 0 ? preferredSlides : slides
   const currentSlide = resolvedSlides[currentIndex] || resolvedSlides[0] || { image_url: null, price: null, sku: "", name: "" }
   
   // 🌟 ถ้ามีรูปปกกลุ่ม cover_image_url ให้ใช้รูปนี้เป็นหลักเดี่ยวๆ
