@@ -31,7 +31,6 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
       { fullValue: "Ceramic Vases", displayLabel: "CERAMIC VASES", thaiLabel: "แจกันเซรามิก" },
       { fullValue: "Glass Vases", displayLabel: "GLASS VASES", thaiLabel: "แจกันแก้ว" },
       { fullValue: "Vessels", displayLabel: "VESSELS", thaiLabel: "ภาชนะ" },
-      { fullValue: "Vase and Flower", displayLabel: "VASE AND FLOWER", thaiLabel: "แจกันและดอกไม้" },
       { fullValue: "Others Vase", displayLabel: "OTHERS VASE", thaiLabel: "แจกันอื่น ๆ" },
     ],
   },
@@ -57,6 +56,7 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
       { fullValue: "Box", displayLabel: "BOX", thaiLabel: "ภาชนะตกแต่ง" },
       { fullValue: "Trays", displayLabel: "TRAYS", thaiLabel: "ถาดตกแต่ง" },
       { fullValue: "Toy", displayLabel: "TOY", thaiLabel: "ของเล่นตกแต่ง" },
+      { fullValue: "Flower", displayLabel: "FLOWER", thaiLabel: "แจกันและดอกไม้" },
     ],
   },
   {
@@ -100,11 +100,10 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
 
 export const CATEGORY_MAP: Record<string, string[]> = {
   // 1. Vase & Vessels
-  "VASE & VESSELS": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d", "glass vases", "glass vase", "glass handmade", "vase glass handmade", "vessels", "vessel", "vase", "vase normal", "vase and flower", "flower", "others vase"],
+  "VASE & VESSELS": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d", "glass vases", "glass vase", "glass handmade", "vase glass handmade", "vessels", "vessel", "vase", "vase normal", "others vase"],
   "Ceramic Vases": ["ceramic vases", "ceramic vase", "ceramic handmade", "ceramic 3d"],
   "Glass Vases": ["glass vases", "glass vase", "glass handmade", "vase glass handmade"],
   "Vessels": ["vessels", "vessel", "ceramic handmade", "ceramic 3d", "glass handmade", "vase glass handmade", "vase", "vase normal"],
-  "Vase and Flower": ["vase and flower", "flower"],
   "Others Vase": ["others vase", "vase", "vase normal"],
 
   // 2. Figure
@@ -127,10 +126,13 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Candle Holder": ["candle holder", "candle holders"],
 
   // 6. Accessories
-  "ACCESSORIES": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "others"],
+  "ACCESSORIES": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "flower", "vase and flower", "vase and flower (แจกันและดอกไม้)", "others"],
   "Box": ["decorative box", "box"],
   "Trays": ["tray", "trays"],
   "Toy": ["decorative toy", "toy"],
+  "Flower": ["flower", "vase and flower", "vase and flower (แจกันและดอกไม้)"],
+  "FLOWER": ["flower", "vase and flower", "vase and flower (แจกันและดอกไม้)"],
+  "Vase and Flower": ["flower", "vase and flower", "vase and flower (แจกันและดอกไม้)"],
 
   // 7. Dining & Tableware
   "DINING & TABLEWARE": ["plates & dishes", "bowls", "bowl", "glassware", "cups & mugs", "cups & mug", "trays & servingware", "kitchenware", "other dining & tableware"],

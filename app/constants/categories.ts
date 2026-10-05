@@ -2,7 +2,6 @@ export const HARDCODED_CATEGORIES = [
   "Ceramic Vases",
   "Glass Vases",
   "Vessels",
-  "Vase and Flower",
   "Others Vase",
   "Animal Figure",
   "Human Figure",
@@ -14,6 +13,7 @@ export const HARDCODED_CATEGORIES = [
   "Box",
   "Trays",
   "Toy",
+  "Flower",
   "Plates & Dishes",
   "Bowls",
   "Glassware",
@@ -35,7 +35,6 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Ceramic Vases": "Ceramic Vases",
   "Glass Vases": "Glass Vases",
   "Vessels": "Vessels",
-  "Vase and Flower": "Vase and Flower",
   "Others Vase": "Others Vase",
 
   "FIGURE": "Figure",
@@ -53,6 +52,9 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Box": "Box",
   "Trays": "Trays",
   "Toy": "Toy",
+  "Flower": "Flower",
+  "FLOWER": "Flower",
+  "Vase and Flower": "Flower",
 
   "DINING & TABLEWARE": "Dining & Tableware",
   "Plates & Dishes": "Plates & Dishes",
