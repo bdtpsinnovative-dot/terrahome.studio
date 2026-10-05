@@ -61,7 +61,7 @@ export default function CollectionCard({
   const hasPriceRange = minPrice !== null && maxPrice !== null && minPrice !== maxPrice
   const displayPrice = currentSlide.price || minPrice
 
-  // คำนวณขนาดสินค้าสำหรับแสดงบรรทัดที่ 3 (xx*xx*xx cm หรือ VARIOUS SIZES)
+  // คำนวณขนาดสินค้าสำหรับแสดงบรรทัดที่ 3 (W ... x D ... x H ... cm หรือ VARIOUS SIZES)
   const formatDimensionPart = (val: any) => {
     if (val === null || val === undefined || val === "") return null
     const num = Number(val)
@@ -72,10 +72,13 @@ export default function CollectionCard({
   const getProductDimString = (p: any) => {
     if (!p) return null
     const w = formatDimensionPart(p.width_cm ?? p.specs?.width_cm ?? p.specs?.w ?? p.specs?.width)
-    const l = formatDimensionPart(p.length_cm ?? p.specs?.length_cm ?? p.specs?.l ?? p.specs?.length ?? p.specs?.d ?? p.specs?.depth)
+    const d = formatDimensionPart(p.length_cm ?? p.specs?.length_cm ?? p.specs?.l ?? p.specs?.length ?? p.specs?.d ?? p.specs?.depth)
     const h = formatDimensionPart(p.thickness_cm ?? p.specs?.thickness_cm ?? p.specs?.h ?? p.specs?.height ?? p.specs?.thickness)
-    const parts = [w, l, h].filter((v): v is number => v !== null)
-    return parts.length > 0 ? `${parts.join("*")} cm` : null
+    const parts: string[] = []
+    if (w !== null) parts.push(`W ${w}`)
+    if (d !== null) parts.push(`D ${d}`)
+    if (h !== null) parts.push(`H ${h}`)
+    return parts.length > 0 ? `${parts.join(" x ")} cm` : null
   }
 
   // รวบรวมขนาดที่ไม่ซ้ำกันของสินค้าทั้งหมดในกลุ่มนี้
@@ -109,7 +112,7 @@ export default function CollectionCard({
         activeProduct?.specs?.w ??
         activeProduct?.specs?.width
     )
-    const dimL = formatDimensionPart(
+    const dimD = formatDimensionPart(
       currentSlide.length_cm ??
         activeProduct?.length_cm ??
         activeProduct?.specs?.length_cm ??
@@ -127,8 +130,11 @@ export default function CollectionCard({
         activeProduct?.specs?.thickness
     )
 
-    const dimParts = [dimW, dimL, dimH].filter((v): v is number => v !== null)
-    dimensionText = dimParts.length > 0 ? `${dimParts.join("*")} cm` : null
+    const dimParts: string[] = []
+    if (dimW !== null) dimParts.push(`W ${dimW}`)
+    if (dimD !== null) dimParts.push(`D ${dimD}`)
+    if (dimH !== null) dimParts.push(`H ${dimH}`)
+    dimensionText = dimParts.length > 0 ? `${dimParts.join(" x ")} cm` : null
   }
 
   const firstAvailableProduct = availableProducts[0] || group.products?.[0]
@@ -327,7 +333,7 @@ export default function CollectionCard({
             )
           })()}
           {dimensionText && (
-            <p className="text-[#8C8A86] text-[10px] sm:text-[11px] font-mono tracking-wider mt-1 opacity-90">
+            <p className="text-[#8C8A86] text-[10px] sm:text-[11px] font-mono tracking-wider mt-1 opacity-90 whitespace-nowrap">
               {dimensionText}
             </p>
           )}
