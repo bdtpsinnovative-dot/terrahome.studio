@@ -38,10 +38,10 @@ function groupForCategory(category: string) {
   const value = category.trim().toUpperCase()
   if (value === "VASE & VESSELS" || value === "CERAMIC VASES" || value === "GLASS VASES" || value === "VESSELS" || value === "OTHERS VASE" || (value.startsWith("VASE") && !value.includes("FLOWER"))) return "VASE & VESSELS"
   if (value === "FIGURE" || value === "ANIMAL FIGURE" || value === "HUMAN FIGURE" || value === "PLANT FIGURE" || value === "OTHERS FIGURE" || value.startsWith("DOLL")) return "FIGURE"
-  if (value === "ACCESSORIES" || value === "BOX" || value === "TRAYS" || value === "TOY" || value === "FLOWER" || value === "VASE AND FLOWER" || value.includes("FLOWER") || value.startsWith("DECORATIVE")) return "ACCESSORIES"
+  if (value === "ACCESSORIES" || value === "BOX" || value === "TRAYS" || value === "TOY" || value === "FLOWER" || value === "LAMP" || value === "VASE AND FLOWER" || value.includes("FLOWER") || value.includes("LAMP") || value.includes("โคมไฟ") || value.startsWith("DECORATIVE")) return "ACCESSORIES"
   if (value === "DINING & TABLEWARE" || value === "PLATES & DISHES" || value === "BOWLS" || value === "GLASSWARE" || value === "CUPS & MUGS" || value === "TRAYS & SERVINGWARE" || value === "OTHER DINING & TABLEWARE" || value === "KITCHENWARE") return "DINING & TABLEWARE"
   if (value === "DRESSING & BATH" || value === "BATH ROOM" || value === "DRESSING ROOM" || value.includes("BATH")) return "DRESSING & BATH"
-  if (value === "ART & WALL DECOR" || value === "HANDMADE" || value === "3D HANDMADE" || value === "DIGITAL PRINT" || value === "MIXED MEDIA ART" || value === "PHOTO FRAME" || value.startsWith("WALL ART")) return "ART & WALL DECOR"
+  if (value === "ART & WALL DECOR" || value === "HANDMADE" || value === "3D HANDMADE" || value === "DIGITAL PRINT" || value === "MIXED MEDIA ART" || value === "PHOTO FRAME" || value.includes("OTHERS ART") || value.includes("WALLDECOR") || value.includes("ตกแต่งผนัง") || value.startsWith("WALL ART")) return "ART & WALL DECOR"
   if (value === "ไม่มี" || value === "NULL" || value === "NONE" || value === "UNMAPPED" || value === "UNCATEGORIZED" || value === "DEV_UNMAPPED") return "ไม่มี"
   return null
 }

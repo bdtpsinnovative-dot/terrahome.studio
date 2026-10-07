@@ -13,6 +13,7 @@ export const HARDCODED_CATEGORIES = [
   "Box",
   "Trays",
   "Toy",
+  "Lamp",
   "Flower",
   "Plates & Dishes",
   "Bowls",
@@ -26,6 +27,7 @@ export const HARDCODED_CATEGORIES = [
   "3D Handmade",
   "Digital print",
   "Mixed Media Art",
+  "Others Art & walldecor",
   "Photo Frame"
 ];
 
@@ -55,6 +57,9 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Flower": "Flower",
   "FLOWER": "Flower",
   "Vase and Flower": "Flower",
+  "Lamp": "Lamp",
+  "LAMP": "Lamp",
+  "Lamp (โคมไฟ)": "Lamp",
 
   "DINING & TABLEWARE": "Dining & Tableware",
   "Plates & Dishes": "Plates & Dishes",
@@ -74,6 +79,10 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Digital print": "Digital Print",
   "Mixed Media Art": "Mixed Media Art",
   "Photo Frame": "Photo Frame",
+  "Others Art & walldecor": "Others Art & Wall Decor",
+  "OTHERS ART & WALL DECOR": "Others Art & Wall Decor",
+  "Others Art & Walldecor": "Others Art & Wall Decor",
+  "Others Art & walldecor (ตกแต่งผนังอื่น ๆ)": "Others Art & Wall Decor",
 
   "IN_STOCK": "In Stock",
   "READY_TO_SHIP": "Ready To Ship",
