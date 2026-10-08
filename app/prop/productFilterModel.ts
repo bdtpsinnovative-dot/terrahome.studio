@@ -96,7 +96,7 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
     ],
   },
   { label: "IN STOCK", displayLabel: "IN STOCK", thaiLabel: "สินค้าพร้อมส่ง", fullValue: "IN_STOCK", isSpecial: true },
-  { label: "PRE-ORDER", displayLabel: "PRE-ORDER", thaiLabel: "พรีออเดอร์ (รอสินค้า 45-60 วัน)", fullValue: "PRE_ORDER", isSpecial: true },
+  { label: "SOLD OUT", displayLabel: "SOLD OUT", thaiLabel: "สินค้าหมด", fullValue: "PRE_ORDER", isSpecial: true },
   { label: "SALE OFFERS %", displayLabel: "SALE OFFERS %", thaiLabel: "ลดราคาพิเศษ", fullValue: "SPECIAL_DISCOUNT", isSpecial: true },
 ]
 

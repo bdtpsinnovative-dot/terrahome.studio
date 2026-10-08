@@ -505,7 +505,7 @@ export default function PropFilterClient({
   const getDisplayTitle = () => {
     if (activeFilter === "All") return "Product"
     if (activeFilter === "SPECIAL_DISCOUNT") return "SPECIAL OFFERS"
-    if (activeFilter === "PRE_ORDER") return "PRE-ORDER"
+    if (activeFilter === "PRE_ORDER") return "SOLD OUT"
     if (activeFilter === "IN_STOCK" || activeFilter === "READY_TO_SHIP") return "IN STOCK"
     if (isNoCategoryFilter(activeFilter)) return "ไม่มี (ไม่มี product_sup)"
     if (CATEGORY_DISPLAY_NAMES[activeFilter]) return CATEGORY_DISPLAY_NAMES[activeFilter].toUpperCase()

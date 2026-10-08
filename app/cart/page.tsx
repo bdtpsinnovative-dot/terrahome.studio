@@ -641,8 +641,8 @@ export default function CartPage() {
                                   </span>
                                   <span className="text-[#8C8A86] text-[10px]">·</span>
                                   {isOutOfStock ? (
-                                    <span className="text-[9px] uppercase tracking-wider font-bold text-[#84492C] flex items-center gap-0.5">
-                                      <AlertCircle className="w-2.5 h-2.5" /> PRE-ORDER
+                                    <span className="text-[9px] uppercase tracking-wider font-bold text-[#DC2626] flex items-center gap-0.5">
+                                      <AlertCircle className="w-2.5 h-2.5" /> SOLD OUT
                                     </span>
                                   ) : (
                                     <span className="text-[9px] uppercase tracking-wider font-semibold text-[#8C8A86]">
@@ -800,8 +800,8 @@ export default function CartPage() {
 
                           {outOfStock && (
                             <div className="absolute inset-0 bg-white/40 flex items-center justify-center backdrop-blur-[1px]">
-                              <span className="bg-[#84492C] text-white text-[8px] uppercase tracking-widest px-2 py-1 font-bold rounded-sm shadow-xs">
-                                PRE-ORDER
+                              <span className="bg-[#DC2626] text-white text-[8px] uppercase tracking-widest px-2 py-1 font-bold rounded-sm shadow-xs">
+                                SOLD OUT
                               </span>
                             </div>
                           )}
@@ -866,8 +866,8 @@ export default function CartPage() {
 
                               <div className="flex items-center gap-1.5">
                                 {outOfStock ? (
-                                  <span className="text-[9px] uppercase tracking-wider text-[#84492C] font-bold flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3 text-[#84492C]" /> PRE-ORDER (รอสินค้า 45-60 วัน)
+                                  <span className="text-[9px] uppercase tracking-wider text-[#DC2626] font-bold flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 text-[#DC2626]" /> SOLD OUT
                                   </span>
                                 ) : (
                                   <span

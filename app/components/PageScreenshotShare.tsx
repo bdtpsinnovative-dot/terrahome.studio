@@ -573,8 +573,8 @@ export default function PageScreenshotShare({
                 </h3>
 
                 {item.outOfStock && (
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#84492C", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "3px" }}>
-                    PRE-ORDER (รอสินค้า 45-60 วัน)
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#DC2626", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "3px" }}>
+                    SOLD OUT
                   </span>
                 )}
 
@@ -719,8 +719,8 @@ export default function PageScreenshotShare({
                 </h3>
 
                 {item.outOfStock && (
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#84492C", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "4px" }}>
-                    PRE-ORDER (รอสินค้า 45-60 วัน)
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#DC2626", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "4px" }}>
+                    SOLD OUT
                   </span>
                 )}
 

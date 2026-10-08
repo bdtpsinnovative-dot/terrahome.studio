@@ -377,6 +377,13 @@ export default function ProductDetailClient({
         
         <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
           <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
+            {outOfStock && (
+              <div className="absolute top-3 right-3 z-20">
+                <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
+                  SOLD OUT
+                </span>
+              </div>
+            )}
             {selectedImage ? (
               <img 
                 src={selectedImage}
@@ -423,7 +430,18 @@ export default function ProductDetailClient({
             <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
               {activeProduct.name}
             </h1>
-            {hasActiveDiscount && activeDiscountedPrice !== null ? (
+            {outOfStock ? (
+              <div className="mt-3 flex items-center gap-2.5">
+                <span className="bg-[#DC2626] text-white text-[10px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs shadow-xs">
+                  SOLD OUT
+                </span>
+                {Number(activeProduct.price) > 0 && (
+                  <span className="text-[12px] font-medium tracking-[0.1em] text-[#8C8A86] font-mono">
+                    THB {Number(activeProduct.price).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            ) : hasActiveDiscount && activeDiscountedPrice !== null ? (
               <div className="mt-3 flex items-center gap-3 flex-wrap">
                 <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
                   {activeDiscountType === 'PERCENT' ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
@@ -437,7 +455,7 @@ export default function ProductDetailClient({
               </div>
             ) : (
               <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                {outOfStock ? 'PRE-ORDER (รอสินค้า 45-60 วัน)' : activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
+                {activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
               </p>
             )}
 
@@ -539,8 +557,7 @@ export default function ProductDetailClient({
                     ))
                   ) : (
                     <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                      <span>PRE-ORDER AVAILABLE</span>
-                      <span className="text-[9px] tracking-normal text-[#84492C] normal-case font-semibold">(รอสินค้า 45-60 วัน)</span>
+                      <span>SOLD OUT</span>
                     </div>
                   )}
                 </div>
@@ -615,11 +632,8 @@ export default function ProductDetailClient({
                         </p>
                       ) : (
                         <div className="mt-1 flex flex-col items-center">
-                          <p className="text-[#84492C] text-[9px] tracking-wider font-semibold">
-                            PRE-ORDER
-                          </p>
-                          <p className="text-[#84492C] text-[9px] tracking-normal font-semibold mt-0.5">
-                            (รอสินค้า 45-60 วัน)
+                          <p className="text-[#DC2626] text-[9.5px] tracking-wider font-bold">
+                            SOLD OUT
                           </p>
                         </div>
                       )}
@@ -637,7 +651,7 @@ export default function ProductDetailClient({
               disabled={isAddingToCart || outOfStock}
               className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
                 outOfStock 
-                  ? 'bg-[#EAE7E0] border border-[#3A3835]/10 text-[#8C8A86] cursor-not-allowed'
+                  ? 'bg-[#FEE2E2] border border-[#DC2626]/30 text-[#DC2626] cursor-not-allowed font-bold'
                   : addedSuccess 
                     ? 'bg-[#84492C] text-white' 
                     : 'bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]'
@@ -649,7 +663,7 @@ export default function ProductDetailClient({
                   ADDING...
                 </>
               ) : outOfStock ? (
-                'PRE-ORDER (รอสินค้า 45-60 วัน)'
+                'SOLD OUT'
               ) : addedSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />

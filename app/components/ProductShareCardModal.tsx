@@ -211,9 +211,9 @@ export default function ProductShareCardModal({
         Number(product.discountedPrice) < Number(product.price)
 
       if (product.outOfStock) {
-        ctx.fillStyle = "#84492C"
+        ctx.fillStyle = "#DC2626"
         ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, sans-serif"
-        ctx.fillText("PRE-ORDER (รอสินค้า 45-60 วัน)", 70, priceY)
+        ctx.fillText("SOLD OUT", 70, priceY)
       } else if (isDiscounted) {
         const discPriceStr = `THB ${Number(product.discountedPrice).toLocaleString()}`
         const origPriceStr = `THB ${Number(product.price).toLocaleString()}`

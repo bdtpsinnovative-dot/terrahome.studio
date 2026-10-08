@@ -35,7 +35,7 @@ async function getActiveDiscounts() {
 }
 
 // React.cache ensures generateMetadata and Page share the exact same single fetch per request
-const getGroupDetailData = cache(async (groupId: string) => {
+const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
   const [activeDiscounts, groupRes] = await Promise.all([
     getActiveDiscounts(),
     supabaseAnon
@@ -66,8 +66,95 @@ const getGroupDetailData = cache(async (groupId: string) => {
       `)
       .eq("id", groupId)
       .eq("products.category_id", "prop")
-      .single(),
+      .maybeSingle(),
   ])
+
+  // If collection group was found and contains products, return it
+  if (groupRes.data && !groupRes.error) {
+    return { activeDiscounts, groupData: groupRes.data, error: null }
+  }
+
+  // Fallback for standalone products or when groupId is actually a product id / sku
+  let productQuery = supabaseAnon
+    .from("products")
+    .select(`
+      id,
+      sku,
+      name,
+      image_url,
+      price,
+      status,
+      category_id,
+      color,
+      specs,
+      collection_group_id,
+      stock (
+        qty,
+        branches (
+          id,
+          branch_name,
+          latitude,
+          longitude
+        )
+      )
+    `)
+    .eq("category_id", "prop")
+
+  if (sku) {
+    productQuery = productQuery.eq("sku", sku)
+  } else if (!isNaN(Number(groupId))) {
+    productQuery = productQuery.eq("id", Number(groupId))
+  } else {
+    productQuery = productQuery.eq("sku", groupId)
+  }
+
+  const { data: productData, error: productErr } = await productQuery.maybeSingle()
+
+  if (productData && !productErr) {
+    // If this product actually belongs to a collection group that wasn't matched by groupId
+    if (productData.collection_group_id && String(productData.collection_group_id) !== String(groupId)) {
+      const { data: actualGroup } = await supabaseAnon
+        .from("collection_groups")
+        .select(`
+          id,
+          product_sup,
+          products!inner (
+            id,
+            sku,
+            name,
+            image_url,
+            price,
+            status,
+            category_id,
+            color,
+            specs,
+            stock (
+              qty,
+              branches (
+                id,
+                branch_name,
+                latitude,
+                longitude
+              )
+            )
+          )
+        `)
+        .eq("id", productData.collection_group_id)
+        .eq("products.category_id", "prop")
+        .maybeSingle()
+
+      if (actualGroup) {
+        return { activeDiscounts, groupData: actualGroup, error: null }
+      }
+    }
+
+    const fallbackGroupData = {
+      id: groupId,
+      product_sup: productData.specs?.material || productData.specs?.brand || null,
+      products: [productData],
+    }
+    return { activeDiscounts, groupData: fallbackGroupData, error: null }
+  }
 
   return { activeDiscounts, groupData: groupRes.data, error: groupRes.error }
 })
@@ -77,7 +164,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const currentGroupId = decodeURIComponent(resolvedParams.groupId)
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
-  const { groupData } = await getGroupDetailData(currentGroupId)
+  const { groupData } = await getGroupDetailData(currentGroupId, currentSku)
   const products: any[] = groupData?.products || []
   const product = products.find((p: any) => p.sku === currentSku) || products[0] || null
 
@@ -133,7 +220,7 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   const currentGroupId = decodeURIComponent(resolvedParams.groupId)
   const currentSku = decodeURIComponent(resolvedParams.sku)
 
-  const { activeDiscounts, groupData, error } = await getGroupDetailData(currentGroupId)
+  const { activeDiscounts, groupData, error } = await getGroupDetailData(currentGroupId, currentSku)
 
   const now = new Date()
   const mapProductDiscount = (product: any) => {

@@ -46,6 +46,11 @@ export default function CollectionCard({
   const resolvedSlides = preferredSlides.length > 0 ? preferredSlides : slides
   const currentSlide = resolvedSlides[currentIndex] || resolvedSlides[0] || { image_url: null, price: null, sku: "", name: "" }
   
+  const activeMatchedProduct = (group.products || []).find((p: any) => p?.sku === currentSlide.sku)
+  const isSlidePreOrder = activeMatchedProduct
+    ? stockQtyForProduct(activeMatchedProduct) <= 0
+    : currentSlide.availability_status === 'preorder' || isPreOrderGroup
+
   // 🌟 ถ้ามีรูปปกกลุ่ม cover_image_url ให้ใช้รูปนี้เป็นหลักเดี่ยวๆ
   const groupCoverImage = group?.cover_image_url && String(group.cover_image_url).trim() !== "" ? String(group.cover_image_url).trim() : null
 
@@ -182,6 +187,13 @@ export default function CollectionCard({
           className="w-full aspect-square relative mb-5 flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
+          {(groupCoverImage ? isPreOrderGroup : isSlidePreOrder) && (
+            <div className="absolute top-2.5 right-2.5 z-20">
+              <span className="bg-[#DC2626] text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs shadow-xs">
+                SOLD OUT
+              </span>
+            </div>
+          )}
           {groupCoverImage ? (
             <img
               src={groupCoverImage}
@@ -220,11 +232,8 @@ export default function CollectionCard({
               if (isPreOrderGroup) {
                 return (
                   <div className="mt-0.5 flex flex-col items-center">
-                    <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold">
-                      PRE-ORDER
-                    </p>
-                    <p className="text-[#84492C] text-[9px] tracking-normal font-semibold">
-                      (รอสินค้า 45-60 วัน)
+                    <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
+                      SOLD OUT
                     </p>
                     {minPrice !== null && minPrice > 0 ? (
                       hasPriceRange ? (
@@ -270,11 +279,6 @@ export default function CollectionCard({
 
             // 🌟 2. กรณีเป็นการ์ดสินค้าปกติ (สไลด์รูป หรือสินค้าเดี่ยว):
             // อัปเดตราคาและสถานะพรีออเดอร์ตามสินค้าของสไลด์ที่กำลังแสดงอยู่จริง
-            const activeMatchedProduct = (group.products || []).find((p: any) => p?.sku === currentSlide.sku)
-            const isSlidePreOrder = activeMatchedProduct
-              ? stockQtyForProduct(activeMatchedProduct) <= 0
-              : currentSlide.availability_status === 'preorder' || isPreOrderGroup
-
             const slidePriceNum = Number(currentSlide.price)
             const hasValidPrice = Number.isFinite(slidePriceNum) && slidePriceNum > 0
 
@@ -297,14 +301,9 @@ export default function CollectionCard({
             return (
               <div className="mt-0.5 flex flex-col items-center">
                 {isSlidePreOrder && (
-                  <>
-                    <p className="text-[#84492C] text-[9px] tracking-[0.2em] uppercase font-semibold">
-                      PRE-ORDER
-                    </p>
-                    <p className="text-[#84492C] text-[9px] tracking-normal font-semibold mb-0.5">
-                      (รอสินค้า 45-60 วัน)
-                    </p>
-                  </>
+                  <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
+                    SOLD OUT
+                  </p>
                 )}
 
                 {!hasValidPrice ? (
