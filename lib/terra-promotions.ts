@@ -232,44 +232,86 @@ export async function evaluateTerraPromotions(
     if (!matchedCoupon) {
       couponError = `ไม่พบรหัสคูปอง "${cleanCode}" หรือคูปองหมดอายุแล้ว`;
     } else {
-      const minSpend = Number(matchedCoupon.min_spend || 0);
-      if (rawSubtotal < minSpend) {
-        couponError = `ยอดซื้อขั้นต่ำสำหรับคูปองนี้คือ ฿${minSpend.toLocaleString()} (ยอดปัจจุบัน ฿${rawSubtotal.toLocaleString()})`;
+      let isTiered = false;
+      let tiers: any[] = [];
+      try {
+        if (matchedCoupon.description && matchedCoupon.description.trim().startsWith('{')) {
+          const parsed = JSON.parse(matchedCoupon.description);
+          if (parsed.is_tiered && Array.isArray(parsed.tiers) && parsed.tiers.length > 0) {
+            isTiered = true;
+            tiers = parsed.tiers;
+          }
+        }
+      } catch {}
+
+      let discountAmount = 0;
+      let effectiveType = matchedCoupon.discount_type;
+      let effectiveVal = Number(matchedCoupon.discount_value);
+      let stepDesc = "";
+
+      if (isTiered && tiers.length > 0) {
+        const sortedTiers = [...tiers].sort((a, b) => Number(b.min_spend) - Number(a.min_spend));
+        const lowestMinSpend = Number(sortedTiers[sortedTiers.length - 1].min_spend || 0);
+
+        if (rawSubtotal < lowestMinSpend) {
+          couponError = `ยอดซื้อขั้นต่ำสำหรับคูปองขั้นบันไดนี้คือ ฿${lowestMinSpend.toLocaleString()} (ยอดปัจจุบัน ฿${rawSubtotal.toLocaleString()})`;
+        } else {
+          const matchedTier = sortedTiers.find((t) => rawSubtotal >= Number(t.min_spend)) || sortedTiers[sortedTiers.length - 1];
+          effectiveType = matchedTier.discount_type || "percentage";
+          effectiveVal = Number(matchedTier.discount_value);
+
+          if (effectiveType === "percentage") {
+            discountAmount = (rawSubtotal * effectiveVal) / 100;
+            if (matchedCoupon.max_discount_amount && discountAmount > Number(matchedCoupon.max_discount_amount)) {
+              discountAmount = Number(matchedCoupon.max_discount_amount);
+            }
+          } else {
+            discountAmount = Math.min(rawSubtotal, effectiveVal);
+          }
+
+          stepDesc = effectiveType === "percentage"
+            ? `ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ${effectiveVal}%`
+            : `ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ฿${Number(effectiveVal).toLocaleString()}`;
+        }
       } else {
-        let discountAmount = 0;
-        if (matchedCoupon.discount_type === "percentage") {
-          discountAmount = (rawSubtotal * Number(matchedCoupon.discount_value)) / 100;
-          if (matchedCoupon.max_discount_amount && discountAmount > Number(matchedCoupon.max_discount_amount)) {
-            discountAmount = Number(matchedCoupon.max_discount_amount);
-          }
+        const minSpend = Number(matchedCoupon.min_spend || 0);
+        if (rawSubtotal < minSpend) {
+          couponError = `ยอดซื้อขั้นต่ำสำหรับคูปองนี้คือ ฿${minSpend.toLocaleString()} (ยอดปัจจุบัน ฿${rawSubtotal.toLocaleString()})`;
         } else {
-          discountAmount = Number(matchedCoupon.discount_value);
-          if (discountAmount > rawSubtotal) {
-            discountAmount = rawSubtotal;
+          if (matchedCoupon.discount_type === "percentage") {
+            discountAmount = (rawSubtotal * Number(matchedCoupon.discount_value)) / 100;
+            if (matchedCoupon.max_discount_amount && discountAmount > Number(matchedCoupon.max_discount_amount)) {
+              discountAmount = Number(matchedCoupon.max_discount_amount);
+            }
+          } else {
+            discountAmount = Number(matchedCoupon.discount_value);
+            if (discountAmount > rawSubtotal) {
+              discountAmount = rawSubtotal;
+            }
           }
         }
+      }
 
-        discountAmount = Math.round(discountAmount);
+      discountAmount = Math.round(discountAmount);
 
-        if (discountAmount > 0) {
-          couponDiscount = {
-            promoId: matchedCoupon.id,
-            title: matchedCoupon.title,
-            promoScope: "global",
-            triggerType: "coupon",
-            couponCode: matchedCoupon.coupon_code,
-            discountType: matchedCoupon.discount_type,
-            discountValue: matchedCoupon.discount_value,
-            discountAmount,
-            collectionName: "ทั้งร้านค้า (Global)",
-            description: matchedCoupon.discount_type === "percentage"
-              ? `คูปองลด ${matchedCoupon.discount_value}%`
-              : `คูปองลด ฿${Number(matchedCoupon.discount_value).toLocaleString()}`,
-          };
-          couponDiscountTotal = discountAmount;
-        } else {
-          couponError = "ไม่สามารถคำนวณส่วนลดจากคูปองนี้ได้";
-        }
+      if (!couponError && discountAmount > 0) {
+        couponDiscount = {
+          promoId: matchedCoupon.id,
+          title: matchedCoupon.title,
+          promoScope: "global",
+          triggerType: "coupon",
+          couponCode: matchedCoupon.coupon_code,
+          discountType: effectiveType,
+          discountValue: effectiveVal,
+          discountAmount,
+          collectionName: "ทั้งร้านค้า (Global)",
+          description: stepDesc || (effectiveType === "percentage"
+            ? `คูปองลด ${effectiveVal}%`
+            : `คูปองลด ฿${Number(effectiveVal).toLocaleString()}`),
+        };
+        couponDiscountTotal = discountAmount;
+      } else if (!couponError) {
+        couponError = "ไม่สามารถคำนวณส่วนลดจากคูปองนี้ได้";
       }
     }
   }
