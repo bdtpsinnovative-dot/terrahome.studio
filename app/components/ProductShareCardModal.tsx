@@ -213,7 +213,7 @@ export default function ProductShareCardModal({
       if (product.outOfStock) {
         ctx.fillStyle = "#DC2626"
         ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, sans-serif"
-        ctx.fillText("SOLD OUT", 70, priceY)
+        ctx.fillText("OUT OF STOCK", 70, priceY)
       } else if (isDiscounted) {
         const discPriceStr = `THB ${Number(product.discountedPrice).toLocaleString()}`
         const origPriceStr = `THB ${Number(product.price).toLocaleString()}`

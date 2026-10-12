@@ -380,7 +380,7 @@ export default function ProductDetailClient({
             {outOfStock && (
               <div className="absolute top-3 right-3 z-20">
                 <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
-                  SOLD OUT
+                  OUT OF STOCK
                 </span>
               </div>
             )}
@@ -433,7 +433,7 @@ export default function ProductDetailClient({
             {outOfStock ? (
               <div className="mt-3 flex items-center gap-2.5">
                 <span className="bg-[#DC2626] text-white text-[10px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs shadow-xs">
-                  SOLD OUT
+                  OUT OF STOCK
                 </span>
                 {Number(activeProduct.price) > 0 && (
                   <span className="text-[12px] font-medium tracking-[0.1em] text-[#8C8A86] font-mono">
@@ -557,7 +557,7 @@ export default function ProductDetailClient({
                     ))
                   ) : (
                     <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                      <span>SOLD OUT</span>
+                      <span>OUT OF STOCK</span>
                     </div>
                   )}
                 </div>
@@ -633,7 +633,7 @@ export default function ProductDetailClient({
                       ) : (
                         <div className="mt-1 flex flex-col items-center">
                           <p className="text-[#DC2626] text-[9.5px] tracking-wider font-bold">
-                            SOLD OUT
+                            OUT OF STOCK
                           </p>
                         </div>
                       )}
@@ -663,7 +663,7 @@ export default function ProductDetailClient({
                   ADDING...
                 </>
               ) : outOfStock ? (
-                'SOLD OUT'
+                'OUT OF STOCK'
               ) : addedSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />

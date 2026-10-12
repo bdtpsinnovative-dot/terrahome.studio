@@ -190,7 +190,7 @@ export default function CollectionCard({
           {(groupCoverImage ? isPreOrderGroup : isSlidePreOrder) && (
             <div className="absolute top-2.5 right-2.5 z-20">
               <span className="bg-[#DC2626] text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs shadow-xs">
-                SOLD OUT
+                OUT OF STOCK
               </span>
             </div>
           )}
@@ -233,7 +233,7 @@ export default function CollectionCard({
                 return (
                   <div className="mt-0.5 flex flex-col items-center">
                     <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
-                      SOLD OUT
+                      OUT OF STOCK
                     </p>
                     {minPrice !== null && minPrice > 0 ? (
                       hasPriceRange ? (
@@ -302,7 +302,7 @@ export default function CollectionCard({
               <div className="mt-0.5 flex flex-col items-center">
                 {isSlidePreOrder && (
                   <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
-                    SOLD OUT
+                    OUT OF STOCK
                   </p>
                 )}
 

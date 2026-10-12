@@ -574,7 +574,7 @@ export default function PageScreenshotShare({
 
                 {item.outOfStock && (
                   <span style={{ fontSize: "10px", fontWeight: 700, color: "#DC2626", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "3px" }}>
-                    SOLD OUT
+                    OUT OF STOCK
                   </span>
                 )}
 
@@ -720,7 +720,7 @@ export default function PageScreenshotShare({
 
                 {item.outOfStock && (
                   <span style={{ fontSize: "10px", fontWeight: 700, color: "#DC2626", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "4px" }}>
-                    SOLD OUT
+                    OUT OF STOCK
                   </span>
                 )}
 
