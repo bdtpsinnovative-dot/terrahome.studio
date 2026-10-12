@@ -477,3 +477,22 @@
     animation-duration: 1.5s !important;
   }
 }
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  animation: inquiry-fade-in 180ms ease both;
+}
+
+@keyframes inquiry-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

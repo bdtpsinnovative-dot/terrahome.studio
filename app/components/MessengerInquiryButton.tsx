@@ -27,6 +27,8 @@ type MessengerInquiryButtonProps = {
   preview?: boolean
   previewState?: MessengerInquiryPreviewState
   previewOpen?: boolean
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function ButtonIcon({ state, disabled, open }: { state: MessengerInquiryState; disabled: boolean; open: boolean }) {
@@ -60,8 +62,21 @@ export default function MessengerInquiryButton({
   preview = false,
   previewState = 'default',
   previewOpen = false,
+  isOpen,
+  onOpenChange,
 }: MessengerInquiryButtonProps) {
-  const [open, setOpen] = useState(previewOpen)
+  const [internalOpen, setInternalOpen] = useState(previewOpen)
+  const isControlled = typeof isOpen === 'boolean'
+  const open = isControlled ? isOpen : internalOpen
+
+  const setOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof next === 'function' ? next(open) : next
+    if (!isControlled) {
+      setInternalOpen(nextVal)
+    }
+    onOpenChange?.(nextVal)
+  }
+
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -69,12 +84,30 @@ export default function MessengerInquiryButton({
   const visualState = disabled ? 'disabled' : state
 
   useEffect(() => {
+    const handleGlobalInquiry = () => {
+      setOpen(true)
+    }
+    window.addEventListener('open-inquiry-modal', handleGlobalInquiry)
+    return () => window.removeEventListener('open-inquiry-modal', handleGlobalInquiry)
+  }, [isControlled, open])
+
+  useEffect(() => {
     if (!open || preview) return
 
     panelRef.current?.querySelector<HTMLAnchorElement>('a')?.focus()
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Element | null
+      if (target?.closest?.('[data-inquiry-trigger="true"]')) {
+        return
+      }
+      if (target?.closest?.('[data-inquiry-backdrop="true"]')) {
+        setOpen(false)
+        return
+      }
+      if (!panelRef.current?.contains(event.target as Node) && !triggerRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -91,11 +124,20 @@ export default function MessengerInquiryButton({
   }, [open, preview])
 
   return (
-    <div
-      ref={rootRef}
-      className={styles.root}
-      data-preview={preview ? 'true' : undefined}
-    >
+    <>
+      {open && !preview ? (
+        <div
+          data-inquiry-backdrop="true"
+          className={styles.backdrop}
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      ) : null}
+      <div
+        ref={rootRef}
+        className={styles.root}
+        data-preview={preview ? 'true' : undefined}
+      >
       {open ? (
         <div
           ref={panelRef}
@@ -228,5 +270,6 @@ export default function MessengerInquiryButton({
         </span>
       </button>
     </div>
+    </>
   )
 }

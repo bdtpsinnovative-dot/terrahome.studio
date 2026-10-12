@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, CheckCircle2, MapPin, Navigation, Sparkles, Layers, Package } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MapPin, Navigation, Sparkles, Layers, Package, MessageCircle } from "lucide-react";
 import { createClient, getSafeSession } from "@/src/supabase/client";
 import { trackAnalyticsCta } from "@/app/components/AnalyticsTracker";
 import MessengerInquiryButton from "@/app/components/MessengerInquiryButton";
@@ -73,6 +73,7 @@ export default function CollectionLookClient({
   const [isFullSetSelected, setIsFullSetSelected] = useState(() => {
     return linkedProducts.length > 0;
   });
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
 
   // Active product selected from the linked items in this look
   const [activeProduct, setActiveProduct] = useState(() => {
@@ -900,9 +901,71 @@ export default function CollectionLookClient({
           {/* ADD TO CART BUTTON (Handles Full Set or Single Item) */}
           <div className="pt-2 max-w-lg mt-auto">
             {isFullSetSelected ? (
+              !isSetAvailable ? (
+                <button
+                  type="button"
+                  data-inquiry-trigger="true"
+                  onClick={() => {
+                    trackAnalyticsCta("open_contact_channels", {
+                      look_id: collectionImage.id,
+                      source: "out_of_stock_full_set_inquiry_button",
+                    });
+                    setIsInquiryOpen((prev) => !prev);
+                  }}
+                  className="w-full py-4 text-[11px] font-bold tracking-[0.12em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 bg-[#84492C] text-white hover:bg-[#6D3B23] active:scale-[0.99] cursor-pointer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  ติดต่อสอบถาม
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddFullSetToCart}
+                  disabled={isAddingToCart}
+                  className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
+                    addedSuccess 
+                      ? "bg-[#84492C] text-white" 
+                      : "bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]"
+                  }`}
+                >
+                  {isAddingToCart ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ADDING FULL SET ({linkedProducts.length} ITEMS)...
+                    </>
+                  ) : addedSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      ADDED FULL SET ({linkedProducts.length} ITEMS) TO CART
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-3.5 h-3.5" />
+                      ADD FULL SET TO CART (THB {Number(totalSetDiscountedPrice).toLocaleString()})
+                    </>
+                  )}
+                </button>
+              )
+            ) : outOfStock ? (
               <button
-                onClick={handleAddFullSetToCart}
-                disabled={isAddingToCart || !isSetAvailable}
+                type="button"
+                data-inquiry-trigger="true"
+                onClick={() => {
+                  trackAnalyticsCta("open_contact_channels", {
+                    product_id: activeProduct.id,
+                    product_name: activeProduct.name || activeProduct.sku,
+                    source: "out_of_stock_inquiry_button",
+                  });
+                  setIsInquiryOpen((prev) => !prev);
+                }}
+                className="w-full py-4 text-[11px] font-bold tracking-[0.12em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 bg-[#84492C] text-white hover:bg-[#6D3B23] active:scale-[0.99] cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                ติดต่อสอบถาม
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || !activeProduct.id}
                 className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
                   addedSuccess 
                     ? "bg-[#84492C] text-white" 
@@ -912,39 +975,8 @@ export default function CollectionLookClient({
                 {isAddingToCart ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ADDING FULL SET ({linkedProducts.length} ITEMS)...
-                  </>
-                ) : addedSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    ADDED FULL SET ({linkedProducts.length} ITEMS) TO CART
-                  </>
-                ) : (
-                  <>
-                    <Layers className="w-3.5 h-3.5" />
-                    ADD FULL SET TO CART (THB {Number(totalSetDiscountedPrice).toLocaleString()})
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={handleAddToCart}
-                disabled={isAddingToCart || outOfStock || !activeProduct.id}
-                className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
-                  outOfStock 
-                    ? "bg-[#FEE2E2] border border-[#DC2626]/30 text-[#DC2626] cursor-not-allowed font-bold"
-                    : addedSuccess 
-                      ? "bg-[#84492C] text-white" 
-                      : "bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]"
-                }`}
-              >
-                {isAddingToCart ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ADDING...
                   </>
-                ) : outOfStock ? (
-                  "OUT OF STOCK"
                 ) : addedSuccess ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -991,7 +1023,11 @@ export default function CollectionLookClient({
       )}
 
       {/* Floating Messenger Inquiry */}
-      <MessengerInquiryButton productName={isFullSetSelected ? `${category.titleEn} Look #${collectionImage.sortOrder} Full Set` : (activeProduct.name || activeProduct.sku || category.titleEn)} />
+      <MessengerInquiryButton
+        productName={isFullSetSelected ? `${category.titleEn} Look #${collectionImage.sortOrder} Full Set` : (activeProduct.name || activeProduct.sku || category.titleEn)}
+        isOpen={isInquiryOpen}
+        onOpenChange={setIsInquiryOpen}
+      />
     </div>
   );
 }

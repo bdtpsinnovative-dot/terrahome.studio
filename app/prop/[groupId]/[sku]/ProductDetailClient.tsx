@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation" 
 import dynamic from "next/dynamic"
-import { CheckCircle2, MapPin, Navigation } from "lucide-react"
+import { CheckCircle2, MapPin, Navigation, MessageCircle } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
 import { createClient, getSafeSession } from '@/src/supabase/client'
 import { trackAnalyticsCta } from '@/app/components/AnalyticsTracker'
@@ -89,6 +89,7 @@ export default function ProductDetailClient({
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
   })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false)
   const [recommendedCollections, setRecommendedCollections] = useState<any[]>(
     () => initialRecommendedCollections || []
   )
@@ -644,35 +645,50 @@ export default function ProductDetailClient({
             </div>
           </div>
 
-          {/* ⚡ 4. เปลี่ยนปุ่ม CONTACT เป็น ADD TO CART พร้อม Logic เช็คสถานะ */}
+          {/* ⚡ 4. ปุ่ม ADD TO CART หรือ ติดต่อสอบถาม เมื่อสินค้าหมดสต็อก */}
           <div className="pt-2 max-w-lg mt-auto">
-                          <button
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || outOfStock}
-              className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
-                outOfStock 
-                  ? 'bg-[#FEE2E2] border border-[#DC2626]/30 text-[#DC2626] cursor-not-allowed font-bold'
-                  : addedSuccess 
+            {outOfStock ? (
+              <button
+                type="button"
+                data-inquiry-trigger="true"
+                onClick={() => {
+                  trackAnalyticsCta('open_contact_channels', {
+                    product_id: activeProduct.id,
+                    product_name: activeProduct.name || activeProduct.sku,
+                    source: 'out_of_stock_inquiry_button',
+                  })
+                  setIsInquiryOpen((prev) => !prev)
+                }}
+                className="w-full py-4 text-[11px] font-bold tracking-[0.12em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 bg-[#84492C] text-white hover:bg-[#6D3B23] active:scale-[0.99] cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                ติดต่อสอบถาม
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+                className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
+                  addedSuccess 
                     ? 'bg-[#84492C] text-white' 
                     : 'bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]'
-              }`}
-            >
-              {isAddingToCart ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ADDING...
-                </>
-              ) : outOfStock ? (
-                'OUT OF STOCK'
-              ) : addedSuccess ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  ADDED TO CART
-                </>
-              ) : (
-                'ADD TO CART'
-              )}
-            </button>
+                }`}
+              >
+                {isAddingToCart ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ADDING...
+                  </>
+                ) : addedSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ADDED TO CART
+                  </>
+                ) : (
+                  'ADD TO CART'
+                )}
+              </button>
+            )}
           </div>
           
         </div>
@@ -716,7 +732,11 @@ export default function ProductDetailClient({
         </div>
       )}
 
-      <MessengerInquiryButton productName={activeProduct.name || activeProduct.sku || 'สินค้านี้'} />
+      <MessengerInquiryButton
+        productName={activeProduct.name || activeProduct.sku || 'สินค้านี้'}
+        isOpen={isInquiryOpen}
+        onOpenChange={setIsInquiryOpen}
+      />
     </div>
   )
 }
