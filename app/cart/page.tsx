@@ -535,7 +535,7 @@ export default function CartPage() {
                 const bundleAutoDiscount = promoCalc?.autoDiscounts?.find(
                   (ad) => String(ad.collectionGroupId) === String(bundle.setId)
                 );
-                const isAutoWinner = promoCalc?.bestDealWinner === "auto";
+                const isAutoWinner = promoCalc?.bestDealWinner === "auto" || Boolean(promoCalc?.appliedDiscounts?.some((ad) => ad.triggerType === "auto"));
                 const isBundleDiscountApplied = isAutoWinner && bundleAutoDiscount && bundleAutoDiscount.discountAmount > 0;
                 const bundleFinalPrice = isBundleDiscountApplied 
                   ? Math.max(0, bundle.totalSetBasePrice - bundleAutoDiscount.discountAmount)
@@ -953,8 +953,8 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {/* Auto-apply Set discounts breakdown (if active winner) */}
-                  {promoCalc?.bestDealWinner === "auto" && promoCalc.autoDiscounts && promoCalc.autoDiscounts.length > 0 && (
+                  {/* Auto-apply Set discounts breakdown */}
+                  {(promoCalc?.bestDealWinner === "auto" || Boolean(promoCalc?.appliedDiscounts?.some((ad) => ad.triggerType === "auto"))) && promoCalc?.autoDiscounts && promoCalc.autoDiscounts.length > 0 && (
                     <div className="space-y-1.5 py-1">
                       {promoCalc.autoDiscounts.map((ad, idx) => (
                         <div key={idx} className="flex justify-between items-center text-emerald-700 text-[11px]">
@@ -968,8 +968,8 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {/* Coupon Discount breakdown (if active winner) */}
-                  {promoCalc?.bestDealWinner === "coupon" && promoCalc.couponDiscount && (
+                  {/* Coupon Discount breakdown */}
+                  {(promoCalc?.bestDealWinner === "coupon" || Boolean(promoCalc?.appliedDiscounts?.some((ad) => ad.triggerType === "coupon"))) && promoCalc?.couponDiscount && (
                     <div className="flex justify-between items-center text-amber-800 text-[11px] bg-amber-50/80 px-2.5 py-1.5 rounded-[2px] border border-amber-200/80">
                       <span className="flex items-center gap-1.5">
                         <Ticket className="w-3.5 h-3.5 text-amber-700" />

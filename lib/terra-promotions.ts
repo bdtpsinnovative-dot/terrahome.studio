@@ -222,6 +222,7 @@ export async function evaluateTerraPromotions(
   let couponDiscount: AppliedPromoResult | null = null;
   let couponDiscountTotal = 0;
   let couponError: string | null = null;
+  let isTopUp = false;
   const cleanCode = appliedCouponCode?.trim().toUpperCase() || null;
 
   if (cleanCode) {
@@ -237,12 +238,21 @@ export async function evaluateTerraPromotions(
       try {
         if (matchedCoupon.description && matchedCoupon.description.trim().startsWith('{')) {
           const parsed = JSON.parse(matchedCoupon.description);
+          isTopUp = Boolean(parsed.is_top_up || parsed.isTopUp);
           if (parsed.is_tiered && Array.isArray(parsed.tiers) && parsed.tiers.length > 0) {
             isTiered = true;
             tiers = parsed.tiers;
           }
         }
       } catch {}
+
+      if (!isTopUp && (matchedCoupon.title?.toLowerCase().includes("top up") || matchedCoupon.title?.toLowerCase().includes("top-up") || matchedCoupon.title?.includes("ลด On-top") || matchedCoupon.title?.includes("Top up") || matchedCoupon.title?.includes("Top-up"))) {
+        isTopUp = true;
+      }
+
+      // 🏷️ ฐานคำนวณส่วนลด:
+      // หากเป็น Top-up coupon จะคำนวณจากยอดคงเหลือหลังจากลดโปรเซ็ต (หรือ rawSubtotal)
+      const calcBase = isTopUp ? Math.max(0, rawSubtotal - autoDiscountTotal) : rawSubtotal;
 
       let discountAmount = 0;
       let effectiveType = matchedCoupon.discount_type;
@@ -261,17 +271,18 @@ export async function evaluateTerraPromotions(
           effectiveVal = Number(matchedTier.discount_value);
 
           if (effectiveType === "percentage") {
-            discountAmount = (rawSubtotal * effectiveVal) / 100;
+            discountAmount = (calcBase * effectiveVal) / 100;
             if (matchedCoupon.max_discount_amount && discountAmount > Number(matchedCoupon.max_discount_amount)) {
               discountAmount = Number(matchedCoupon.max_discount_amount);
             }
           } else {
-            discountAmount = Math.min(rawSubtotal, effectiveVal);
+            discountAmount = Math.min(calcBase, effectiveVal);
           }
 
+          const topUpPrefix = isTopUp ? "⚡ Top-up " : "";
           stepDesc = effectiveType === "percentage"
-            ? `ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ${effectiveVal}%`
-            : `ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ฿${Number(effectiveVal).toLocaleString()}`;
+            ? `${topUpPrefix}ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ${effectiveVal}%`
+            : `${topUpPrefix}ขั้นบันได: ช้อปครบ ฿${Number(matchedTier.min_spend).toLocaleString()} ลด ฿${Number(effectiveVal).toLocaleString()}`;
         }
       } else {
         const minSpend = Number(matchedCoupon.min_spend || 0);
@@ -279,14 +290,14 @@ export async function evaluateTerraPromotions(
           couponError = `ยอดซื้อขั้นต่ำสำหรับคูปองนี้คือ ฿${minSpend.toLocaleString()} (ยอดปัจจุบัน ฿${rawSubtotal.toLocaleString()})`;
         } else {
           if (matchedCoupon.discount_type === "percentage") {
-            discountAmount = (rawSubtotal * Number(matchedCoupon.discount_value)) / 100;
+            discountAmount = (calcBase * Number(matchedCoupon.discount_value)) / 100;
             if (matchedCoupon.max_discount_amount && discountAmount > Number(matchedCoupon.max_discount_amount)) {
               discountAmount = Number(matchedCoupon.max_discount_amount);
             }
           } else {
             discountAmount = Number(matchedCoupon.discount_value);
-            if (discountAmount > rawSubtotal) {
-              discountAmount = rawSubtotal;
+            if (discountAmount > calcBase) {
+              discountAmount = calcBase;
             }
           }
         }
@@ -295,6 +306,7 @@ export async function evaluateTerraPromotions(
       discountAmount = Math.round(discountAmount);
 
       if (!couponError && discountAmount > 0) {
+        const topUpPrefix = isTopUp ? "⚡ Top-up " : "";
         couponDiscount = {
           promoId: matchedCoupon.id,
           title: matchedCoupon.title,
@@ -306,8 +318,8 @@ export async function evaluateTerraPromotions(
           discountAmount,
           collectionName: "ทั้งร้านค้า (Global)",
           description: stepDesc || (effectiveType === "percentage"
-            ? `คูปองลด ${effectiveVal}%`
-            : `คูปองลด ฿${Number(effectiveVal).toLocaleString()}`),
+            ? `${topUpPrefix}คูปองลด ${effectiveVal}%`
+            : `${topUpPrefix}คูปองลด ฿${Number(effectiveVal).toLocaleString()}`),
         };
         couponDiscountTotal = discountAmount;
       } else if (!couponError) {
@@ -316,13 +328,20 @@ export async function evaluateTerraPromotions(
     }
   }
 
-  // ── C. Best Deal Policy (Non-Stackable: เลือกโปรที่ดีที่สุดเพียงอย่างเดียว) ───────────
+  // ── C. Best Deal Policy vs Top-Up Stacking ───────────
   let appliedDiscounts: AppliedPromoResult[] = [];
   let totalDiscount = 0;
   let bestDealWinner: "auto" | "coupon" | "none" = "none";
   let bestDealNotice: string | null = null;
 
-  if (couponDiscountTotal > autoDiscountTotal) {
+  if (isTopUp && couponDiscount) {
+    appliedDiscounts = [...autoDiscounts, couponDiscount];
+    totalDiscount = autoDiscountTotal + couponDiscountTotal;
+    bestDealWinner = "coupon";
+    if (autoDiscountTotal > 0 && cleanCode) {
+      bestDealNotice = `โค้ด "${cleanCode}" เป็นส่วนลด Top-up ลด On-top เพิ่มเติมจากโปรเซ็ตเรียบร้อยแล้ว`;
+    }
+  } else if (couponDiscountTotal > autoDiscountTotal) {
     appliedDiscounts = couponDiscount ? [couponDiscount] : [];
     totalDiscount = couponDiscountTotal;
     bestDealWinner = "coupon";
