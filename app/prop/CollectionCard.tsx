@@ -182,9 +182,9 @@ export default function CollectionCard({
         onClick={handleNavigate}
         className="flex flex-col items-center group cursor-pointer w-full h-full justify-between"
       >
-        {/* 🌟 ใช้ style={{ backgroundColor }} แทน Tailwind class เพื่อการันตีว่าสีไม่หายชัวร์ๆ */}
+        {/* 🌟 รูปภาพชิดซ้าย ขวา บน เต็มกล่อง (Flush Left, Right, Top) */}
         <div
-          className="w-full aspect-square relative mb-5 flex items-center justify-center"
+          className="w-full aspect-square relative overflow-hidden flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
           {(groupCoverImage ? isPreOrderGroup : isSlidePreOrder) && (
@@ -199,7 +199,7 @@ export default function CollectionCard({
               src={groupCoverImage}
               alt={group.name || group.id}
               title={group.name || group.id}
-              className="absolute inset-0 object-contain w-full h-full p-2 mix-blend-multiply"
+              className="absolute inset-0 object-cover w-full h-full mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
             />
           ) : resolvedSlides.length > 0 ? (
             resolvedSlides.map((slide, idx) => (
@@ -208,8 +208,7 @@ export default function CollectionCard({
                 src={slide.image_url || ""}
                 alt={group.name || group.id}
                 title={group.name || group.id}
-                // 🌟 ให้รูปภาพใช้ mix-blend-multiply เพื่อละลายพื้นหลังขาวเข้ากับสีของกล่องด้านบน
-                className={`absolute inset-0 object-contain w-full h-full p-2 transition-opacity duration-500 ease-in-out mix-blend-multiply
+                className={`absolute inset-0 object-cover w-full h-full mix-blend-multiply transition-all duration-500 ease-in-out group-hover:scale-105
                   ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
                 `}
               />
@@ -220,7 +219,7 @@ export default function CollectionCard({
         </div>
 
         {/* ส่วนรายละเอียดสินค้า: แสดงชื่อ ป้ายสถานะ และราคาเสมอ */}
-        <div className="flex flex-col items-center text-center mt-auto px-2">
+        <div className="flex flex-col items-center text-center mt-auto w-full px-3 py-4 md:px-4 md:py-6">
           <span className="text-[#3A3835] text-[10px] sm:text-[11px] uppercase tracking-[0.25em] font-medium text-center mb-1.5">
             {groupCoverImage
               ? (group.name || currentSlide.name ? (group.name || currentSlide.name).substring(0, 25) : "PRODUCT")

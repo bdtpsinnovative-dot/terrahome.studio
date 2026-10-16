@@ -698,12 +698,14 @@ export default function PropFilterClient({
 
           <div className="w-full border-t border-[#D5D2CA]/70 mt-0">
             {isCatalogLoading ? (
-              <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
+              <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24 border-l border-[#D5D2CA]/70">
                 {Array.from({ length: 8 }).map((_, idx) => (
-                  <div key={idx} className="border-b border-r border-[#D5D2CA]/70 py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative animate-pulse">
-                    <div className="w-full aspect-square mb-5 bg-[#E2DED5]/70" />
-                    <div className="h-3 w-28 bg-[#E2DED5] mb-2" />
-                    <div className="h-3 w-20 bg-[#E2DED5]/80" />
+                  <div key={idx} className="border-b border-r border-[#D5D2CA]/70 flex flex-col justify-between items-center relative animate-pulse">
+                    <div className="w-full aspect-square bg-[#E2DED5]/70" />
+                    <div className="w-full flex flex-col items-center px-4 pt-4 pb-6 md:pt-5 md:pb-8">
+                      <div className="h-3 w-28 bg-[#E2DED5] mb-2" />
+                      <div className="h-3 w-20 bg-[#E2DED5]/80" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -721,7 +723,7 @@ export default function PropFilterClient({
               </div>
             ) : (
               <>
-                <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24">
+                <div id="products" className="grid grid-cols-2 lg:grid-cols-4 w-full relative scroll-mt-24 border-l border-[#D5D2CA]/70">
                   {filteredCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((group) => {
                     const availableProducts = (group.products || []).filter((product: any) => {
                       const stockQty = (product.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
@@ -760,7 +762,7 @@ export default function PropFilterClient({
                     ] : [])
 
                     return (
-                      <div key={group.id} className="border-b border-r border-[#D5D2CA]/70 py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative">
+                      <div key={group.id} className="border-b border-r border-[#D5D2CA]/70 flex flex-col justify-between items-center relative overflow-hidden">
                         <CollectionCard group={group} slides={slides} />
                       </div>
                     )

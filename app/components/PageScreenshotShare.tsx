@@ -514,13 +514,14 @@ export default function PageScreenshotShare({
               key={`${item.id}-${idx}`}
               style={{
                 backgroundColor: "#F9F6F0",
-                padding: "22px 18px 24px 18px",
+                padding: "0 0 20px 0",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
                 alignItems: "center",
                 borderRight: "1px solid #D5D2CA",
                 borderBottom: "1px solid #D5D2CA",
+                overflow: "hidden",
               }}
             >
               {/* Square Product Image Box (#EBE8E1 like CollectionCard) */}
@@ -532,7 +533,7 @@ export default function PageScreenshotShare({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: "16px",
+                  marginBottom: "14px",
                   overflow: "hidden",
                 }}
               >
@@ -542,9 +543,9 @@ export default function PageScreenshotShare({
                     alt={item.name}
                     crossOrigin="anonymous"
                     style={{
-                      maxWidth: "88%",
-                      maxHeight: "88%",
-                      objectFit: "contain",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
                       mixBlendMode: "multiply",
                     }}
                   />
@@ -556,7 +557,7 @@ export default function PageScreenshotShare({
               </div>
 
               {/* Product Info */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", width: "100%", padding: "0 4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", width: "100%", padding: "0 12px" }}>
                 <h3
                   style={{
                     fontSize: "12px",
@@ -660,13 +661,14 @@ export default function PageScreenshotShare({
               key={`${item.id}-${idx}`}
               style={{
                 backgroundColor: "#F9F6F0",
-                padding: "26px 20px 28px 20px",
+                padding: "0 0 22px 0",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
                 alignItems: "center",
                 borderRight: "1px solid #D5D2CA",
                 borderBottom: "1px solid #D5D2CA",
+                overflow: "hidden",
               }}
             >
               {/* Square Product Image Box (#EBE8E1 like CollectionCard) */}
@@ -678,7 +680,7 @@ export default function PageScreenshotShare({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: "18px",
+                  marginBottom: "14px",
                   overflow: "hidden",
                 }}
               >
@@ -688,9 +690,9 @@ export default function PageScreenshotShare({
                     alt={item.name}
                     crossOrigin="anonymous"
                     style={{
-                      maxWidth: "88%",
-                      maxHeight: "88%",
-                      objectFit: "contain",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
                       mixBlendMode: "multiply",
                     }}
                   />
@@ -702,7 +704,7 @@ export default function PageScreenshotShare({
               </div>
 
               {/* Product Info */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", width: "100%", padding: "0 4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", width: "100%", padding: "0 12px" }}>
                 <h3
                   style={{
                     fontSize: "12px",
