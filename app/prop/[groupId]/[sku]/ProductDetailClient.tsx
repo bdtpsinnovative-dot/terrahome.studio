@@ -376,8 +376,8 @@ export default function ProductDetailClient({
     <div data-prop-product-id={String(activeProduct.id)} className="relative min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
       <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch pt-24 pb-4 lg:pt-28">
         
-        <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className="flex-1 bg-[#F4F1EB] aspect-[3/4] lg:aspect-auto relative overflow-hidden group rounded-[2px]">
+        <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col lg:sticky lg:top-28 self-start">
+          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group rounded-[2px]">
             {outOfStock && (
               <div className="absolute top-3 right-3 z-20">
                 <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
@@ -391,7 +391,7 @@ export default function ProductDetailClient({
                 alt={activeProduct.name} 
                 title={activeProduct.name} 
                 key={`${activeProduct.id}-${selectedImage}`}
-                className="w-full h-full absolute inset-0 object-contain p-10 lg:p-16 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#8C8A86] uppercase tracking-[0.2em] text-xs">
@@ -645,7 +645,8 @@ export default function ProductDetailClient({
             </div>
           </div>
 
-          {/* ⚡ 4. ปุ่ม ADD TO CART หรือ ติดต่อสอบถาม เมื่อสินค้าหมดสต็อก */}
+          {/* ⚡ 4. ปุ่ม ADD TO CART (ซ่อนไว้ชั่วคราวตามคำขอ: ซ่อนปุ่มตะกร้า) */}
+          {/* 
           <div className="pt-2 max-w-lg mt-auto">
             {outOfStock ? (
               <button
@@ -690,6 +691,7 @@ export default function ProductDetailClient({
               </button>
             )}
           </div>
+          */}
           
         </div>
       </div>
