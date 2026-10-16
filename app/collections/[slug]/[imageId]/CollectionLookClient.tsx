@@ -414,10 +414,10 @@ export default function CollectionLookClient({
   const effectiveStock = isFullSetSelected ? setBranchStock : singleActiveStock;
 
   return (
-    <div className="relative z-[9999] min-h-screen bg-[#EBE8E1] text-[#3A3835] font-sans antialiased selection:bg-[#3A3835] selection:text-[#EBE8E1] flex flex-col justify-between">
+    <div className="relative z-[9999] min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans antialiased selection:bg-[#3A3835] selection:text-[#EAE7E0] flex flex-col justify-between">
       
       {/* 1. TOP NAVIGATION BAR */}
-      <nav className="w-full px-6 lg:px-12 py-6 flex justify-between items-center sticky top-0 bg-[#EBE8E1] z-[10000]">
+      <nav className="w-full px-6 lg:px-12 py-5 flex justify-between items-center sticky top-0 bg-[#EAE7E0]/95 backdrop-blur-xs border-b border-[#D5D2CA]/70 z-[10000]">
         <button
           onClick={() => router.back()}
           className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] uppercase text-[#8C8A86] hover:text-[#3A3835] flex items-center gap-2 transition-colors group cursor-pointer"
@@ -435,19 +435,19 @@ export default function CollectionLookClient({
         </div>
       </nav>
 
-      {/* 2. MAIN 2-COLUMN SHOWCASE SECTION */}
-      <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-4">
+      {/* 2. MAIN 2-COLUMN SHOWCASE SECTION: Luxury Studio Grid (1600px) */}
+      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch py-2 lg:py-6 border-b border-[#D5D2CA]/70">
         
-        {/* LEFT COLUMN: Large Photograph (Consistent container sizing matching Prop Detail) */}
-        <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col">
-          <div className="bg-[#F4F1EB] relative overflow-hidden group rounded-[2px] flex-1 aspect-3/4 lg:aspect-auto min-h-[360px] lg:min-h-[480px] shadow-2xs">
+        {/* LEFT COLUMN: Large Photograph (Flush Left, Right, Top) */}
+        <div className="lg:col-span-6 lg:border-r border-[#D5D2CA]/70 flex flex-col lg:sticky lg:top-24 self-start">
+          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group">
             {isFullSetSelected ? (
               <img 
                 src={collectionImage.imageUrl} 
                 alt={collectionImage.altText || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
                 title={`${category.titleEn} Look ${collectionImage.sortOrder}`} 
                 key={`look-${collectionImage.id}`}
-                className="w-full h-full absolute inset-0 object-contain p-6 lg:p-10 transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
               activeProduct.image_url ? (
@@ -456,20 +456,20 @@ export default function CollectionLookClient({
                   alt={activeProduct.name || `${category.titleEn} Look ${collectionImage.sortOrder}`} 
                   title={activeProduct.name} 
                   key={`product-${activeProduct.id || collectionImage.id}`}
-                  className="w-full h-full absolute inset-0 object-contain p-10 lg:p-16 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
                 <img 
                   src={collectionImage.imageUrl} 
                   alt={category.titleEn} 
-                  className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
                 />
               )
             )}
 
-            {/* Look / Product Badge */}
+            {/* Look / Product Badge - Sharp luxury corner */}
             <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-medium tracking-[0.2em] uppercase border border-white/10">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] bg-[#3A3835]/85 backdrop-blur-xs text-white text-[8px] font-bold tracking-[0.2em] uppercase shadow-xs">
                 <span>{isFullSetSelected ? `Look #${collectionImage.sortOrder} · Set` : (activeProduct.sku || `Look #${collectionImage.sortOrder}`)}</span>
               </div>
             </div>
@@ -477,7 +477,7 @@ export default function CollectionLookClient({
         </div>
 
         {/* RIGHT COLUMN: Active Product Details OR Complete Set Details */}
-        <div className="lg:col-span-7 p-4 lg:p-6 xl:p-8 flex flex-col gap-6">
+        <div className="lg:col-span-6 p-6 lg:p-12 xl:p-16 flex flex-col gap-6">
           
           {/* A. COMPLETE SET VIEW (เมื่อเลือก เซ็ตรวม) */}
           {isFullSetSelected ? (
@@ -512,7 +512,7 @@ export default function CollectionLookClient({
               )}
 
               {/* SET SPECS TABLE */}
-              <div className="mt-8 py-5 border-y border-[#3A3835]/10 grid grid-cols-3 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+              <div className="mt-8 py-5 border-y border-[#3A3835]/10 grid grid-cols-3 text-center text-xs divide-x divide-[#3A3835]/10 max-w-xl">
                 <div>
                   <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1">TOTAL PIECES</span>
                   <span className="font-semibold text-[11px] text-[#3A3835]">{linkedProducts.length} รายการ</span>
@@ -568,7 +568,7 @@ export default function CollectionLookClient({
               )}
 
               {/* SPECS TABLE (MATERIAL, WIDTH, DEPTH, HEIGHT) */}
-              <div className="mt-8 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+              <div className="mt-8 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-xl">
                 <div>
                   <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
                   <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || "-"}</span>
@@ -590,7 +590,7 @@ export default function CollectionLookClient({
           )}
 
           {/* IN-STORE AVAILABILITY & MAP (Always Available for both Full Set & Single Items) */}
-          <div className="max-w-lg">
+          <div className="max-w-xl">
             <button 
               onClick={() => {
                 trackAnalyticsCta(showStock ? "close_stock_availability" : "open_stock_availability", { product_id: activeProduct.id });
@@ -866,7 +866,7 @@ export default function CollectionLookClient({
                         {item.image_url ? (
                           <img 
                             src={item.image_url} 
-                            className={`w-full h-full object-contain p-4 mix-blend-multiply transition-opacity ${isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`} 
+                            className={`w-full h-full object-cover mix-blend-multiply transition-all duration-300 ${isActive ? "opacity-100 scale-105" : "opacity-85 group-hover:opacity-100 group-hover:scale-105"}`} 
                             alt={item.name} 
                             title={item.name} 
                           />
@@ -898,7 +898,8 @@ export default function CollectionLookClient({
             )}
           </div>
 
-          {/* ADD TO CART BUTTON (Handles Full Set or Single Item) */}
+          {/* ⚡ ADD TO CART BUTTON (ซ่อนไว้ชั่วคราวตามคำขอ: ซ่อนปุ่มตะกร้า) */}
+          {/*
           <div className="pt-2 max-w-lg mt-auto">
             {isFullSetSelected ? (
               !isSetAvailable ? (
@@ -988,6 +989,7 @@ export default function CollectionLookClient({
               </button>
             )}
           </div>
+          */}
           
         </div>
       </div>
