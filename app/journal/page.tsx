@@ -227,12 +227,12 @@ export default function JournalPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#E5DDD3] text-[#1C1A18] selection:bg-[#84492C] selection:text-[#FAF7F2] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#EAE7E0] text-[#3A3835] selection:bg-[#C8A97E]/20 selection:text-[#3A3835] flex flex-col font-sans">
       
       {/* =========================================================================
           1. TOP HERO BANNER (Full-Width Edge-to-Edge หรูหรา ไร้รอยต่อ)
           ========================================================================= */}
-      <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden bg-[#241C18]">
+      <div className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden bg-[#241C18] border-b border-[#D5D2CA]/70">
         {HERO_BANNERS.map((src, idx) => (
           <motion.img
             key={`${src}-${idx}`}
@@ -255,7 +255,7 @@ export default function JournalPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-transparent pointer-events-none" />
 
         {/* ชั้นไล่สีละลายขอบล่างกลืนกับพื้นหลังหน้าเว็บ */}
-        <div className="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-[#E5DDD3] via-[#E5DDD3]/60 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-[#EAE7E0] via-[#EAE7E0]/60 to-transparent pointer-events-none z-20" />
         
         <div className="absolute bottom-8 left-6 sm:bottom-12 sm:left-12 lg:left-16 text-white z-30">
           <motion.span
@@ -276,16 +276,16 @@ export default function JournalPage() {
           </motion.h1>
         </div>
 
-        {/* Slide Indicator Dots */}
-        <div className="absolute bottom-8 right-6 sm:bottom-12 sm:right-12 lg:right-16 flex gap-2.5 z-30">
+        {/* Slide Indicator Lines */}
+        <div className="absolute bottom-8 right-6 sm:bottom-12 sm:right-12 lg:right-16 flex gap-2 z-30">
           {HERO_BANNERS.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setCurrentBannerIndex(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1 rounded-full transition-all duration-400 drop-shadow-sm cursor-pointer ${
-                i === currentBannerIndex ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/80"
+              className={`h-0.5 transition-all duration-400 drop-shadow-sm cursor-pointer ${
+                i === currentBannerIndex ? "w-8 bg-white" : "w-3 bg-white/40 hover:bg-white/80"
               }`}
             />
           ))}
@@ -293,9 +293,9 @@ export default function JournalPage() {
       </div>
 
       {/* =========================================================================
-          2. LUXURY EDITORIAL CATEGORY SECTIONS (Scroll Animation Reveal สุดสมูท)
+          2. LUXURY EDITORIAL CATEGORY SECTIONS
           ========================================================================= */}
-      <main className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 lg:px-12 pt-16 md:pt-24 pb-36 flex-1">
+      <main className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-12 md:pt-16 pb-36 flex-1">
         {isLoading ? (
           <div className="py-32 flex flex-col items-center justify-center text-[#84492C] gap-3">
             <div className="w-8 h-8 border-2 border-[#84492C] border-t-transparent rounded-full animate-spin" />
@@ -318,39 +318,39 @@ export default function JournalPage() {
                 >
                   {/* Section Header สไตล์ Luxury Editorial สลับฝั่ง ซ้าย-ขวา */}
                   <div
-                    className={`flex flex-col md:flex-row md:items-end justify-between gap-6 pb-5 border-b border-[#1C1A18]/10 ${
+                    className={`flex flex-col md:flex-row md:items-end justify-between gap-6 pb-5 border-b border-[#D5D2CA]/70 ${
                       isEven ? "" : "md:flex-row-reverse"
                     }`}
                   >
                     {/* Text Block */}
                     <div
-                      className={`space-y-3 ${isEven ? "text-left" : "md:text-right"}`}
+                      className={`space-y-2.5 ${isEven ? "text-left" : "md:text-right"}`}
                     >
                       {/* Number + Thai Title Badge */}
                       <div className={`flex items-center gap-2 ${isEven ? "justify-start" : "md:justify-end"}`}>
-                        <span className="text-xs sm:text-[13px] font-bold tracking-[0.2em] text-[#84492C] uppercase">
+                        <span className="text-xs font-mono font-bold tracking-[0.25em] text-[#84492C] uppercase">
                           {category.number}
                         </span>
                         <span className="text-[#84492C]/40 text-xs font-light">—</span>
-                        <span className="text-xs sm:text-[13.5px] font-semibold text-[#84492C] tracking-normal">
+                        <span className="text-xs sm:text-[13px] font-medium text-[#8C8A86] tracking-normal">
                           {category.title_th}
                         </span>
                       </div>
 
                       {/* Main Title English */}
-                      <h2 className="font-serif text-3xl sm:text-4xl lg:text-[44px] uppercase tracking-[0.1em] text-[#1C1A18] font-light leading-tight">
+                      <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl uppercase tracking-[0.1em] text-[#3A3835] font-normal leading-tight">
                         {category.title_en}
                       </h2>
 
                       {/* Descriptions (English & Thai) */}
-                      <div className={`space-y-1.5 max-w-2xl ${isEven ? "" : "md:ml-auto"}`}>
+                      <div className={`space-y-1 max-w-2xl ${isEven ? "" : "md:ml-auto"}`}>
                         {category.description_en && (
-                          <p className="text-xs sm:text-[14.5px] text-[#2D2824] leading-relaxed font-normal">
+                          <p className="text-xs sm:text-[13.5px] text-[#5A544F] leading-relaxed font-normal">
                             {category.description_en}
                           </p>
                         )}
                         {category.description_th && (
-                          <p className="text-xs sm:text-[14px] text-[#554C43] leading-relaxed font-normal">
+                          <p className="text-xs sm:text-[13px] text-[#7A736B] leading-relaxed font-normal">
                             {category.description_th}
                           </p>
                         )}
@@ -361,7 +361,7 @@ export default function JournalPage() {
                     <div className="shrink-0 pb-1">
                       <Link
                         href={`/prop?category=${encodeURIComponent(category.category_query)}`}
-                        className={`group inline-flex items-center gap-2 text-[11px] sm:text-[12px] font-medium tracking-[0.25em] uppercase text-[#84492C] border-b border-[#84492C]/40 pb-1 hover:border-[#84492C] transition-all duration-300 ${
+                        className={`group inline-flex items-center gap-2 text-[10px] sm:text-[11px] font-medium tracking-[0.25em] uppercase text-[#84492C] border-b border-[#84492C]/40 hover:border-[#3A3835] hover:text-[#3A3835] pb-1 transition-all duration-300 ${
                           isEven ? "" : "flex-row-reverse"
                         }`}
                       >
@@ -371,8 +371,8 @@ export default function JournalPage() {
                     </div>
                   </div>
 
-                  {/* Grid of Images with Multiple 2x2 Feature Tiles (Dense Packing) */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 grid-flow-dense gap-4 sm:gap-6 md:gap-8">
+                  {/* Grid of Images: Architectural Studio Lookbook Grid with Flush Borders */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 grid-flow-dense border-t border-l border-[#D5D2CA]/70 w-full relative">
                     {category.images.map((img, imgIdx) => {
                       const { className: gridPlacement, isHero } = getImageGridStyle(imgIdx, isEven, category.images.length);
                       const validPrices = (img.products || [])
@@ -385,114 +385,90 @@ export default function JournalPage() {
                         <Link
                           key={img.id}
                           href={`/collections/${category.slug}/${img.id}`}
-                          className={`group relative rounded-2xl md:rounded-3xl overflow-hidden bg-[#F4EFEA] border border-[#E7E2D9]/80 shadow-xs hover:shadow-2xl transition-all duration-500 cursor-pointer block ${gridPlacement}`}
+                          className={`group relative overflow-hidden bg-[#F4F1EB] border-r border-b border-[#D5D2CA]/70 transition-colors duration-500 cursor-pointer block ${gridPlacement}`}
                         >
-                          <motion.div
-                            whileHover={{ y: -6, transition: { duration: 0.3, ease: "easeOut" } }}
-                            className="w-full h-full relative"
-                          >
+                          <div className="w-full h-full relative overflow-hidden">
                             <img
                               src={img.image_url}
                               alt={img.alt_text || `${category.title_en} image ${imgIdx + 1}`}
                               loading={imgIdx < 6 ? "eager" : "lazy"}
-                              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106 select-none"
+                              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 select-none"
                             />
 
                             {/* Top Badges */}
-                            <div className="absolute top-2.5 sm:top-3.5 left-2.5 sm:left-3.5 right-2.5 sm:right-3.5 z-20 flex items-center justify-between pointer-events-none">
+                            <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
                               {isHero ? (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-medium tracking-[0.18em] uppercase border border-white/20 shadow-md">
-                                  <Sparkles size={11} className="text-[#F2C94C]" />
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-[2px] bg-[#3A3835]/85 backdrop-blur-xs text-white text-[8px] font-bold tracking-[0.18em] uppercase shadow-xs">
+                                  <Sparkles size={10} className="text-[#C8A97E]" />
                                   <span>Featured Look</span>
                                 </div>
                               ) : <span />}
 
                               {promo && (
-                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#84492C] text-white text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase shadow-md border border-white/20">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-[2px] bg-[#84492C] text-white text-[8px] font-bold tracking-wider uppercase shadow-xs">
                                   <span>เซ็ตลด {promo.discount_type === "percentage" ? `${promo.discount_value}%` : `฿${Number(promo.discount_value).toLocaleString()}`}</span>
                                 </div>
                               )}
                             </div>
 
                             {/* Dark Gradient Overlay for bottom readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
 
-                            {/* Bottom Product Info Glass Tray */}
+                            {/* Bottom Product Info Bar */}
                             {img.products && img.products.length > 0 ? (
-                              <div className="absolute bottom-2.5 sm:bottom-3.5 left-2.5 sm:left-3.5 right-2.5 sm:right-3.5 z-20">
-                                <div className="bg-[#1C1A18]/80 backdrop-blur-md border border-white/20 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-white transition-all duration-300 group-hover:bg-[#1C1A18]/92 group-hover:border-white/30 shadow-xl">
-                                  <div className="flex items-center justify-between gap-2">
-                                    {/* Products Thumbnail Strip */}
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div className="flex -space-x-2 shrink-0">
-                                        {img.products.slice(0, 3).map((prod, pIdx) => (
-                                          <div
-                                            key={prod.id || pIdx}
-                                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#1C1A18] overflow-hidden bg-white/20 shrink-0 shadow-xs"
-                                          >
-                                            {prod.image_url ? (
-                                              <img
-                                                src={prod.image_url}
-                                                alt={prod.name}
-                                                className="w-full h-full object-cover"
-                                              />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center text-[10px] text-white/70">
-                                                🏺
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[11px] sm:text-[12px] font-medium text-white truncate leading-tight">
-                                          {img.products.length === 1 ? img.products[0].name : `${img.products.length} ชิ้นในลุคนี้`}
-                                        </p>
-                                        <p className="text-[10px] sm:text-[11px] text-[#E5DDD3]/80 leading-tight">
-                                          {minPrice !== null ? `เริ่มต้น ฿${minPrice.toLocaleString()}` : "ดูรายละเอียดสินค้า"}
-                                        </p>
-                                      </div>
+                              <div className="absolute bottom-0 inset-x-0 z-20 p-2.5 sm:p-3 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+                                <div className="flex items-center justify-between gap-2">
+                                  {/* Products Thumbnail Strip */}
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex -space-x-1 shrink-0">
+                                      {img.products.slice(0, 3).map((prod, pIdx) => (
+                                        <div
+                                          key={prod.id || pIdx}
+                                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-[1px] border border-white/30 overflow-hidden bg-white/20 shrink-0"
+                                        >
+                                          {prod.image_url ? (
+                                            <img
+                                              src={prod.image_url}
+                                              alt={prod.name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[9px] text-white/70">
+                                              🏺
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
 
-                                    {/* View Arrow Icon */}
-                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#1C1A18] flex items-center justify-center shrink-0 group-hover:bg-[#84492C] group-hover:text-white transition-colors duration-300 shadow-sm">
-                                      <ArrowUpRight size={14} className="transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] sm:text-[11px] font-medium text-white tracking-wide truncate leading-tight">
+                                        {img.products.length === 1 ? img.products[0].name : `${img.products.length} ชิ้นในลุคนี้`}
+                                      </p>
+                                      <p className="text-[9px] sm:text-[10px] font-mono tracking-wider text-[#C8A97E] leading-tight">
+                                        {minPrice !== null ? `เริ่มต้น ฿${minPrice.toLocaleString()}` : "ดูรายละเอียดสินค้า"}
+                                      </p>
                                     </div>
                                   </div>
 
-                                  {/* Hover Product List Tray (Desktop) */}
-                                  <div className="max-h-0 opacity-0 overflow-hidden group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-2.5 pt-0 group-hover:pt-2 border-t border-white/0 group-hover:border-white/10 transition-all duration-300 hidden sm:block">
-                                    <div className="space-y-1.5">
-                                      {img.products.slice(0, 3).map((prod) => (
-                                        <div key={prod.id} className="flex items-center justify-between text-[11px] text-white/90">
-                                          <span className="truncate max-w-[70%] font-light">{prod.name}</span>
-                                          <span className="font-semibold text-[#F2C94C] shrink-0">
-                                            {prod.price !== null && prod.price > 0 ? `฿${prod.price.toLocaleString()}` : "สอบถามราคา"}
-                                          </span>
-                                        </div>
-                                      ))}
-                                      {img.products.length > 3 && (
-                                        <p className="text-[10px] text-[#E5DDD3]/60 tracking-wider">
-                                          +{img.products.length - 3} สินค้าเพิ่มเติม...
-                                        </p>
-                                      )}
-                                    </div>
+                                  {/* View Arrow Icon */}
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[1px] bg-white/90 text-[#3A3835] flex items-center justify-center shrink-0 group-hover:bg-[#84492C] group-hover:text-white transition-colors duration-300">
+                                    <ArrowUpRight size={13} className="transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                   </div>
                                 </div>
                               </div>
                             ) : (
                               /* Fallback overlay if no products linked */
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4 sm:p-6 z-20">
-                                <span className="text-[11px] sm:text-xs tracking-[0.25em] text-white uppercase font-medium drop-shadow-sm">
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3 sm:p-4 z-20">
+                                <span className="text-[9px] sm:text-[10px] tracking-[0.25em] text-white uppercase font-medium">
                                   ดูสินค้าในภาพนี้
                                 </span>
-                                <div className="p-2 rounded-full bg-white/95 text-[#1C1A18] shadow-md backdrop-blur-xs">
-                                  <ArrowUpRight size={16} />
+                                <div className="p-1.5 rounded-[1px] bg-white text-[#3A3835]">
+                                  <ArrowUpRight size={13} />
                                 </div>
                               </div>
                             )}
-                          </motion.div>
+                          </div>
                         </Link>
                       );
                     })}
@@ -514,50 +490,50 @@ export default function JournalPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setPreviewImage(null)}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8 cursor-zoom-out"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 md:p-8 cursor-zoom-out"
           >
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
+              exit={{ scale: 0.96, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative max-w-4xl max-h-[85vh] w-full bg-[#EFE8DF] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center p-6 md:p-10 cursor-default border border-[#D9D0C5]"
+              className="relative max-w-4xl max-h-[85vh] w-full bg-[#EAE7E0] rounded-[2px] overflow-hidden shadow-2xl flex flex-col items-center p-6 md:p-10 cursor-default border border-[#D5D2CA]"
             >
-              {/* Close Button (z-50 ไม่โดนบัง และกดง่ายชัดเจน 100%) */}
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setPreviewImage(null)}
-                className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-white text-[#1C1A18] hover:bg-[#84492C] hover:text-white shadow-lg border border-[#E5DFD5] transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center"
+                className="absolute top-4 right-4 z-50 p-2 rounded-[2px] bg-white text-[#3A3835] hover:bg-[#84492C] hover:text-white shadow-sm border border-[#D5D2CA] transition-all cursor-pointer flex items-center justify-center"
                 title="ปิดหน้าต่าง"
                 aria-label="Close"
               >
-                <X size={18} strokeWidth={2.5} />
+                <X size={16} strokeWidth={2} />
               </button>
 
               <div className="w-full flex-1 min-h-[260px] max-h-[58vh] flex items-center justify-center p-2 pt-8 sm:pt-4">
                 <img
                   src={previewImage.url}
                   alt={previewImage.title}
-                  className="max-w-full max-h-[52vh] object-contain drop-shadow-md rounded-xl"
+                  className="max-w-full max-h-[52vh] object-contain drop-shadow-sm rounded-[2px]"
                 />
               </div>
 
-              <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-[#E5DFD5] mt-auto">
+              <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-[#D5D2CA]/70 mt-auto">
                 <div className="text-center sm:text-left">
-                  <span className="text-[10px] tracking-[0.25em] uppercase font-semibold text-[#84492C]">
+                  <span className="text-[9px] tracking-[0.25em] uppercase font-bold text-[#84492C]">
                     Collection
                   </span>
-                  <h3 className="font-serif text-xl sm:text-2xl uppercase tracking-wider text-[#1C1A18] font-light">
+                  <h3 className="font-serif text-xl sm:text-2xl uppercase tracking-wider text-[#3A3835] font-normal">
                     {previewImage.title}
                   </h3>
                 </div>
 
                 <Link
                   href={`/prop?category=${encodeURIComponent(previewImage.categoryQuery)}`}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#84492C] hover:bg-[#6c3920] text-white text-xs font-semibold tracking-[0.2em] uppercase rounded-full shadow-sm transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#3A3835] hover:bg-[#84492C] text-white text-[10px] font-bold tracking-[0.2em] uppercase rounded-[2px] shadow-sm transition-all cursor-pointer"
                 >
                   <span>View in Store</span>
-                  <ArrowUpRight size={15} />
+                  <ArrowUpRight size={14} />
                 </Link>
               </div>
             </motion.div>
