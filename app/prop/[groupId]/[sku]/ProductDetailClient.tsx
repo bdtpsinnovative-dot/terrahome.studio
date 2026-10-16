@@ -374,12 +374,13 @@ export default function ProductDetailClient({
 
   return (
     <div data-prop-product-id={String(activeProduct.id)} className="relative min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-      <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch pt-24 pb-4 lg:pt-28">
+      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch pt-24 pb-8 lg:pt-28 border-b border-[#D5D2CA]/70">
         
-        <div className="lg:col-span-5 p-4 lg:p-6 flex flex-col lg:sticky lg:top-28 self-start">
-          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group rounded-[2px]">
+        {/* 🌟 ฝั่งซ้าย: รูปสินค้าหลักขยายใหญ่ ชิดซ้าย ขวา บน เต็มคอลัมน์ สไตล์ Luxury Studio Grid */}
+        <div className="lg:col-span-6 lg:border-r border-[#D5D2CA]/70 flex flex-col lg:sticky lg:top-28 self-start">
+          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group">
             {outOfStock && (
-              <div className="absolute top-3 right-3 z-20">
+              <div className="absolute top-4 right-4 z-20">
                 <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
                   OUT OF STOCK
                 </span>
@@ -400,7 +401,7 @@ export default function ProductDetailClient({
             )}
           </div>
           {galleryImages.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Product image gallery">
+            <div className="p-4 lg:p-6 border-t border-[#D5D2CA]/70 flex gap-2.5 overflow-x-auto pb-2" aria-label="Product image gallery">
               {galleryImages.map((image, index) => (
                 <button
                   key={image}
@@ -408,7 +409,7 @@ export default function ProductDetailClient({
                   onClick={() => setSelectedImageIndex(index)}
                   aria-label={`View product image ${index + 1}`}
                   aria-pressed={selectedImage === image}
-                  className={`relative h-16 w-14 shrink-0 overflow-hidden rounded-[2px] border bg-[#F4F1EB] transition-colors ${
+                  className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[2px] border bg-[#F4F1EB] transition-colors ${
                     selectedImage === image
                       ? 'border-[#84492C] ring-1 ring-[#84492C]/40'
                       : 'border-[#3A3835]/10 hover:border-[#84492C]/50'
@@ -417,7 +418,7 @@ export default function ProductDetailClient({
                   <img
                     src={image}
                     alt={`${activeProduct.name} - image ${index + 1}`}
-                    className="h-full w-full object-contain p-1 mix-blend-multiply"
+                    className="h-full w-full object-cover mix-blend-multiply"
                   />
                 </button>
               ))}
@@ -425,7 +426,8 @@ export default function ProductDetailClient({
           )}
         </div>
 
-        <div className="lg:col-span-7 p-4 lg:p-6 xl:p-8 flex flex-col gap-6">
+        {/* 🌟 ฝั่งขวา: รายละเอียดสินค้า สเปก และคอลเลกชัน */}
+        <div className="lg:col-span-6 p-6 lg:p-12 xl:p-16 flex flex-col gap-6">
           
           <div>
             <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
@@ -460,7 +462,7 @@ export default function ProductDetailClient({
               </p>
             )}
 
-            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-lg">
+            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-xl">
               <div>
                 <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
                 <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || '-'}</span>
@@ -479,7 +481,7 @@ export default function ProductDetailClient({
               </div>
             </div>
 
-            <div className="mt-8 max-w-lg">
+            <div className="mt-8 max-w-xl">
               <button 
                 onClick={() => {
                   trackAnalyticsCta(showStock ? 'close_stock_availability' : 'open_stock_availability', { product_id: activeProduct.id })
@@ -614,7 +616,7 @@ export default function ProductDetailClient({
                       {item.image_url ? (
                         <img 
                           src={item.image_url} 
-                          className={`w-full h-full object-contain p-4 mix-blend-multiply transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`} 
+                          className={`w-full h-full object-cover mix-blend-multiply transition-all duration-300 ${isActive ? 'opacity-100 scale-105' : 'opacity-85 group-hover:opacity-100 group-hover:scale-105'}`} 
                           alt={item.name} 
                           title={item.name} 
                         />
