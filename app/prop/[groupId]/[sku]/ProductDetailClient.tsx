@@ -701,7 +701,7 @@ export default function ProductDetailClient({
             <h2 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal mb-8 text-center">
               RECOMMENDED FOR YOU
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 w-full relative">
+            <div className="grid grid-cols-2 lg:grid-cols-4 w-full relative border-t border-[#D5D2CA]/70">
               {recommendedCollections.map((group) => {
                 const slides = group.products
                   ?.filter((p: any) => p.image_url !== null && p.image_url !== "")
@@ -722,7 +722,7 @@ export default function ProductDetailClient({
                   })
                 }
                 return (
-                  <div key={group.id} className="border-b border-[#D5D2CA]/70 [&:not(:nth-child(2n))]:border-r lg:[&:not(:nth-child(4n))]:border-r py-8 px-4 md:py-12 md:px-6 flex flex-col justify-between items-center relative">
+                  <div key={group.id} className="border-b border-[#D5D2CA]/70 [&:not(:nth-child(2n))]:border-r lg:[&:not(:nth-child(4n))]:border-r flex flex-col justify-between items-center relative overflow-hidden">
                     <CollectionCard group={group} slides={slides} bgColor="#EAE7E0" />
                   </div>
                 )
