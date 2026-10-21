@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { Mail, Phone, MapPin, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import Footer from "@/app/components/Footer";
-import { submitTerraContact } from "@/app/actions/contact";
+import { createClient } from "@/src/supabase/client";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", message: "" });
@@ -18,14 +18,43 @@ export default function ContactPage() {
     setErrorMsg(null);
 
     try {
-      const res = await submitTerraContact(formData);
-      if (res.success) {
+      if (!formData.name.trim()) {
+        setErrorMsg("กรุณากรอกชื่อผู้ติดต่อ");
+        setSubmitting(false);
+        return;
+      }
+      if (!formData.email.trim() && !formData.phone.trim()) {
+        setErrorMsg("กรุณาระบุอีเมลหรือเบอร์โทรศัพท์");
+        setSubmitting(false);
+        return;
+      }
+
+      const nameParts = formData.name.trim().split(/\s+/);
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(" ") || "-";
+
+      const supabase = createClient();
+      const { error: insertError } = await supabase
+        .from("contact_inquiries")
+        .insert({
+          first_name: firstName,
+          last_name: lastName,
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          message: formData.message.trim(),
+          source: "terrahome",
+          status: "new",
+        });
+
+      if (insertError) {
+        console.error("Supabase insert error:", insertError);
+        setErrorMsg("เกิดข้อผิดพลาดในการส่งข้อความ กรุณาลองใหม่อีกครั้ง");
+      } else {
         setSubmitted(true);
         setFormData({ name: "", email: "", phone: "", message: "" });
-      } else {
-        setErrorMsg(res.error || "เกิดข้อผิดพลาดในการส่งข้อความ");
       }
-    } catch {
+    } catch (err: any) {
+      console.error("Error submitting contact inquiry:", err);
       setErrorMsg("ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setSubmitting(false);
