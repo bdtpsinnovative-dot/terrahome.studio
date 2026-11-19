@@ -87,10 +87,27 @@ const PRODUCT_SELECT_SLIM = [
   "width_cm:specs->width_cm",
   "length_cm:specs->length_cm",
   "thickness_cm:specs->thickness_cm",
-  "stock ( branch_id, qty )",
 ].join(", ")
 
 const GROUP_SELECT_SLIM = "id, name, cover_image_url, image_url, product_sup, created_at"
+
+// ⚡ โครงสร้างแคชข้อมูลสินค้าแบบคงที่ (แคช 1 ชม. ไม่ผูกกับสต็อกหรือสาขา)
+interface StaticCatalogCache {
+  propProducts: any[]
+  rawGroups: any[]
+  validDiscounts: any[]
+  globalDiscount: any | null
+  discountByProductId: Map<number, any>
+  hotProductIds: number[]
+  hotRankByProductId: Map<number, number>
+  hotScoreByProductId: Map<number, number>
+  bannerGroups: Array<{ product_sup: string | null; image_url: string }>
+  allBannerImages: string[]
+  fetchedAt: number
+}
+
+const STATIC_CATALOG_TTL_MS = 60 * 60 * 1000 // 1 hour memory cache
+let cachedStaticCatalog: StaticCatalogCache | null = null
 
 export function getCachedRawCatalog(): RawCatalogData | null {
   if (cachedRawCatalog && Date.now() - cachedRawCatalog.fetchedAt < CACHE_TTL_MS) {
@@ -106,10 +123,9 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
 
   inflightCatalogPromise = (async () => {
     const supabase = createClient()
-    const pageSize = 1000
-    const initialPages = 6 // Covers up to 6,000 products & 6,000 groups in a single parallel wave
 
-    const [branchesRes, discountsRes, hotRes, ...pageResults] = await Promise.all([
+    // 🔴 1. สต็อกสดและสาขา (Real-time Live Stock & Branches) — ยิงสดทุกครั้งที่โหลด
+    const liveFetchPromise = Promise.all([
       supabase
         .from("branches")
         .select("id, branch_code, branch_name, latitude, longitude")
@@ -117,122 +133,174 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
         .not("longitude", "is", null)
         .order("branch_name", { ascending: true }),
       supabase
-        .from("discounts")
-        .select("id, discount_type, value, start_date, end_date, discount_rules ( product_id )")
-        .eq("active", true),
-      supabase.rpc("get_prop_hot_items", { limit_count: 80 }),
-      ...Array.from({ length: initialPages }, (_, i) =>
-        supabase
-          .from("products")
-          .select(PRODUCT_SELECT_SLIM)
-          .eq("category_id", "prop")
-          .order("id", { ascending: true })
-          .range(i * pageSize, (i + 1) * pageSize - 1)
-      ),
-      ...Array.from({ length: initialPages }, (_, i) =>
-        supabase
-          .from("collection_groups")
-          .select(GROUP_SELECT_SLIM)
-          .ilike("tag", "%prop%")
-          .order("id", { ascending: true })
-          .range(i * pageSize, (i + 1) * pageSize - 1)
-      ),
+        .from("stock")
+        .select("product_id, branch_id, qty")
+        .gt("qty", 0),
     ])
 
-    const productWave = pageResults.slice(0, initialPages)
-    const groupWave = pageResults.slice(initialPages, initialPages * 2)
+    // 🟢 2. ข้อมูลสินค้าคงที่ (Static Products, Groups, Discounts, Hot Items) — แคช 1 ชั่วโมง
+    let staticData: StaticCatalogCache
 
-    const firstError =
-      productWave.find((r: any) => r.error)?.error ||
-      groupWave.find((r: any) => r.error)?.error ||
-      null
-    if (firstError) {
-      throw firstError
-    }
+    if (cachedStaticCatalog && Date.now() - cachedStaticCatalog.fetchedAt < STATIC_CATALOG_TTL_MS) {
+      staticData = cachedStaticCatalog
+    } else {
+      const pageSize = 1000
+      const initialPages = 6
 
-    const propProducts: any[] = productWave.flatMap((r: any) => r.data || [])
-    const rawGroups: any[] = groupWave.flatMap((r: any) => r.data || [])
+      const [discountsRes, hotRes, ...pageResults] = await Promise.all([
+        supabase
+          .from("discounts")
+          .select("id, discount_type, value, start_date, end_date, discount_rules ( product_id )")
+          .eq("active", true),
+        supabase.rpc("get_prop_hot_items", { limit_count: 80 }),
+        ...Array.from({ length: initialPages }, (_, i) =>
+          supabase
+            .from("products")
+            .select(PRODUCT_SELECT_SLIM)
+            .eq("category_id", "prop")
+            .order("id", { ascending: true })
+            .range(i * pageSize, (i + 1) * pageSize - 1)
+        ),
+        ...Array.from({ length: initialPages }, (_, i) =>
+          supabase
+            .from("collection_groups")
+            .select(GROUP_SELECT_SLIM)
+            .ilike("tag", "%prop%")
+            .order("id", { ascending: true })
+            .range(i * pageSize, (i + 1) * pageSize - 1)
+        ),
+      ])
 
-    // Fetch additional pages if catalog ever grows beyond 6,000 rows
-    if ((productWave[initialPages - 1]?.data || []).length === pageSize) {
-      for (let page = initialPages; page < 15; page++) {
-        const { data, error } = await supabase
-          .from("products")
-          .select(PRODUCT_SELECT_SLIM)
-          .eq("category_id", "prop")
-          .order("id", { ascending: true })
-          .range(page * pageSize, (page + 1) * pageSize - 1)
-        if (error) throw error
-        if (!data || data.length === 0) break
-        propProducts.push(...data)
-        if (data.length < pageSize) break
+      const productWave = pageResults.slice(0, initialPages)
+      const groupWave = pageResults.slice(initialPages, initialPages * 2)
+
+      const firstError =
+        productWave.find((r: any) => r.error)?.error ||
+        groupWave.find((r: any) => r.error)?.error ||
+        null
+      if (firstError) {
+        throw firstError
       }
-    }
 
-    if ((groupWave[initialPages - 1]?.data || []).length === pageSize) {
-      for (let page = initialPages; page < 15; page++) {
-        const { data, error } = await supabase
-          .from("collection_groups")
-          .select(GROUP_SELECT_SLIM)
-          .ilike("tag", "%prop%")
-          .order("id", { ascending: true })
-          .range(page * pageSize, (page + 1) * pageSize - 1)
-        if (error) throw error
-        if (!data || data.length === 0) break
-        rawGroups.push(...data)
-        if (data.length < pageSize) break
+      const propProducts: any[] = productWave.flatMap((r: any) => r.data || [])
+      const rawGroups: any[] = groupWave.flatMap((r: any) => r.data || [])
+
+      if ((productWave[initialPages - 1]?.data || []).length === pageSize) {
+        for (let page = initialPages; page < 15; page++) {
+          const { data, error } = await supabase
+            .from("products")
+            .select(PRODUCT_SELECT_SLIM)
+            .eq("category_id", "prop")
+            .order("id", { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1)
+          if (error) throw error
+          if (!data || data.length === 0) break
+          propProducts.push(...data)
+          if (data.length < pageSize) break
+        }
       }
-    }
 
-    const branches = branchesRes.data || []
-    const activeDiscounts = discountsRes.data || []
-    const hotItems = hotRes.data || []
+      if ((groupWave[initialPages - 1]?.data || []).length === pageSize) {
+        for (let page = initialPages; page < 15; page++) {
+          const { data, error } = await supabase
+            .from("collection_groups")
+            .select(GROUP_SELECT_SLIM)
+            .ilike("tag", "%prop%")
+            .order("id", { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1)
+          if (error) throw error
+          if (!data || data.length === 0) break
+          rawGroups.push(...data)
+          if (data.length < pageSize) break
+        }
+      }
 
-    const hotRankByProductId = new Map<number, number>()
-    const hotScoreByProductId = new Map<number, number>()
-    const hotProductIds: number[] = []
-    ;(hotItems || []).forEach((item: any, index: number) => {
-      const productId = Number(item.product_id)
-      if (!Number.isSafeInteger(productId)) return
-      hotProductIds.push(productId)
-      hotRankByProductId.set(productId, index + 1)
-      hotScoreByProductId.set(productId, Number(item.score) || 0)
-    })
+      const activeDiscounts = discountsRes.data || []
+      const hotItems = hotRes.data || []
 
-    const now = new Date()
-    const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
-      const isStarted = !discount.start_date || new Date(discount.start_date) <= now
-      const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
-      return isStarted && isNotEnded
-    })
+      const hotRankByProductId = new Map<number, number>()
+      const hotScoreByProductId = new Map<number, number>()
+      const hotProductIds: number[] = []
+      ;(hotItems || []).forEach((item: any, index: number) => {
+        const productId = Number(item.product_id)
+        if (!Number.isSafeInteger(productId)) return
+        hotProductIds.push(productId)
+        hotRankByProductId.set(productId, index + 1)
+        hotScoreByProductId.set(productId, Number(item.score) || 0)
+      })
 
-    let globalDiscount: any | null = null
-    const discountByProductId = new Map<number, any>()
-    for (const discount of validDiscounts) {
-      for (const rule of discount.discount_rules || []) {
-        if (rule.product_id === null) {
-          if (!globalDiscount) globalDiscount = discount
-        } else {
-          const pid = Number(rule.product_id)
-          if (Number.isSafeInteger(pid) && !discountByProductId.has(pid)) {
-            discountByProductId.set(pid, discount)
+      const now = new Date()
+      const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
+        const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+        const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+        return isStarted && isNotEnded
+      })
+
+      let globalDiscount: any | null = null
+      const discountByProductId = new Map<number, any>()
+      for (const discount of validDiscounts) {
+        for (const rule of discount.discount_rules || []) {
+          if (rule.product_id === null) {
+            if (!globalDiscount) globalDiscount = discount
+          } else {
+            const pid = Number(rule.product_id)
+            if (Number.isSafeInteger(pid) && !discountByProductId.has(pid)) {
+              discountByProductId.set(pid, discount)
+            }
           }
         }
       }
+
+      const bannerGroups = rawGroups
+        .filter((g: any) => !!g.image_url && String(g.image_url).trim() !== "")
+        .slice(0, 300)
+        .map((g: any) => ({ product_sup: g.product_sup ?? null, image_url: String(g.image_url) }))
+
+      const allBannerImages = Array.from(new Set(bannerGroups.map((c) => c.image_url)))
+
+      staticData = {
+        propProducts,
+        rawGroups,
+        validDiscounts,
+        globalDiscount,
+        discountByProductId,
+        hotProductIds,
+        hotRankByProductId,
+        hotScoreByProductId,
+        bannerGroups,
+        allBannerImages,
+        fetchedAt: Date.now(),
+      }
+      cachedStaticCatalog = staticData
+    }
+
+    // รอผลลัพธ์สต็อกสดและสาขา
+    const [branchesRes, stockRes] = await liveFetchPromise
+    const branches = branchesRes.data || []
+    const liveStockRows = stockRes.data || []
+
+    // แมปสต็อกสดตาม product_id
+    const stockByProductId = new Map<number, Array<{ branch_id: number; qty: number }>>()
+    for (const s of liveStockRows) {
+      const pid = Number(s.product_id)
+      const list = stockByProductId.get(pid) || []
+      list.push({ branch_id: s.branch_id, qty: s.qty })
+      stockByProductId.set(pid, list)
     }
 
     const groupById = new Map<string, any>()
-    for (const group of rawGroups) {
+    for (const group of staticData.rawGroups) {
       groupById.set(String(group.id), group)
     }
 
     const allProducts: any[] = []
     const productsByGroup = new Map<string, any[]>()
-    for (const rawProduct of propProducts) {
+    for (const rawProduct of staticData.propProducts) {
       if (rawProduct.status && rawProduct.status !== "active") continue
       if (!rawProduct.image_url || String(rawProduct.image_url).trim() === "") continue
       const product = {
         ...rawProduct,
+        stock: stockByProductId.get(rawProduct.id) || [],
         color: rawProduct.color ?? rawProduct.specs_color ?? rawProduct.specs_colour ?? rawProduct.specs_tone ?? null,
         colors: rawProduct.specs_colors ?? null,
       }
@@ -246,30 +314,23 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
       }
     }
 
-    const propGroups = rawGroups
+    const propGroups = staticData.rawGroups
       .filter((group: any) => productsByGroup.has(String(group.id)))
       .sort((a: any, b: any) => {
         const createdDiff = String(b.created_at || "").localeCompare(String(a.created_at || ""))
         return createdDiff !== 0 ? createdDiff : String(b.id).localeCompare(String(a.id))
       })
 
-    const bannerGroups = rawGroups
-      .filter((g: any) => !!g.image_url && String(g.image_url).trim() !== "")
-      .slice(0, 300)
-      .map((g: any) => ({ product_sup: g.product_sup ?? null, image_url: String(g.image_url) }))
-
-    const allBannerImages = Array.from(new Set(bannerGroups.map((c) => c.image_url)))
-
     const result: RawCatalogData = {
       branches,
-      bannerGroups,
-      allBannerImages,
-      hotProductIds,
-      hotRankByProductId,
-      hotScoreByProductId,
-      validDiscounts,
-      globalDiscount,
-      discountByProductId,
+      bannerGroups: staticData.bannerGroups,
+      allBannerImages: staticData.allBannerImages,
+      hotProductIds: staticData.hotProductIds,
+      hotRankByProductId: staticData.hotRankByProductId,
+      hotScoreByProductId: staticData.hotScoreByProductId,
+      validDiscounts: staticData.validDiscounts,
+      globalDiscount: staticData.globalDiscount,
+      discountByProductId: staticData.discountByProductId,
       propGroups,
       productsByGroup,
       groupById,

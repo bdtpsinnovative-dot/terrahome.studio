@@ -34,44 +34,55 @@ async function getActiveDiscounts() {
   return list
 }
 
-// React.cache ensures generateMetadata and Page share the exact same single fetch per request
-const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
-  const [activeDiscounts, groupRes] = await Promise.all([
-    getActiveDiscounts(),
-    supabaseAnon
-      .from("collection_groups")
-      .select(`
-        id,
-        product_sup,
-        products!inner (
-          id,
-          sku,
-          name,
-          image_url,
-          price,
-          status,
-          category_id,
-          color,
-          specs,
-          stock (
-            qty,
-            branches (
-              id,
-              branch_name,
-              latitude,
-              longitude
-            )
-          )
-        )
-      `)
-      .eq("id", groupId)
-      .eq("products.category_id", "prop")
-      .maybeSingle(),
-  ])
+interface CachedGroupMeta {
+  groupData: {
+    id: string
+    product_sup?: string | null
+    products: any[]
+  } | null
+  error?: any
+  cachedAt: number
+}
 
-  // If collection group was found and contains products, return it
+const GROUP_META_CACHE = new Map<string, CachedGroupMeta>()
+const GROUP_META_TTL_MS = 60 * 60 * 1000 // 1 hour in worker memory
+
+async function getGroupMetadata(groupId: string, sku?: string): Promise<CachedGroupMeta> {
+  const cacheKey = `${groupId}:${sku || ''}`
+  const hit = GROUP_META_CACHE.get(cacheKey)
+  if (hit && Date.now() - hit.cachedAt < GROUP_META_TTL_MS) {
+    return hit
+  }
+
+  // 1. ดึงข้อมูล Group + Products (แคชหมด โดยไม่ Join ตาราง stock/branches ให้ช้า)
+  const groupRes = await supabaseAnon
+    .from("collection_groups")
+    .select(`
+      id,
+      product_sup,
+      products!inner (
+        id,
+        sku,
+        name,
+        image_url,
+        price,
+        status,
+        category_id,
+        color,
+        specs
+      )
+    `)
+    .eq("id", groupId)
+    .eq("products.category_id", "prop")
+    .maybeSingle()
+
   if (groupRes.data && !groupRes.error) {
-    return { activeDiscounts, groupData: groupRes.data, error: null }
+    const entry: CachedGroupMeta = {
+      groupData: groupRes.data,
+      cachedAt: Date.now(),
+    }
+    GROUP_META_CACHE.set(cacheKey, entry)
+    return entry
   }
 
   // Fallback for standalone products or when groupId is actually a product id / sku
@@ -87,16 +98,7 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
       category_id,
       color,
       specs,
-      collection_group_id,
-      stock (
-        qty,
-        branches (
-          id,
-          branch_name,
-          latitude,
-          longitude
-        )
-      )
+      collection_group_id
     `)
     .eq("category_id", "prop")
 
@@ -111,7 +113,6 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
   const { data: productData, error: productErr } = await productQuery.maybeSingle()
 
   if (productData && !productErr) {
-    // If this product actually belongs to a collection group that wasn't matched by groupId
     if (productData.collection_group_id && String(productData.collection_group_id) !== String(groupId)) {
       const { data: actualGroup } = await supabaseAnon
         .from("collection_groups")
@@ -127,16 +128,7 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
             status,
             category_id,
             color,
-            specs,
-            stock (
-              qty,
-              branches (
-                id,
-                branch_name,
-                latitude,
-                longitude
-              )
-            )
+            specs
           )
         `)
         .eq("id", productData.collection_group_id)
@@ -144,7 +136,12 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
         .maybeSingle()
 
       if (actualGroup) {
-        return { activeDiscounts, groupData: actualGroup, error: null }
+        const entry: CachedGroupMeta = {
+          groupData: actualGroup,
+          cachedAt: Date.now(),
+        }
+        GROUP_META_CACHE.set(cacheKey, entry)
+        return entry
       }
     }
 
@@ -153,10 +150,72 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
       product_sup: productData.specs?.material || productData.specs?.brand || null,
       products: [productData],
     }
-    return { activeDiscounts, groupData: fallbackGroupData, error: null }
+    const entry: CachedGroupMeta = {
+      groupData: fallbackGroupData,
+      cachedAt: Date.now(),
+    }
+    GROUP_META_CACHE.set(cacheKey, entry)
+    return entry
   }
 
-  return { activeDiscounts, groupData: groupRes.data, error: groupRes.error }
+  return { groupData: null, error: groupRes.error || productErr, cachedAt: Date.now() }
+}
+
+// React.cache ensures generateMetadata and Page share the exact same single fetch per request
+const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
+  const [activeDiscounts, metaResult] = await Promise.all([
+    getActiveDiscounts(),
+    getGroupMetadata(groupId, sku),
+  ])
+
+  if (!metaResult.groupData) {
+    return { activeDiscounts, groupData: null, error: metaResult.error }
+  }
+
+  const rawProducts = metaResult.groupData.products || []
+  const productIds = rawProducts.map((p: any) => p.id).filter(Boolean)
+
+  // ⚡ ดึงสต็อกสดและสาขา (Real-time Live Stock & Branches) เฉพาะสินค้าในกลุ่มนี้
+  let liveStock: any[] = []
+  if (productIds.length > 0) {
+    const { data: stockData } = await supabaseAnon
+      .from("stock")
+      .select(`
+        product_id,
+        qty,
+        branches (
+          id,
+          branch_name,
+          latitude,
+          longitude
+        )
+      `)
+      .in("product_id", productIds)
+      .gt("qty", 0)
+
+    liveStock = stockData || []
+  }
+
+  // ประกอบ Live Stock และสาขาเข้ากับข้อมูลสินค้าที่แคชไว้
+  const productsWithLiveStock = rawProducts.map((p: any) => {
+    const pStock = liveStock
+      .filter((s: any) => s.product_id === p.id)
+      .map((s: any) => ({
+        qty: s.qty,
+        branches: s.branches,
+      }))
+    return {
+      ...p,
+      stock: pStock,
+    }
+  })
+
+  const groupData = {
+    ...metaResult.groupData,
+    products: productsWithLiveStock,
+  }
+
+  return { activeDiscounts, groupData, error: null }
 })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
