@@ -15,6 +15,8 @@ export const HARDCODED_CATEGORIES = [
   "Toy",
   "Lamp",
   "Flower",
+  "Others Art & walldecor",
+  "Photo Frame",
   "Plates & Dishes",
   "Bowls",
   "Glassware",
@@ -26,9 +28,7 @@ export const HARDCODED_CATEGORIES = [
   "Handmade",
   "3D Handmade",
   "Digital print",
-  "Mixed Media Art",
-  "Others Art & walldecor",
-  "Photo Frame"
+  "Mixed Media Art"
 ];
 
 // Keep display names separate from fullValue so existing URLs and filters remain stable.
@@ -60,6 +60,12 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "Lamp": "Lamp",
   "LAMP": "Lamp",
   "Lamp (โคมไฟ)": "Lamp",
+  "Others Art & walldecor": "Others Art & Wall Decor",
+  "OTHERS ART & WALL DECOR": "Others Art & Wall Decor",
+  "Others Art & Walldecor": "Others Art & Wall Decor",
+  "Others Art & walldecor (ตกแต่งผนังอื่น ๆ)": "Others Art & Wall Decor",
+  "Photo Frame": "Photo Frame",
+  "PHOTO FRAME": "Photo Frame",
 
   "DINING & TABLEWARE": "Dining & Tableware",
   "Plates & Dishes": "Plates & Dishes",
@@ -78,11 +84,6 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   "3D Handmade": "3D Handmade",
   "Digital print": "Digital Print",
   "Mixed Media Art": "Mixed Media Art",
-  "Photo Frame": "Photo Frame",
-  "Others Art & walldecor": "Others Art & Wall Decor",
-  "OTHERS ART & WALL DECOR": "Others Art & Wall Decor",
-  "Others Art & Walldecor": "Others Art & Wall Decor",
-  "Others Art & walldecor (ตกแต่งผนังอื่น ๆ)": "Others Art & Wall Decor",
 
   "IN_STOCK": "In Stock",
   "READY_TO_SHIP": "Ready To Ship",

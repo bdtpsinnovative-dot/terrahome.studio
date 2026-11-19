@@ -58,6 +58,8 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
       { fullValue: "Toy", displayLabel: "TOY", thaiLabel: "ของเล่นตกแต่ง" },
       { fullValue: "Lamp", displayLabel: "LAMP", thaiLabel: "โคมไฟ" },
       { fullValue: "Flower", displayLabel: "FLOWER", thaiLabel: "ดอกไม้" },
+      { fullValue: "Others Art & walldecor", displayLabel: "OTHERS ART & WALL DECOR", thaiLabel: "ตกแต่งผนังอื่น ๆ" },
+      { fullValue: "Photo Frame", displayLabel: "PHOTO FRAME", thaiLabel: "กรอบรูป" },
     ],
   },
   {
@@ -91,8 +93,6 @@ export const PRODUCT_FILTER_ITEMS: ProductFilterMenuItem[] = [
       { fullValue: "3D Handmade", displayLabel: "3D HANDMADE", thaiLabel: "ภาพตกแต่ง Handmade 3 มิติ" },
       { fullValue: "Digital print", displayLabel: "DIGITAL PRINT", thaiLabel: "ภาพดิจิตอลปริ้น" },
       { fullValue: "Mixed Media Art", displayLabel: "MIXED MEDIA ART", thaiLabel: "ภาพวาด Handmade ผสมดิจิตอลปริ้น" },
-      { fullValue: "Others Art & walldecor", displayLabel: "OTHERS ART & WALL DECOR", thaiLabel: "ตกแต่งผนังอื่น ๆ" },
-      { fullValue: "Photo Frame", displayLabel: "PHOTO FRAME", thaiLabel: "กรอบรูป" },
     ],
   },
   { label: "IN STOCK", displayLabel: "IN STOCK", thaiLabel: "สินค้าพร้อมส่ง", fullValue: "IN_STOCK", isSpecial: true },
@@ -128,7 +128,7 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Candle Holder": ["candle holder", "candle holders"],
 
   // 6. Accessories
-  "ACCESSORIES": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "flower", "vase and flower", "vase and flower (แจกันและดอกไม้)", "lamp", "lamp (โคมไฟ)", "โคมไฟ", "others"],
+  "ACCESSORIES": ["decorative box", "box", "tray", "trays", "decorative toy", "toy", "flower", "vase and flower", "vase and flower (แจกันและดอกไม้)", "lamp", "lamp (โคมไฟ)", "โคมไฟ", "others", "photo frame", "frame", "others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
   "Box": ["decorative box", "box"],
   "Trays": ["tray", "trays"],
   "Toy": ["decorative toy", "toy"],
@@ -138,6 +138,12 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Lamp": ["lamp", "lamp (โคมไฟ)", "โคมไฟ"],
   "LAMP": ["lamp", "lamp (โคมไฟ)", "โคมไฟ"],
   "Lamp (โคมไฟ)": ["lamp", "lamp (โคมไฟ)", "โคมไฟ"],
+  "Others Art & walldecor": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
+  "OTHERS ART & WALL DECOR": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
+  "Others Art & Walldecor": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
+  "Others Art & walldecor (ตกแต่งผนังอื่น ๆ)": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
+  "Photo Frame": ["frame", "photo frame"],
+  "PHOTO FRAME": ["frame", "photo frame"],
 
   // 7. Dining & Tableware
   "DINING & TABLEWARE": ["plates & dishes", "bowls", "bowl", "glassware", "cups & mugs", "cups & mug", "trays & servingware", "kitchenware", "other dining & tableware"],
@@ -154,16 +160,11 @@ export const CATEGORY_MAP: Record<string, string[]> = {
   "Dressing Room": ["dressing room", "dressing"],
 
   // 9. Art & walldecor
-  "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art", "frame", "photo frame", "others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
+  "ART & WALL DECOR": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%", "3d handmade", "wall art 3d material", "wall art 3d physical painting", "wall art digital print", "digital print", "mixed media art"],
   "Handmade": ["handmade", "wall art hand craft 50%", "wall art hand craft 80%", "wall art hand craft 100%"],
   "3D Handmade": ["3d handmade", "wall art 3d material", "wall art 3d physical painting"],
   "Digital print": ["wall art digital print", "digital print"],
   "Mixed Media Art": ["mixed media art"],
-  "Photo Frame": ["frame", "photo frame"],
-  "Others Art & walldecor": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
-  "OTHERS ART & WALL DECOR": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
-  "Others Art & Walldecor": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
-  "Others Art & walldecor (ตกแต่งผนังอื่น ๆ)": ["others art & walldecor", "others art & wall decor", "ตกแต่งผนังอื่น ๆ"],
 
   // Legacy mappings for backwards compatibility
   "Art Object": ["art object"],
