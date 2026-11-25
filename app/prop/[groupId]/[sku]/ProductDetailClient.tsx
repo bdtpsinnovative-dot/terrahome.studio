@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation" 
 import dynamic from "next/dynamic"
-import { CheckCircle2, MapPin, Navigation, MessageCircle } from "lucide-react"
+import { CheckCircle2, MapPin, Navigation, MessageCircle, ChevronLeft, ChevronRight, Maximize2, Share2, X, Truck, Store, ShieldCheck } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
 import { createClient, getSafeSession } from '@/src/supabase/client'
 import { trackAnalyticsCta } from '@/app/components/AnalyticsTracker'
@@ -90,6 +90,8 @@ export default function ProductDetailClient({
   })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isInquiryOpen, setIsInquiryOpen] = useState(false)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [recommendedCollections, setRecommendedCollections] = useState<any[]>(
     () => initialRecommendedCollections || []
   )
@@ -260,6 +262,20 @@ export default function ProductDetailClient({
     window.history.replaceState(null, "", newPath)
   }
 
+  const handleShareProduct = () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({
+        title: activeProduct.name,
+        text: `${activeProduct.name} - TERRA HOME STUDIO`,
+        url: window.location.href,
+      }).catch(() => {})
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่งครับ")
@@ -372,328 +388,427 @@ export default function ProductDetailClient({
     activeStock.sort((a: any, b: any) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
   }
 
+  const rawName = activeProduct.name || ''
+  const sku = activeProduct.sku || ''
+  const displayName = sku && rawName.toLowerCase().endsWith(sku.toLowerCase())
+    ? rawName.slice(0, rawName.length - sku.length).trim()
+    : rawName
+
   return (
     <div data-prop-product-id={String(activeProduct.id)} className="relative min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-stretch pt-24 pb-8 lg:pt-28 border-b border-[#D5D2CA]/70">
+      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-start pt-24 pb-8 lg:pt-28 border-b border-[#D5D2CA]/70">
         
-        {/* 🌟 ฝั่งซ้าย: รูปสินค้าหลักขยายใหญ่ ชิดซ้าย ขวา บน เต็มคอลัมน์ สไตล์ Luxury Studio Grid */}
-        <div className="lg:col-span-6 lg:border-r border-[#D5D2CA]/70 flex flex-col lg:sticky lg:top-28 self-start">
-          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group">
+        {/* 🌟 ฝั่งซ้าย: รูปสินค้าหลักและ Gallery สไตล์ Studio Luxury */}
+        <div className="lg:col-span-7 xl:col-span-7 lg:border-r border-[#D5D2CA]/70 p-4 sm:p-6 lg:p-10 xl:p-12 flex flex-col items-center justify-start">
+          <div className="relative w-full max-w-[620px] aspect-square bg-[#F4F1EB] rounded-[3px] overflow-hidden group shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-[#3A3835]/5 flex items-center justify-center">
             {outOfStock && (
               <div className="absolute top-4 right-4 z-20">
-                <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
+                <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-[2px] shadow-xs">
                   OUT OF STOCK
                 </span>
               </div>
             )}
+
             {selectedImage ? (
               <img 
                 src={selectedImage}
                 alt={activeProduct.name} 
                 title={activeProduct.name} 
                 key={`${activeProduct.id}-${selectedImage}`}
-                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105 cursor-zoom-in"
+                onClick={() => setIsLightboxOpen(true)}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#8C8A86] uppercase tracking-[0.2em] text-xs">
                 No Image
               </div>
             )}
-          </div>
-          {galleryImages.length > 1 && (
-            <div className="p-4 lg:p-6 border-t border-[#D5D2CA]/70 flex gap-2.5 overflow-x-auto pb-2" aria-label="Product image gallery">
-              {galleryImages.map((image, index) => (
+
+            {/* Prev / Next Arrows */}
+            {galleryImages.length > 1 && (
+              <>
                 <button
-                  key={image}
                   type="button"
-                  onClick={() => setSelectedImageIndex(index)}
-                  aria-label={`View product image ${index + 1}`}
-                  aria-pressed={selectedImage === image}
-                  className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[2px] border bg-[#F4F1EB] transition-colors ${
-                    selectedImage === image
-                      ? 'border-[#84492C] ring-1 ring-[#84492C]/40'
-                      : 'border-[#3A3835]/10 hover:border-[#84492C]/50'
-                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#3A3835] backdrop-blur-md shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 cursor-pointer"
+                  aria-label="Previous photo"
                 >
-                  <img
-                    src={image}
-                    alt={`${activeProduct.name} - image ${index + 1}`}
-                    className="h-full w-full object-cover mix-blend-multiply"
-                  />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedImageIndex((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#3A3835] backdrop-blur-md shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 hover:scale-105 cursor-pointer"
+                  aria-label="Next photo"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+
+            {/* Bottom Floating Bar on Image */}
+            <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2">
+              {galleryImages.length > 1 && (
+                <span className="px-2.5 py-1 rounded-[2px] bg-[#3A3835]/70 backdrop-blur-xs text-white text-[9px] font-mono tracking-widest uppercase">
+                  {String(selectedImageIndex + 1).padStart(2, '0')} / {String(galleryImages.length).padStart(2, '0')}
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(true)}
+              className="absolute bottom-3 right-3 z-10 px-2.5 py-1 rounded-[2px] bg-[#3A3835]/70 hover:bg-[#3A3835] backdrop-blur-xs text-white text-[9px] font-medium tracking-[0.15em] uppercase opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              title="ขยายรูปภาพขนาดเต็ม"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>ZOOM</span>
+            </button>
+          </div>
+
+          {/* Centered Gallery Thumbnails */}
+          {galleryImages.length > 1 && (
+            <div className="w-full max-w-[620px] mt-4 flex items-center justify-center gap-2.5 overflow-x-auto py-1 px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {galleryImages.map((image, index) => {
+                const isSelected = selectedImage === image
+                return (
+                  <button
+                    key={image}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(index)}
+                    aria-label={`View photo ${index + 1}`}
+                    className={`relative h-20 w-16 sm:h-22 sm:w-18 shrink-0 overflow-hidden rounded-[2px] bg-[#F4F1EB] transition-all duration-200 cursor-pointer border ${
+                      isSelected
+                        ? 'border-[#84492C] ring-2 ring-[#84492C]/40 shadow-xs scale-102'
+                        : 'border-[#3A3835]/12 opacity-70 hover:opacity-100 hover:border-[#84492C]/40'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${activeProduct.name} - thumbnail ${index + 1}`}
+                      className="h-full w-full object-cover mix-blend-multiply"
+                    />
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* 🌟 ฝั่งขวา: รายละเอียดสินค้า สเปก และคอลเลกชัน */}
-        <div className="lg:col-span-6 p-6 lg:p-12 xl:p-16 flex flex-col gap-6">
+        {/* 🌟 ฝั่งขวา: รายละเอียดสินค้า สเปก และ Action Panel แบบ STICKY สไตล์ Luxury Studio */}
+        <div className="lg:col-span-5 xl:col-span-5 p-6 lg:p-10 xl:p-12 flex flex-col gap-6 lg:sticky lg:top-24 self-start">
           
+          {/* Header Row: Back button & SKU */}
+          <div className="flex items-center justify-between gap-2 flex-wrap pb-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back()
+                } else {
+                  router.push('/prop')
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#8C8A86] hover:text-[#84492C] transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>TERRA STUDIO PROP</span>
+            </button>
+            {sku && (
+              <span className="text-[9px] font-mono tracking-[0.12em] text-[#8C8A86] bg-[#3A3835]/5 px-2 py-0.5 rounded-[2px] border border-[#3A3835]/10">
+                SKU: {sku}
+              </span>
+            )}
+          </div>
+
+          {/* Product Name */}
           <div>
-            <h1 className="font-serif text-2xl lg:text-[2.1rem] uppercase tracking-wide leading-snug text-[#3A3835]">
-              {activeProduct.name}
+            <h1 className="font-serif text-2xl lg:text-3xl uppercase tracking-wide leading-snug text-[#3A3835] font-normal">
+              {displayName}
             </h1>
+          </div>
+
+          {/* Price & Stock Status Row */}
+          <div>
             {outOfStock ? (
-              <div className="mt-3 flex items-center gap-2.5">
-                <span className="bg-[#DC2626] text-white text-[10px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs shadow-xs">
+              <div className="flex items-center gap-3">
+                <span className="bg-[#DC2626]/10 text-[#DC2626] border border-[#DC2626]/20 text-[9px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-[2px]">
                   OUT OF STOCK
                 </span>
                 {Number(activeProduct.price) > 0 && (
-                  <span className="text-[12px] font-medium tracking-[0.1em] text-[#8C8A86] font-mono">
+                  <span className="text-sm font-mono text-[#8C8A86] line-through">
                     THB {Number(activeProduct.price).toLocaleString()}
                   </span>
                 )}
               </div>
             ) : hasActiveDiscount && activeDiscountedPrice !== null ? (
-              <div className="mt-3 flex items-center gap-3 flex-wrap">
-                <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
-                  {activeDiscountType === 'PERCENT' ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#8C8A86]">THB</span>
+                <span className="font-serif text-2xl lg:text-3xl text-[#84492C] font-normal tracking-wide">
+                  {Number(activeDiscountedPrice).toLocaleString()}
                 </span>
-                <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                <span className="text-xs font-mono text-[#8C8A86] line-through">
                   THB {Number(activeProduct.price).toLocaleString()}
                 </span>
-                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                  THB {Number(activeDiscountedPrice).toLocaleString()}
-                </p>
+                <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#DC2626] bg-[#DC2626]/10 px-2 py-0.5 rounded-[2px]">
+                  {activeDiscountType === 'PERCENT' ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+                </span>
               </div>
             ) : (
-              <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                {activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
-              </p>
-            )}
-
-            <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-xl">
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">MATERIAL</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.material || '-'}</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">WIDTH</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.width_cm || '-'} cm</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">DEPTH</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.length_cm || '-'} cm</span>
-              </div>
-              <div>
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] mb-1.5">HEIGHT</span>
-                <span className="font-medium text-[10px] text-[#3A3835]">{specs.thickness_cm || '-'} cm</span>
-              </div>
-            </div>
-
-            <div className="mt-8 max-w-xl">
-              <button 
-                onClick={() => {
-                  trackAnalyticsCta(showStock ? 'close_stock_availability' : 'open_stock_availability', { product_id: activeProduct.id })
-                  setShowStock(!showStock)
-                }}
-                className="w-full flex items-center justify-between py-4 border-b border-[#3A3835]/10 group"
-              >
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] font-bold text-[#3A3835] group-hover:text-[#84492C] transition-colors">
-                  <MapPin className="w-3.5 h-3.5" />
-                  IN-STORE AVAILABILITY & MAP
-                </div>
-                <span className="text-[#8C8A86] text-lg font-light group-hover:text-[#84492C] transition-colors">
-                  {showStock ? '−' : '+'}
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#8C8A86]">THB</span>
+                <span className="font-serif text-2xl lg:text-3xl text-[#84492C] font-normal tracking-wide">
+                  {activeProduct.price > 0 ? Number(activeProduct.price).toLocaleString() : 'POA'}
                 </span>
-              </button>
-
-              <div className={`overflow-hidden transition-all duration-700 ease-in-out ${showStock ? 'max-h-[1200px] mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
-                
-                {activeStock.length > 0 && !userLocation && (
-                  <button
-                    onClick={handleGetLocation}
-                    disabled={loadingLocation}
-                    className="mb-4 w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
-                  >
-                    <Navigation className={`w-3 h-3 ${loadingLocation ? 'animate-spin' : ''}`} />
-                    {loadingLocation ? 'CALCULATING...' : 'CALCULATE DISTANCE FROM YOUR LOCATION'}
-                  </button>
+                {!outOfStock && (
+                  <span className="ml-2 text-[9px] uppercase tracking-[0.15em] text-[#84492C] bg-[#84492C]/10 px-2 py-0.5 rounded-[2px] font-medium">
+                    พร้อมจำหน่าย ({totalStock} ชิ้น)
+                  </span>
                 )}
+              </div>
+            )}
+          </div>
 
-                <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
-                  {activeStock.length > 0 ? (
-                    activeStock.map((s: any, idx: number) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => {
-                          if (s.branches?.latitude && s.branches?.longitude) {
-                            setSelectedBranch({
-                              lat: Number(s.branches.latitude),
-                              lng: Number(s.branches.longitude),
-                              timestamp: Date.now()
-                            })
-                          }
-                        }}
-                        className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
-                      >
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[#3A3835] font-medium tracking-[0.1em]">
-                            {s.branches?.branch_name || 'Unknown Branch'}
-                          </span>
-                          {s.distance !== null && (
-                            <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                            <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
-                          </div>
-                          
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
-                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
-                            data-analytics-event="open_directions"
-                            className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
-                          >
-                            <Navigation className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
-                      <span>OUT OF STOCK</span>
-                    </div>
-                  )}
-                </div>
-
-                {activeStock.length > 0 && (
-                  <BranchMap 
-                    activeStock={activeStock} 
-                    productImage={activeProduct.image_url} 
-                    productName={activeProduct.name}
-                    userLocation={userLocation}
-                    setUserLocation={setUserLocation}
-                    selectedBranch={selectedBranch}
-                  />
-                )}
-
+          {/* Architectural Specifications Table */}
+          <div className="p-4 rounded-[2px] bg-[#F4F1EB] border border-[#D5D2CA]/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center divide-y sm:divide-y-0 sm:divide-x divide-[#D5D2CA]">
+              <div className="pt-1 sm:pt-0">
+                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">MATERIAL</span>
+                <span className="font-medium text-[11px] text-[#3A3835]">{specs.material || 'Ceramic'}</span>
+              </div>
+              <div className="pt-2 sm:pt-0">
+                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">WIDTH</span>
+                <span className="font-medium text-[11px] text-[#3A3835]">{specs.width_cm ? `${specs.width_cm} cm` : '-'}</span>
+              </div>
+              <div className="pt-2 sm:pt-0">
+                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">DEPTH</span>
+                <span className="font-medium text-[11px] text-[#3A3835]">{specs.length_cm ? `${specs.length_cm} cm` : '-'}</span>
+              </div>
+              <div className="pt-2 sm:pt-0">
+                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">HEIGHT</span>
+                <span className="font-medium text-[11px] text-[#3A3835]">{specs.thickness_cm ? `${specs.thickness_cm} cm` : '-'}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4">
-            <div className="mb-6">
-              <span className="text-[#84492C] text-[8px] uppercase tracking-[0.2em] font-bold block mb-1">
-                COMPLETE THE SET
-              </span>
-              <h2 className="font-serif text-lg uppercase tracking-wider text-[#3A3835]">
-                COLLECTION ITEMS
-              </h2>
-            </div>
+          {/* Action CTAs: Inquiry / Stock / Share */}
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                trackAnalyticsCta('open_contact_channels', {
+                  product_id: activeProduct.id,
+                  product_name: activeProduct.name || activeProduct.sku,
+                  source: 'product_detail_main_inquiry',
+                })
+                setIsInquiryOpen(true)
+              }}
+              className="w-full py-4 px-6 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[11px] font-bold tracking-[0.2em] uppercase rounded-[2px] transition-all duration-300 shadow-sm flex items-center justify-center gap-2.5 active:scale-[0.99] cursor-pointer group"
+            >
+              <MessageCircle className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <span>สอบถามรายละเอียด / สั่งซื้อสินค้านี้</span>
+            </button>
 
-            <div className="flex flex-row gap-5 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {groupProducts.map((item) => {
-                const isActive = item.sku === activeProduct.sku
-                
-                return (
-                  <div 
-                    key={item.id}
-                    onClick={() => handleSelectProduct(item)}
-                    className={`snap-start min-w-[120px] max-w-[120px] flex flex-col group transition-all duration-300 cursor-pointer`}
-                  >
-                    <div className={`w-full aspect-[4/5] mb-3 relative overflow-hidden flex flex-col items-center justify-center rounded-[2px] transition-colors duration-300 ${
-                      isActive ? 'bg-[#F2EFE9] border border-[#84492C]' : 'bg-[#F2EFE9] border border-transparent hover:border-[#3A3835]/15'
-                    }`}>
-                      
-                      {isActive && (
-                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-10 w-full flex justify-center">
-                          <span className="flex items-center gap-1 text-[7px] font-bold text-[#84492C] uppercase tracking-[0.15em] bg-white px-2 py-0.5 rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#3A3835]/5">
-                            <CheckCircle2 className="w-2.5 h-2.5" />
-                            VIEWING
-                          </span>
-                        </div>
-                      )}
-
-                      {item.image_url ? (
-                        <img 
-                          src={item.image_url} 
-                          className={`w-full h-full object-cover mix-blend-multiply transition-all duration-300 ${isActive ? 'opacity-100 scale-105' : 'opacity-85 group-hover:opacity-100 group-hover:scale-105'}`} 
-                          alt={item.name} 
-                          title={item.name} 
-                        />
-                      ) : (
-                        <span className="text-[8px] text-[#8C8A86] uppercase tracking-[0.2em]">No Img</span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-center text-center px-1">
-                      <h3 className={`text-[9px] uppercase font-bold tracking-[0.1em] truncate w-full transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#5A544F] group-hover:text-[#84492C]'}`}>
-                        {item.name}
-                      </h3>
-                      {((item.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0) > 0) ? (
-                        <p className={`text-[9px] mt-1 font-medium ${isActive ? 'text-[#3A3835]' : 'text-[#8C8A86]'}`}>
-                          {item.price > 0 ? `THB ${item.price.toLocaleString()}` : 'POA'}
-                        </p>
-                      ) : (
-                        <div className="mt-1 flex flex-col items-center">
-                          <p className="text-[#DC2626] text-[9.5px] tracking-wider font-bold">
-                            OUT OF STOCK
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ⚡ 4. ปุ่ม ADD TO CART (ซ่อนไว้ชั่วคราวตามคำขอ: ซ่อนปุ่มตะกร้า) */}
-          {/* 
-          <div className="pt-2 max-w-lg mt-auto">
-            {outOfStock ? (
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                data-inquiry-trigger="true"
                 onClick={() => {
-                  trackAnalyticsCta('open_contact_channels', {
-                    product_id: activeProduct.id,
-                    product_name: activeProduct.name || activeProduct.sku,
-                    source: 'out_of_stock_inquiry_button',
-                  })
-                  setIsInquiryOpen((prev) => !prev)
+                  setShowStock(!showStock)
+                  trackAnalyticsCta(showStock ? 'close_stock_availability' : 'open_stock_availability', { product_id: activeProduct.id })
                 }}
-                className="w-full py-4 text-[11px] font-bold tracking-[0.12em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 bg-[#84492C] text-white hover:bg-[#6D3B23] active:scale-[0.99] cursor-pointer"
+                className="flex-1 py-3 px-3 border border-[#3A3835]/15 hover:border-[#84492C] bg-white/40 hover:bg-white text-[#3A3835] hover:text-[#84492C] text-[9.5px] font-bold tracking-[0.15em] uppercase rounded-[2px] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                ติดต่อสอบถาม
+                <MapPin className="w-3.5 h-3.5 text-[#84492C]" />
+                <span>{showStock ? 'ซ่อนสต็อกสาขา' : `สต็อกโชว์รูม (${activeStock.length} สาขา)`}</span>
               </button>
-            ) : (
+
               <button
-                onClick={handleAddToCart}
-                disabled={isAddingToCart}
-                className={`w-full py-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-all duration-300 shadow-sm rounded-[2px] flex justify-center items-center gap-2 ${
-                  addedSuccess 
-                    ? 'bg-[#84492C] text-white' 
-                    : 'bg-[#3A3835] text-white hover:bg-[#84492C] active:scale-[0.99]'
-                }`}
+                type="button"
+                onClick={handleShareProduct}
+                title="แชร์สินค้านี้"
+                className="py-3 px-4 border border-[#3A3835]/15 hover:border-[#84492C] bg-white/40 hover:bg-white text-[#3A3835] hover:text-[#84492C] text-[9.5px] font-bold tracking-[0.15em] uppercase rounded-[2px] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                {isAddingToCart ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ADDING...
-                  </>
-                ) : addedSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    ADDED TO CART
-                  </>
-                ) : (
-                  'ADD TO CART'
-                )}
+                {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-[#84492C]" /> : <Share2 className="w-3.5 h-3.5" />}
+                <span>{copied ? 'คัดลอกแล้ว' : 'แชร์'}</span>
               </button>
-            )}
+            </div>
           </div>
-          */}
+
+          {/* In-Store Availability & Map Accordion */}
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showStock ? 'max-h-[1400px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="pt-2 flex flex-col gap-3">
+              {activeStock.length > 0 && !userLocation && (
+                <button
+                  onClick={handleGetLocation}
+                  disabled={loadingLocation}
+                  className="w-full text-left text-[9px] font-bold text-[#84492C] hover:text-[#3A3835] transition-colors uppercase tracking-[0.15em] flex items-center gap-1.5 py-1"
+                >
+                  <Navigation className={`w-3 h-3 ${loadingLocation ? 'animate-spin' : ''}`} />
+                  {loadingLocation ? 'CALCULATING...' : 'CALCULATE DISTANCE FROM YOUR LOCATION'}
+                </button>
+              )}
+
+              <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
+                {activeStock.length > 0 ? (
+                  activeStock.map((s: any, idx: number) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        if (s.branches?.latitude && s.branches?.longitude) {
+                          setSelectedBranch({
+                            lat: Number(s.branches.latitude),
+                            lng: Number(s.branches.longitude),
+                            timestamp: Date.now()
+                          })
+                        }
+                      }}
+                      className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[#3A3835] font-medium tracking-[0.1em]">
+                          {s.branches?.branch_name || 'Unknown Branch'}
+                        </span>
+                        {s.distance !== null && (
+                          <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                          <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
+                        </div>
+                        
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()} 
+                          title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                          data-analytics-event="open_directions"
+                          className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                        >
+                          <Navigation className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
+                    <span>OUT OF STOCK</span>
+                  </div>
+                )}
+              </div>
+
+              {activeStock.length > 0 && (
+                <BranchMap 
+                  activeStock={activeStock} 
+                  productImage={activeProduct.image_url} 
+                  productName={activeProduct.name}
+                  userLocation={userLocation}
+                  setUserLocation={setUserLocation}
+                  selectedBranch={selectedBranch}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Studio Service Guarantees */}
+          <div className="pt-4 border-t border-[#3A3835]/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[10px] text-[#5A544F]">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-[#84492C] shrink-0" />
+              <span>จัดส่งปลอดภัยทั่วประเทศ</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-[#84492C] shrink-0" />
+              <span>ชมสินค้าจริงที่โชว์รูม</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#84492C] shrink-0" />
+              <span>งานคราฟต์เกรดพรีเมียม</span>
+            </div>
+          </div>
+
+          {/* Complete The Set / Collection Items (ONLY rendered when multiple products exist) */}
+          {groupProducts.length > 1 && (
+            <div className="pt-6 border-t border-[#3A3835]/10">
+              <div className="mb-4 flex items-baseline justify-between">
+                <div>
+                  <span className="text-[#84492C] text-[8px] uppercase tracking-[0.2em] font-bold block mb-1">
+                    COMPLETE THE SET
+                  </span>
+                  <h2 className="font-serif text-base uppercase tracking-wider text-[#3A3835]">
+                    COLLECTION ITEMS ({groupProducts.length})
+                  </h2>
+                </div>
+                <span className="text-[10px] text-[#8C8A86] tracking-wider">เลือกชมชิ้นอื่นในเซต</span>
+              </div>
+
+              <div className="flex flex-row gap-4 overflow-x-auto pb-3 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {groupProducts.map((item) => {
+                  const isActive = item.sku === activeProduct.sku
+                  
+                  return (
+                    <div 
+                      key={item.id}
+                      onClick={() => handleSelectProduct(item)}
+                      className="snap-start min-w-[110px] max-w-[110px] flex flex-col group transition-all duration-300 cursor-pointer"
+                    >
+                      <div className={`w-full aspect-[4/5] mb-2 relative overflow-hidden flex flex-col items-center justify-center rounded-[2px] transition-all duration-300 ${
+                        isActive ? 'bg-[#F2EFE9] border-2 border-[#84492C] shadow-xs' : 'bg-[#F2EFE9] border border-transparent hover:border-[#84492C]/30 opacity-80 hover:opacity-100'
+                      }`}>
+                        
+                        {isActive && (
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-full flex justify-center">
+                            <span className="flex items-center gap-0.5 text-[7px] font-bold text-[#84492C] uppercase tracking-[0.15em] bg-white/95 px-1.5 py-0.5 rounded-[2px] shadow-xs border border-[#3A3835]/5">
+                              <CheckCircle2 className="w-2.5 h-2.5" />
+                              VIEWING
+                            </span>
+                          </div>
+                        )}
+
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            className={`w-full h-full object-cover mix-blend-multiply transition-all duration-300 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`} 
+                            alt={item.name} 
+                            title={item.name} 
+                          />
+                        ) : (
+                          <span className="text-[8px] text-[#8C8A86] uppercase tracking-[0.2em]">No Img</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-center text-center px-0.5">
+                        <h3 className={`text-[9px] uppercase font-bold tracking-[0.08em] truncate w-full transition-colors ${isActive ? 'text-[#84492C]' : 'text-[#5A544F] group-hover:text-[#84492C]'}`}>
+                          {item.name}
+                        </h3>
+                        {((item.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0) > 0) ? (
+                          <p className={`text-[9px] mt-0.5 font-medium ${isActive ? 'text-[#3A3835]' : 'text-[#8C8A86]'}`}>
+                            {item.price > 0 ? `THB ${Number(item.price).toLocaleString()}` : 'POA'}
+                          </p>
+                        ) : (
+                          <div className="mt-0.5 flex flex-col items-center">
+                            <p className="text-[#DC2626] text-[9px] tracking-wider font-bold">
+                              OUT OF STOCK
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           
         </div>
       </div>
@@ -701,7 +816,7 @@ export default function ProductDetailClient({
       {/* ⚡ RECOMMENDED PRODUCTS SECTION */}
       {recommendedCollections && recommendedCollections.length > 0 && (
         <div className="w-full border-t border-[#D5D2CA]/70 mt-12 pt-16 pb-24">
-          <div className="max-w-[1600px] mx-auto">
+          <div className="max-w-[1600px] mx-auto px-6">
             <h2 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal mb-8 text-center">
               RECOMMENDED FOR YOU
             </h2>
@@ -736,11 +851,37 @@ export default function ProductDetailClient({
         </div>
       )}
 
+      {/* Messenger Inquiry Drawer Modal */}
       <MessengerInquiryButton
         productName={activeProduct.name || activeProduct.sku || 'สินค้านี้'}
         isOpen={isInquiryOpen}
         onOpenChange={setIsInquiryOpen}
       />
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {isLightboxOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button 
+            type="button"
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2.5 rounded-full bg-white/10 hover:bg-white/20 z-20 cursor-pointer"
+            aria-label="Close fullscreen"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          {selectedImage && (
+            <img 
+              src={selectedImage}
+              alt={activeProduct.name}
+              className="max-w-[92vw] max-h-[88vh] object-contain rounded-[2px] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
