@@ -366,7 +366,7 @@ export default function CollectionLookClient({
 
   linkedProducts.forEach((prod) => {
     (prod.stock || []).forEach((s: any) => {
-      if (s.qty > 0 && s.branches?.id) {
+      if (s.qty > 0 && s.branches?.id && s.branches?.is_active !== false) {
         const branchId = s.branches.id;
         if (!branchMap.has(branchId)) {
           let dist = null;

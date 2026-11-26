@@ -183,15 +183,17 @@ const getGroupDetailData = cache(async (groupId: string, sku?: string) => {
       .select(`
         product_id,
         qty,
-        branches (
+        branches!inner (
           id,
           branch_name,
           latitude,
-          longitude
+          longitude,
+          is_active
         )
       `)
       .in("product_id", productIds)
       .gt("qty", 0)
+      .eq("branches.is_active", true)
 
     liveStock = stockData || []
   }

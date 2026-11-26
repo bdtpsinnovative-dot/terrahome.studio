@@ -128,7 +128,8 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
     const liveFetchPromise = Promise.all([
       supabase
         .from("branches")
-        .select("id, branch_code, branch_name, latitude, longitude")
+        .select("id, branch_code, branch_name, latitude, longitude, is_active")
+        .eq("is_active", true)
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("branch_name", { ascending: true }),
@@ -279,9 +280,12 @@ export async function loadRawCatalog(): Promise<RawCatalogData> {
     const branches = branchesRes.data || []
     const liveStockRows = stockRes.data || []
 
-    // แมปสต็อกสดตาม product_id
+    const activeBranchIdSet = new Set(branches.map((b: any) => Number(b.id)))
+
+    // แมปสต็อกสดตาม product_id (เฉพาะสาขาที่เปิดให้บริการ)
     const stockByProductId = new Map<number, Array<{ branch_id: number; qty: number }>>()
     for (const s of liveStockRows) {
+      if (!activeBranchIdSet.has(Number(s.branch_id))) continue
       const pid = Number(s.product_id)
       const list = stockByProductId.get(pid) || []
       list.push({ branch_id: s.branch_id, qty: s.qty })
