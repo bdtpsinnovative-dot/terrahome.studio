@@ -56,7 +56,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   useEffect(() => {
     const handleScroll = () => {
-      const triggerHeight = (pathname.startsWith('/prop') || pathname.startsWith('/journal')) ? window.innerHeight * 0.45 : 20;
+      const isProductDetail = /^\/prop\/[^/]+\/[^/]+\/?$/.test(pathname);
+      const triggerHeight = isProductDetail ? 10 : (pathname.startsWith('/prop') || pathname.startsWith('/journal')) ? window.innerHeight * 0.45 : 20;
       setIsScrolled(window.scrollY > triggerHeight);
     };
 
@@ -133,7 +134,7 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
     : (activeLightMode ? 'brightness-0 contrast-200' : '');
 
   const dropDownBg = "bg-[#F4EBE6]/60 backdrop-blur-2xl border border-[#84492C]/10 shadow-[0_20px_50px_rgba(132,73,44,0.1)]";
-  const navContainerClass = `fixed top-0 transition-all duration-500 ${isScrolled || isMobileMenuOpen
+  const navContainerClass = `fixed top-0 transition-all duration-300 ${isProductDetailPage ? 'bg-[#EAE7E0]/95 border-b border-[#D5D2CA]/80 backdrop-blur-md shadow-[0_2px_15px_rgba(0,0,0,0.03)]' : isScrolled || isMobileMenuOpen
     ? 'bg-white/10 border-b border-[#84492C]/5 backdrop-blur-lg shadow-[0_2px_20px_rgba(0,0,0,0.02)]'
     : 'bg-transparent'
     }`;

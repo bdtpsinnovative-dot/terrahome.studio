@@ -29,6 +29,7 @@ type MessengerInquiryButtonProps = {
   previewOpen?: boolean
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
 }
 
 function ButtonIcon({ state, disabled, open }: { state: MessengerInquiryState; disabled: boolean; open: boolean }) {
@@ -64,6 +65,7 @@ export default function MessengerInquiryButton({
   previewOpen = false,
   isOpen,
   onOpenChange,
+  hideTrigger = false,
 }: MessengerInquiryButtonProps) {
   const [internalOpen, setInternalOpen] = useState(previewOpen)
   const isControlled = typeof isOpen === 'boolean'
@@ -248,27 +250,29 @@ export default function MessengerInquiryButton({
         </div>
       ) : null}
 
-      <button
-        ref={triggerRef}
-        type="button"
-        disabled={isUnavailable}
-        aria-label={open ? 'ปิดช่องทางติดต่อ' : `เลือกช่องทางเพื่อสอบถามเกี่ยวกับ ${productName}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls="contact-channel-menu"
-        data-analytics-event={isUnavailable || preview ? undefined : 'open_contact_channels'}
-        data-analytics-product-name={productName || undefined}
-        data-state={visualState}
-        data-preview-state={preview ? previewState : undefined}
-        data-open={open ? 'true' : 'false'}
-        className={styles.trigger}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className={styles.triggerContent}>
-          <ButtonIcon state={state} disabled={disabled} open={open} />
-          {!open && <span className={styles.triggerLabel}>สอบถามสินค้า</span>}
-        </span>
-      </button>
+      {!hideTrigger && (
+        <button
+          ref={triggerRef}
+          type="button"
+          disabled={isUnavailable}
+          aria-label={open ? 'ปิดช่องทางติดต่อ' : `เลือกช่องทางเพื่อสอบถามเกี่ยวกับ ${productName}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls="contact-channel-menu"
+          data-analytics-event={isUnavailable || preview ? undefined : 'open_contact_channels'}
+          data-analytics-product-name={productName || undefined}
+          data-state={visualState}
+          data-preview-state={preview ? previewState : undefined}
+          data-open={open ? 'true' : 'false'}
+          className={styles.trigger}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span className={styles.triggerContent}>
+            <ButtonIcon state={state} disabled={disabled} open={open} />
+            {!open && <span className={styles.triggerLabel}>สอบถามสินค้า</span>}
+          </span>
+        </button>
+      )}
     </div>
     </>
   )

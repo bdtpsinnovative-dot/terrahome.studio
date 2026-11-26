@@ -396,11 +396,11 @@ export default function ProductDetailClient({
 
   return (
     <div data-prop-product-id={String(activeProduct.id)} className="relative min-h-screen bg-[#EAE7E0] text-[#3A3835] font-sans selection:bg-[#C8A97E]/20 flex flex-col">
-      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-start pt-24 pb-8 lg:pt-28 border-b border-[#D5D2CA]/70">
+      <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 flex-1 items-start pt-28 pb-8 lg:pt-36 lg:pb-12 border-b border-[#D5D2CA]/70">
         
         {/* 🌟 ฝั่งซ้าย: รูปสินค้าหลักและ Gallery สไตล์ Studio Luxury */}
-        <div className="lg:col-span-7 xl:col-span-7 lg:border-r border-[#D5D2CA]/70 p-4 sm:p-6 lg:p-10 xl:p-12 flex flex-col items-center justify-start">
-          <div className="relative w-full max-w-[620px] aspect-square bg-[#F4F1EB] rounded-[3px] overflow-hidden group shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-[#3A3835]/5 flex items-center justify-center">
+        <div className="lg:col-span-7 xl:col-span-7 lg:border-r border-[#D5D2CA]/70 p-4 sm:p-6 lg:p-8 xl:p-10 flex flex-col items-center justify-start">
+          <div className="relative w-full max-w-[560px] aspect-square bg-[#F4F1EB] rounded-[3px] overflow-hidden group shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-[#3A3835]/5 flex items-center justify-center p-3 sm:p-6">
             {outOfStock && (
               <div className="absolute top-4 right-4 z-20">
                 <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-[2px] shadow-xs">
@@ -415,7 +415,7 @@ export default function ProductDetailClient({
                 alt={activeProduct.name} 
                 title={activeProduct.name} 
                 key={`${activeProduct.id}-${selectedImage}`}
-                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105 cursor-zoom-in"
+                className="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 group-hover:scale-105 cursor-zoom-in"
                 onClick={() => setIsLightboxOpen(true)}
               />
             ) : (
@@ -474,7 +474,7 @@ export default function ProductDetailClient({
 
           {/* Centered Gallery Thumbnails */}
           {galleryImages.length > 1 && (
-            <div className="w-full max-w-[620px] mt-4 flex items-center justify-center gap-2.5 overflow-x-auto py-1 px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="w-full max-w-[560px] mt-4 flex items-center justify-center gap-2.5 overflow-x-auto py-1 px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {galleryImages.map((image, index) => {
                 const isSelected = selectedImage === image
                 return (
@@ -502,7 +502,7 @@ export default function ProductDetailClient({
         </div>
 
         {/* 🌟 ฝั่งขวา: รายละเอียดสินค้า สเปก และ Action Panel แบบ STICKY สไตล์ Luxury Studio */}
-        <div className="lg:col-span-5 xl:col-span-5 p-6 lg:p-10 xl:p-12 flex flex-col gap-6 lg:sticky lg:top-24 self-start">
+        <div className="lg:col-span-5 xl:col-span-5 p-6 lg:p-8 xl:p-10 flex flex-col gap-5 lg:sticky lg:top-28 xl:top-32 self-start">
           
           {/* Header Row: Back button & SKU */}
           <div className="flex items-center justify-between gap-2 flex-wrap pb-1">
@@ -577,24 +577,41 @@ export default function ProductDetailClient({
 
           {/* Architectural Specifications Table */}
           <div className="p-4 rounded-[2px] bg-[#F4F1EB] border border-[#D5D2CA]/80">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center divide-y sm:divide-y-0 sm:divide-x divide-[#D5D2CA]">
-              <div className="pt-1 sm:pt-0">
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">MATERIAL</span>
-                <span className="font-medium text-[11px] text-[#3A3835]">{specs.material || 'Ceramic'}</span>
+            {Boolean(
+              (specs.width_cm && String(specs.width_cm).trim() !== '-') ||
+              (specs.length_cm && String(specs.length_cm).trim() !== '-') ||
+              (specs.thickness_cm && String(specs.thickness_cm).trim() !== '-')
+            ) ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center divide-y sm:divide-y-0 sm:divide-x divide-[#D5D2CA]">
+                <div className="pt-1 sm:pt-0">
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">MATERIAL</span>
+                  <span className="font-medium text-[11px] text-[#3A3835]">{specs.material || 'Natural Stone'}</span>
+                </div>
+                <div className="pt-2 sm:pt-0">
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">WIDTH</span>
+                  <span className="font-medium text-[11px] text-[#3A3835]">{specs.width_cm ? `${specs.width_cm} cm` : '-'}</span>
+                </div>
+                <div className="pt-2 sm:pt-0">
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">DEPTH</span>
+                  <span className="font-medium text-[11px] text-[#3A3835]">{specs.length_cm ? `${specs.length_cm} cm` : '-'}</span>
+                </div>
+                <div className="pt-2 sm:pt-0">
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">HEIGHT</span>
+                  <span className="font-medium text-[11px] text-[#3A3835]">{specs.thickness_cm ? `${specs.thickness_cm} cm` : '-'}</span>
+                </div>
               </div>
-              <div className="pt-2 sm:pt-0">
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">WIDTH</span>
-                <span className="font-medium text-[11px] text-[#3A3835]">{specs.width_cm ? `${specs.width_cm} cm` : '-'}</span>
+            ) : (
+              <div className="flex items-center justify-between text-xs px-1">
+                <div>
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-0.5">MATERIAL</span>
+                  <span className="font-medium text-[11.5px] text-[#3A3835]">{specs.material || 'Natural Stone'}</span>
+                </div>
+                <div className="text-right">
+                  <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-0.5">DIMENSIONS</span>
+                  <span className="text-[10px] text-[#8C8A86] tracking-wide">สอบถามขนาดหรือสั่งทำพิเศษได้ที่โชว์รูม</span>
+                </div>
               </div>
-              <div className="pt-2 sm:pt-0">
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">DEPTH</span>
-                <span className="font-medium text-[11px] text-[#3A3835]">{specs.length_cm ? `${specs.length_cm} cm` : '-'}</span>
-              </div>
-              <div className="pt-2 sm:pt-0">
-                <span className="block text-[8px] uppercase tracking-[0.2em] text-[#8C8A86] font-medium mb-1">HEIGHT</span>
-                <span className="font-medium text-[11px] text-[#3A3835]">{specs.thickness_cm ? `${specs.thickness_cm} cm` : '-'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Action CTAs: Inquiry / Stock / Share */}
@@ -815,7 +832,7 @@ export default function ProductDetailClient({
 
       {/* ⚡ RECOMMENDED PRODUCTS SECTION */}
       {recommendedCollections && recommendedCollections.length > 0 && (
-        <div className="w-full border-t border-[#D5D2CA]/70 mt-12 pt-16 pb-24">
+        <div className="w-full mt-4 pt-10 pb-16">
           <div className="max-w-[1600px] mx-auto px-6">
             <h2 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal mb-8 text-center">
               RECOMMENDED FOR YOU
@@ -856,6 +873,7 @@ export default function ProductDetailClient({
         productName={activeProduct.name || activeProduct.sku || 'สินค้านี้'}
         isOpen={isInquiryOpen}
         onOpenChange={setIsInquiryOpen}
+        hideTrigger={true}
       />
 
       {/* Fullscreen Image Lightbox Modal */}
