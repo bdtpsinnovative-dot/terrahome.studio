@@ -160,7 +160,7 @@ export default function BranchSelector({
         } ${isOpen ? 'text-[#84492C] font-semibold bg-[#F0EFEB]/80' : ''}`}
       >
         <MapPin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${isOpen ? 'text-[#84492C]' : 'text-[#8C8A86]'}`} />
-        <span className="truncate max-w-[100px] sm:max-w-[160px]">
+        <span className="truncate max-w-[130px] sm:max-w-[240px]">
           {selectedBranch.branch_name}
         </span>
         <ChevronDown className={`w-3 h-3 shrink-0 opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -224,7 +224,7 @@ export default function BranchSelector({
                           : 'text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]'
                       }`}
                     >
-                      <span className="truncate pr-3">{branch.branch_name}</span>
+                      <span className="whitespace-normal break-words leading-snug pr-3">{branch.branch_name}</span>
                       {isActive ? (
                         <div className="flex items-center gap-1.5 text-[#C8A97E] shrink-0">
                           <span className="text-[9px] tracking-widest font-medium">SELECTED</span>
@@ -251,7 +251,7 @@ export default function BranchSelector({
               right: `${coords?.right ?? 16}px`,
               zIndex: 99999,
             }}
-            className="w-[260px] bg-[#FDFCFB] border border-[#E5E5E5] shadow-[0_12px_40px_-10px_rgba(0,0,0,0.14)] origin-top-right transition-all duration-200"
+            className="w-max min-w-[320px] max-w-[420px] bg-[#FDFCFB] border border-[#E5E5E5] shadow-[0_12px_40px_-10px_rgba(0,0,0,0.14)] origin-top-right transition-all duration-200"
           >
             <div className="px-5 py-3.5 text-[10px] uppercase tracking-[0.25em] text-[#C8A97E] font-medium border-b border-[#F0EFEB] flex items-center justify-between">
               <span>Select Location</span>
@@ -259,7 +259,7 @@ export default function BranchSelector({
                 ({options.length} locations)
               </span>
             </div>
-            <div className="flex flex-col py-1.5 max-h-[360px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
+            <div className="flex flex-col py-1.5 max-h-[380px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
               {options.map((branch) => {
                 const isActive = selectedBranch.id.toString() === branch.id.toString()
                 return (
@@ -267,13 +267,13 @@ export default function BranchSelector({
                     key={branch.id}
                     type="button"
                     onClick={() => handleSelect(branch.id)}
-                    className={`w-full text-left px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] transition-colors flex items-center justify-between group ${
+                    className={`w-full text-left px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] transition-colors flex items-center justify-between group ${
                       isActive
                         ? 'text-[#C8A97E] font-medium bg-[#F9F8F6]'
                         : 'text-[#78716C] hover:bg-[#F9F8F6] hover:text-[#292524]'
                     }`}
                   >
-                    <span className="truncate pr-2">{branch.branch_name}</span>
+                    <span className="whitespace-normal break-words leading-relaxed pr-3">{branch.branch_name}</span>
                     {isActive && (
                       <div className="w-1.5 h-1.5 rounded-full bg-[#C8A97E] shrink-0" />
                     )}
