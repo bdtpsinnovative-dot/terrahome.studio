@@ -378,7 +378,7 @@ export default function ProductDetailClient({
         
         {/* 🌟 ฝั่งซ้าย: รูปสินค้าหลักขยายใหญ่ ชิดซ้าย ขวา บน เต็มคอลัมน์ สไตล์ Luxury Studio Grid */}
         <div className="lg:col-span-6 lg:border-r border-[#D5D2CA]/70 flex flex-col lg:sticky lg:top-28 self-start">
-          <div className="w-full aspect-square bg-[#F4F1EB] relative overflow-hidden group">
+          <div className="w-full aspect-square bg-[#EAE7E0] relative overflow-hidden group">
             {outOfStock && (
               <div className="absolute top-4 right-4 z-20">
                 <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-xs shadow-xs">
@@ -392,7 +392,7 @@ export default function ProductDetailClient({
                 alt={activeProduct.name} 
                 title={activeProduct.name} 
                 key={`${activeProduct.id}-${selectedImage}`}
-                className="w-full h-full absolute inset-0 object-contain p-2 sm:p-4 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full absolute inset-0 object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#8C8A86] uppercase tracking-[0.2em] text-xs">
@@ -409,7 +409,7 @@ export default function ProductDetailClient({
                   onClick={() => setSelectedImageIndex(index)}
                   aria-label={`View product image ${index + 1}`}
                   aria-pressed={selectedImage === image}
-                  className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[2px] border bg-[#F4F1EB] transition-colors ${
+                  className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[2px] border bg-[#EAE7E0] transition-colors ${
                     selectedImage === image
                       ? 'border-[#84492C] ring-1 ring-[#84492C]/40'
                       : 'border-[#3A3835]/10 hover:border-[#84492C]/50'
