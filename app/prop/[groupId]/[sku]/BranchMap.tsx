@@ -272,8 +272,12 @@ export default function BranchMap({
         />
 
         <TileLayer
-          attribution='© <a href="https://carto.com/" title="CARTO maps service">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url={
+            process.env.NEXT_PUBLIC_CARTO_API_KEY
+              ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
+              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          }
         />
 
         {validLocations.map((stockItem, idx) => (
