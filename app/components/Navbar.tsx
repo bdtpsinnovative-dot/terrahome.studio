@@ -129,9 +129,8 @@ export default function Navbar({ collections = [], isLightMode = false }: { coll
 
   const logoPath = '/logo.png';
 
-  const logoFilter = (isScrolled || isMobileMenuOpen)
-    ? ''
-    : (activeLightMode ? 'brightness-0 contrast-200' : '');
+  const isLightNav = isScrolled || activeLightMode || isMobileMenuOpen;
+  const logoFilter = isLightNav ? 'brightness-0 contrast-200' : '';
 
   const dropDownBg = "bg-[#F4EBE6]/60 backdrop-blur-2xl border border-[#84492C]/10 shadow-[0_20px_50px_rgba(132,73,44,0.1)]";
   const navContainerClass = `fixed top-0 transition-all duration-300 ${isScrolled || isMobileMenuOpen
