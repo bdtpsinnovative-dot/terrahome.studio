@@ -3,18 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
-import dynamic from "next/dynamic"
-import { MapPin, ChevronDown, X, Check, Compass, List } from "lucide-react"
-
-const BranchMiniMap = dynamic(() => import("./BranchMiniMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[240px] flex flex-col items-center justify-center bg-[#F5F2EB]/50 gap-2">
-      <span className="w-6 h-6 border-2 border-[#84492C]/20 border-t-[#84492C] rounded-full animate-spin" />
-      <span className="text-[9px] uppercase tracking-[0.2em] text-[#84492C]">Loading Mini Map...</span>
-    </div>
-  ),
-})
+import { MapPin, ChevronDown, X, Check } from "lucide-react"
 
 interface Branch {
   id: string | number
@@ -37,7 +26,6 @@ export default function BranchSelector({
   const currentBranchId = searchParams.get("branch") || "all"
 
   const [isOpen, setIsOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"map" | "list">("map")
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -196,100 +184,59 @@ export default function BranchSelector({
               role="dialog"
               aria-modal="true"
               aria-label="Select Location"
-              className="relative z-[99999] bg-[#FDFCFB] rounded-t-2xl border-t border-[#E5E5E5] shadow-2xl pb-6 max-h-[88vh] flex flex-col transition-all duration-200 overflow-hidden"
+              className="relative z-[99999] bg-[#FDFCFB] rounded-t-2xl border-t border-[#E5E5E5] shadow-2xl pb-8 max-h-[85vh] flex flex-col transition-all duration-200"
             >
               {/* แถบลากด้านบน */}
-              <div className="pt-2.5 pb-1 flex justify-center">
+              <div className="pt-3 pb-2 flex justify-center">
                 <div className="w-10 h-1 bg-[#D5D2CA] rounded-full" />
               </div>
 
-              {/* ส่วนหัว Drawer พร้อมตัวสลับ Mini Map / List */}
-              <div className="flex items-center justify-between px-4 pb-2.5 pt-1 border-b border-[#F0EFEB]">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <MapPin className="w-4 h-4 text-[#84492C] shrink-0" />
-                  <span className="text-[11px] uppercase tracking-[0.22em] text-[#3A3835] font-semibold truncate">
-                    LOCATION / สาขา
+              {/* ส่วนหัว Drawer */}
+              <div className="flex items-center justify-between px-6 pb-3 border-b border-[#F0EFEB]">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#C8A97E]" />
+                  <span className="text-[11px] uppercase tracking-[0.25em] text-[#C8A97E] font-medium">
+                    Select Location / สาขา
                   </span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-sm bg-[#EDE8E1] p-0.5 border border-[#D5D2CA]/60 text-[9px] tracking-wider">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("map")}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xs transition-all cursor-pointer ${
-                        viewMode === "map"
-                          ? "bg-[#FAF8F5] text-[#84492C] font-semibold shadow-xs"
-                          : "text-[#6F6861] hover:text-[#3A3835]"
-                      }`}
-                    >
-                      <Compass className="w-3 h-3" />
-                      <span>MAP</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("list")}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xs transition-all cursor-pointer ${
-                        viewMode === "list"
-                          ? "bg-[#FAF8F5] text-[#84492C] font-semibold shadow-xs"
-                          : "text-[#6F6861] hover:text-[#3A3835]"
-                      }`}
-                    >
-                      <List className="w-3 h-3" />
-                      <span>LIST</span>
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="p-1 text-[#8C8A86] hover:text-[#3A3835] active:scale-95 transition-transform"
-                    aria-label="Close branch selector"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 -mr-1.5 text-[#8C8A86] hover:text-[#3A3835] active:scale-95 transition-transform"
+                  aria-label="Close branch selector"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* เนื้อหา Drawer: สลับได้ระหว่าง Mini Map และ List */}
-              {viewMode === "map" ? (
-                <div className="flex-1 overflow-y-auto overscroll-contain">
-                  <BranchMiniMap
-                    branches={branches}
-                    selectedBranchId={selectedBranch.id}
-                    onSelectBranch={handleSelect}
-                    isMobile={true}
-                  />
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto overscroll-contain py-2 divide-y divide-[#F0EFEB]/80">
-                  {options.map((branch) => {
-                    const isActive = selectedBranch.id.toString() === branch.id.toString()
-                    return (
-                      <button
-                        key={branch.id}
-                        type="button"
-                        onClick={() => handleSelect(branch.id)}
-                        className={`w-full text-left px-6 py-3.5 text-[12px] uppercase tracking-[0.16em] transition-colors flex items-center justify-between active:bg-[#F4F1EA] ${
-                          isActive
-                            ? 'text-[#84492C] font-semibold bg-[#F9F8F6]'
-                            : 'text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]'
-                        }`}
-                      >
-                        <span className="whitespace-normal break-words leading-snug pr-3">{branch.branch_name}</span>
-                        {isActive ? (
-                          <div className="flex items-center gap-1.5 text-[#84492C] shrink-0">
-                            <span className="text-[9px] tracking-widest font-medium">SELECTED</span>
-                            <Check className="w-4 h-4" />
-                          </div>
-                        ) : (
-                          <div className="w-2 h-2 rounded-full border border-[#D5D2CA] shrink-0" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              {/* รายการสาขาทั้งหมด เลื่อนดูได้ง่ายด้วยนิ้วโป้ง */}
+              <div className="flex-1 overflow-y-auto overscroll-contain py-2 divide-y divide-[#F0EFEB]/80">
+                {options.map((branch) => {
+                  const isActive = selectedBranch.id.toString() === branch.id.toString()
+                  return (
+                    <button
+                      key={branch.id}
+                      type="button"
+                      onClick={() => handleSelect(branch.id)}
+                      className={`w-full text-left px-6 py-3.5 text-[12px] uppercase tracking-[0.16em] transition-colors flex items-center justify-between active:bg-[#F4F1EA] ${
+                        isActive
+                          ? 'text-[#C8A97E] font-semibold bg-[#F9F8F6]'
+                          : 'text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]'
+                      }`}
+                    >
+                      <span className="whitespace-normal break-words leading-snug pr-3">{branch.branch_name}</span>
+                      {isActive ? (
+                        <div className="flex items-center gap-1.5 text-[#C8A97E] shrink-0">
+                          <span className="text-[9px] tracking-widest font-medium">SELECTED</span>
+                          <Check className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full border border-[#D5D2CA] shrink-0" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         ) : (
@@ -304,82 +251,36 @@ export default function BranchSelector({
               right: `${coords?.right ?? 16}px`,
               zIndex: 99999,
             }}
-            className={`bg-[#FDFCFB] border border-[#E5E5E5] shadow-[0_16px_48px_-10px_rgba(0,0,0,0.18)] origin-top-right transition-all duration-200 overflow-hidden rounded-md ${
-              viewMode === "map" ? "w-[440px] sm:w-[480px]" : "w-max min-w-[320px] max-w-[420px]"
-            }`}
+            className="w-max min-w-[320px] max-w-[420px] bg-[#FDFCFB] border border-[#E5E5E5] shadow-[0_12px_40px_-10px_rgba(0,0,0,0.14)] origin-top-right transition-all duration-200"
           >
-            {/* ส่วนหัว Dropdown พร้อมตัวสลับ Mini Map / List */}
-            <div className="px-4 py-2.5 bg-[#FAF8F5] border-b border-[#F0EFEB] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <MapPin className="w-3.5 h-3.5 text-[#84492C] shrink-0" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-[#3A3835] font-semibold truncate">
-                  SELECT LOCATION
-                </span>
-                <span className="text-[9px] text-[#A8A29E] font-normal lowercase tracking-normal shrink-0">
-                  ({options.length})
-                </span>
-              </div>
-
-              {/* View Switcher: MINI MAP vs LIST */}
-              <div className="flex items-center bg-[#EDE8E1] p-0.5 rounded border border-[#D5D2CA]/60 text-[9px] tracking-wider shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("map")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-xs transition-all cursor-pointer ${
-                    viewMode === "map"
-                      ? "bg-[#FAF8F5] text-[#84492C] font-semibold shadow-xs"
-                      : "text-[#6F6861] hover:text-[#3A3835]"
-                  }`}
-                >
-                  <Compass className="w-3 h-3" />
-                  <span>MINI MAP</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-xs transition-all cursor-pointer ${
-                    viewMode === "list"
-                      ? "bg-[#FAF8F5] text-[#84492C] font-semibold shadow-xs"
-                      : "text-[#6F6861] hover:text-[#3A3835]"
-                  }`}
-                >
-                  <List className="w-3 h-3" />
-                  <span>LIST</span>
-                </button>
-              </div>
+            <div className="px-5 py-3.5 text-[10px] uppercase tracking-[0.25em] text-[#C8A97E] font-medium border-b border-[#F0EFEB] flex items-center justify-between">
+              <span>Select Location</span>
+              <span className="text-[9px] text-[#A8A29E] font-normal lowercase tracking-normal">
+                ({options.length} locations)
+              </span>
             </div>
-
-            {/* เนื้อหา Dropdown: สลับได้ระหว่าง Mini Map และ List */}
-            {viewMode === "map" ? (
-              <BranchMiniMap
-                branches={branches}
-                selectedBranchId={selectedBranch.id}
-                onSelectBranch={handleSelect}
-              />
-            ) : (
-              <div className="flex flex-col py-1.5 max-h-[380px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
-                {options.map((branch) => {
-                  const isActive = selectedBranch.id.toString() === branch.id.toString()
-                  return (
-                    <button
-                      key={branch.id}
-                      type="button"
-                      onClick={() => handleSelect(branch.id)}
-                      className={`w-full text-left px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] transition-colors flex items-center justify-between group cursor-pointer ${
-                        isActive
-                          ? 'text-[#84492C] font-semibold bg-[#F9F8F6]'
-                          : 'text-[#78716C] hover:bg-[#F9F8F6] hover:text-[#292524]'
-                      }`}
-                    >
-                      <span className="whitespace-normal break-words leading-relaxed pr-3">{branch.branch_name}</span>
-                      {isActive && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#84492C] shrink-0" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            <div className="flex flex-col py-1.5 max-h-[380px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
+              {options.map((branch) => {
+                const isActive = selectedBranch.id.toString() === branch.id.toString()
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => handleSelect(branch.id)}
+                    className={`w-full text-left px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] transition-colors flex items-center justify-between group ${
+                      isActive
+                        ? 'text-[#C8A97E] font-medium bg-[#F9F8F6]'
+                        : 'text-[#78716C] hover:bg-[#F9F8F6] hover:text-[#292524]'
+                    }`}
+                  >
+                    <span className="whitespace-normal break-words leading-relaxed pr-3">{branch.branch_name}</span>
+                    {isActive && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#C8A97E] shrink-0" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         ),
         document.body
