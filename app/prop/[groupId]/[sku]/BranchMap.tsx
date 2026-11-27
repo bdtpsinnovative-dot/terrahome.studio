@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapPin, Navigation, X, Maximize2, Compass } from 'lucide-react'
+import { MapPin, Navigation, X, Maximize2, Compass, ChevronDown, Check } from 'lucide-react'
 
 interface BranchMapProps {
   activeStock: any[]
@@ -90,11 +90,29 @@ export default function BranchMap({
   const [mounted, setMounted] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [internalSelectedBranch, setInternalSelectedBranch] = useState<{ lat: number; lng: number; timestamp: number } | null>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({})
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!isDropdownOpen) return
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isDropdownOpen])
 
   // Sync prop changes to internal selected branch
   useEffect(() => {
@@ -270,6 +288,11 @@ export default function BranchMap({
     </>
   )
 
+  const activeSelectedStock = validLocations.find(
+    s => internalSelectedBranch?.lat === Number(s.branches.latitude) && 
+         internalSelectedBranch?.lng === Number(s.branches.longitude)
+  ) || validLocations[0]
+
   return (
     <>
       {/* 🌟 1. INLINE MAP (ดีไซน์ Quiet Luxury สบายตา ไร้ปุ่มสีจัดจ้าน) */}
@@ -365,93 +388,106 @@ export default function BranchMap({
               </div>
             </div>
 
-            {/* 🗺️ MODAL BODY: Full-Bleed Map with Smart Responsive Branch Cards */}
+            {/* 🗺️ MODAL BODY: Full-Bleed Map with Luxury Top Dropdown */}
             <div className="flex-1 relative w-full h-full min-h-0 bg-[#EAE7E0] overflow-hidden">
               
-              {/* 📋 DESKTOP FLOATING BRANCH PANEL (md and up) */}
-              <div className="hidden md:flex absolute z-[1000] top-4 left-4 w-[280px] max-h-[calc(100%-32px)] bg-[#FAF8F5]/92 backdrop-blur-md rounded-xl border border-[#D5D2CA]/90 shadow-[0_12px_36px_-8px_rgba(58,56,53,0.18)] flex-col overflow-hidden">
-                <div className="px-3.5 py-2.5 border-b border-[#D5D2CA]/60 bg-white/60 flex items-center justify-between shrink-0">
-                  <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-[#84492C]">
-                    Available Stores ({validLocations.length})
-                  </span>
-                  <span className="text-[8.5px] text-[#8C8A86] tracking-wide font-light">
-                    คลิกเพื่อดูหมุด
-                  </span>
-                </div>
-                <div className="p-2 flex flex-col gap-1.5 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
-                  {validLocations.map((s: any, idx: number) => {
-                    const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
-                                       internalSelectedBranch?.lng === Number(s.branches.longitude)
-                    return (
-                      <div 
-                        key={idx}
-                        onClick={() => handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))}
-                        className={`p-2.5 rounded-lg transition-all duration-200 cursor-pointer border flex flex-col justify-between shrink-0 ${isSelected ? 'bg-white border-[#84492C] shadow-sm ring-1 ring-[#84492C]/20' : 'bg-white/80 border-[#D5D2CA]/60 hover:bg-white hover:border-[#84492C]/40'}`}
-                      >
-                        <div className="flex items-start justify-between gap-1.5">
-                          <span className={`text-[11px] font-medium uppercase tracking-[0.08em] leading-snug line-clamp-2 ${isSelected ? 'text-[#84492C]' : 'text-[#3A3835]'}`}>
-                            {s.branches?.branch_name || 'TERRA BRANCH'}
-                          </span>
-                          <span className="text-[8.5px] font-mono tracking-wider text-[#84492C] bg-[#84492C]/8 px-1.5 py-0.5 rounded-xs shrink-0 font-semibold whitespace-nowrap">
-                            {s.qty} IN STOCK
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-[#3A3835]/5 text-[9px]">
-                          {s.distance !== null && s.distance !== undefined ? (
-                            <span className="text-[#8C8A86] font-mono flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5 text-[#84492C]" /> {s.distance.toFixed(1)} km
-                            </span>
-                          ) : (
-                            <span className="text-[#8C8A86] font-light">แตะเพื่อซูมหมุด</span>
-                          )}
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
-                            className="text-[#84492C] hover:text-[#3A3835] font-medium flex items-center gap-1 transition-colors uppercase tracking-[0.1em]"
-                            title="เปิด Google Maps นำทาง"
-                          >
-                            <Navigation className="w-2.5 h-2.5" />
-                            <span>นำทาง</span>
-                          </a>
-                        </div>
+              {/* 🌟 TOP FLOATING BAR: Luxury Branch Dropdown Selector (อยู่ด้านบนตามที่นายต้องการ) */}
+              <div className="absolute top-3.5 left-3.5 right-3.5 z-[1000] flex items-center justify-between pointer-events-none gap-2">
+                
+                {/* 📍 BRANCH SELECTOR DROPDOWN */}
+                <div ref={dropdownRef} className="relative pointer-events-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="bg-[#FAF8F5]/95 hover:bg-[#FAF8F5] backdrop-blur-md border border-[#D5D2CA] text-[#3A3835] hover:border-[#84492C]/50 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-left transition-all duration-200 shadow-sm flex items-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#84492C]/10 flex items-center justify-center shrink-0">
+                      <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#84492C]" />
+                    </div>
+                    
+                    <div className="flex flex-col min-w-0 pr-1">
+                      <span className="text-[7.5px] sm:text-[8px] uppercase tracking-[0.16em] text-[#8C8A86] font-medium leading-none mb-0.5">
+                        เลือกสาขา
+                      </span>
+                      <span className="text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.08em] font-medium text-[#3A3835] truncate max-w-[150px] sm:max-w-[220px] leading-tight">
+                        {getCleanBranchName(activeSelectedStock?.branches?.branch_name)}
+                      </span>
+                    </div>
+
+                    <span className="text-[8px] sm:text-[8.5px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#84492C]/10 text-[#84492C] shrink-0 whitespace-nowrap">
+                      {activeSelectedStock?.qty || 0} PCS
+                    </span>
+
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#8C8A86] transition-transform duration-200 shrink-0 ${isDropdownOpen ? 'rotate-180 text-[#84492C]' : ''}`} />
+                  </button>
+
+                  {/* 📋 EXPANDED DROPDOWN MENU */}
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-[280px] sm:w-[320px] bg-[#FAF8F5] border border-[#D5D2CA] rounded-xl shadow-xl overflow-hidden backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 z-[1001]">
+                      <div className="px-3.5 py-2 border-b border-[#D5D2CA]/60 bg-white/70 flex items-center justify-between">
+                        <span className="text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#84492C]">
+                          สาขาที่มีสินค้า ({validLocations.length})
+                        </span>
+                        <span className="text-[8.5px] text-[#8C8A86] font-light">
+                          คลิกเพื่อดูหมุด
+                        </span>
                       </div>
-                    )
-                  })}
+
+                      <div className="max-h-[260px] overflow-y-auto divide-y divide-[#D5D2CA]/40 [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
+                        {validLocations.map((s: any, idx: number) => {
+                          const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
+                                             internalSelectedBranch?.lng === Number(s.branches.longitude)
+                          const cleanName = getCleanBranchName(s.branches?.branch_name)
+
+                          return (
+                            <button
+                              type="button"
+                              key={idx}
+                              onClick={() => {
+                                handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))
+                                setIsDropdownOpen(false)
+                              }}
+                              className={`w-full px-3.5 py-2.5 flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                isSelected ? 'bg-white text-[#84492C]' : 'hover:bg-white/80 text-[#3A3835]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 pr-2">
+                                {isSelected ? (
+                                  <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />
+                                ) : (
+                                  <span className="w-3.5 h-3.5 rounded-full border border-[#D5D2CA] shrink-0" />
+                                )}
+                                <div className="min-w-0">
+                                  <div className={`text-[10.5px] sm:text-[11px] uppercase tracking-[0.08em] font-medium truncate ${isSelected ? 'text-[#84492C] font-semibold' : 'text-[#3A3835]'}`}>
+                                    {cleanName}
+                                  </div>
+                                  {s.distance !== null && s.distance !== undefined && (
+                                    <div className="text-[8.5px] text-[#8C8A86] font-mono mt-0.5">
+                                      ห่าง {s.distance.toFixed(1)} km
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#84492C]/10 text-[#84492C] shrink-0 whitespace-nowrap">
+                                {s.qty} IN STOCK
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              {/* 📱 MOBILE FLOATING CHIPS BAR (below md - Minimal, non-intrusive) */}
-              <div className="md:hidden absolute z-[1000] bottom-3 left-3 right-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                {validLocations.map((s: any, idx: number) => {
-                  const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
-                                     internalSelectedBranch?.lng === Number(s.branches.longitude)
-                  const cleanName = getCleanBranchName(s.branches?.branch_name)
-
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))}
-                      className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border backdrop-blur-md shadow-xs text-left transition-all active:scale-95 cursor-pointer ${
-                        isSelected 
-                          ? 'bg-[#FAF8F5] border-[#84492C] text-[#84492C] ring-1 ring-[#84492C]/30 shadow-sm font-semibold'
-                          : 'bg-[#FAF8F5]/90 border-[#D5D2CA] text-[#706D67] hover:text-[#3A3835]'
-                      }`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-[#84492C]' : 'bg-[#D5D2CA]'}`}></span>
-                      <span className="text-[8.5px] uppercase tracking-[0.12em] font-medium whitespace-nowrap">
-                        {cleanName}
-                      </span>
-                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full whitespace-nowrap font-medium ${
-                        isSelected ? 'bg-[#84492C]/10 text-[#84492C]' : 'bg-black/5 text-[#8C8A86]'
-                      }`}>
-                        {s.qty} PCS
-                      </span>
-                    </button>
-                  )
-                })}
+                {/* 🧭 LOCATE ME BUTTON (Mobile shortcut on top-right) */}
+                <button
+                  type="button"
+                  onClick={handleLocateMe}
+                  className="pointer-events-auto sm:hidden bg-[#FAF8F5]/95 hover:bg-[#FAF8F5] backdrop-blur-md border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] p-2 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+                  title="ตำแหน่งของฉัน"
+                >
+                  <Compass className="w-4 h-4 text-[#84492C]" />
+                </button>
               </div>
 
               {/* 🗺️ MAP CONTAINER (เต็มพื้นที่ 100% ยิ่งใหญ่ สบายตา) */}
