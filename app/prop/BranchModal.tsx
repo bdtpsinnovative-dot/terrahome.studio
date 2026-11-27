@@ -536,10 +536,11 @@ export default function BranchModal({
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Google Maps"
-                        className="w-full py-1 px-3 border border-[#D5D2CA] text-[#6F6861] hover:text-[#3A3835] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
+                        style={{ color: "#3A3835", backgroundColor: "#FFFFFF" }}
+                        className="w-full py-1 px-3 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
                       >
                         <Navigation className="w-2.5 h-2.5" />
-                        <span>นำทาง (Google Maps)</span>
+                        <span style={{ color: "#3A3835" }}>นำทาง (Google Maps)</span>
                       </a>
                     </div>
                   </Popup>
@@ -561,7 +562,7 @@ export default function BranchModal({
 
         {/* 🏷️ Modal Bottom Bar: Branch Chips & Selection Action */}
         <div className="p-3 sm:p-4 bg-[#FAF8F5] border-t border-[#D5D2CA]/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => {

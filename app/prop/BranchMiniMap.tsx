@@ -328,10 +328,11 @@ export default function BranchMiniMap({
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Google Maps"
-                      className="w-full py-1 px-3 border border-[#D5D2CA] text-[#6F6861] hover:text-[#3A3835] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
+                      style={{ color: "#3A3835", backgroundColor: "#FFFFFF" }}
+                      className="w-full py-1 px-3 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
                     >
                       <Navigation className="w-2.5 h-2.5" />
-                      <span>นำทาง (Google Maps)</span>
+                      <span style={{ color: "#3A3835" }}>นำทาง (Google Maps)</span>
                     </a>
                   </div>
                 </Popup>
