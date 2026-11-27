@@ -298,19 +298,32 @@ export default function ProductDetailClient({
   const selectedBranchStock = selectedBranchId
     ? activeProduct.stock?.find((s: any) => String(s.branches?.id) === String(selectedBranchId))
     : null
-  const isSelectedBranchSpecial = Boolean(selectedBranchStock?.is_branch_special)
+  const isSelectedBranchSpecial = selectedBranchStock
+    ? Boolean(selectedBranchStock?.is_branch_special)
+    : Boolean(activeProduct?.is_branch_special)
 
-  // ส่วนลดและราคาที่จะแสดง (ถ้าเลือกสาขาที่มีโปรเฉพาะ ให้แสดงโปรสาขานั้นเป็นอันดับแรก)
-  const displayDiscountValue = isSelectedBranchSpecial
-    ? Number(selectedBranchStock.discount_value)
-    : Number(activeProduct?.discount_value)
-  const displayDiscountType = isSelectedBranchSpecial
-    ? selectedBranchStock.discount_type
-    : activeProduct?.discount_type
-  const displayDiscountedPrice = isSelectedBranchSpecial
-    ? Number(selectedBranchStock.discounted_price)
-    : getDiscountedPrice(activeProduct)
-  const hasDisplayDiscount = Number.isFinite(displayDiscountValue) && displayDiscountValue > 0 && Boolean(displayDiscountType)
+  const specialBranchName = selectedBranchStock
+    ? selectedBranchStock.branches?.branch_name
+    : activeProduct?.special_branch_name
+
+  // ส่วนลดและราคาที่จะแสดง (ถ้าเลือกสาขาที่มีโปรเฉพาะ ให้แสดงโปรสาขานั้นเป็นอันดับแรก หากยังไม่เลือกสาขา ให้แสดงโปรโมชั่นที่ดีที่สุดของสินค้า)
+  let displayDiscountValue: number | null = null
+  let displayDiscountType: string | null = null
+  let displayDiscountedPrice: number | null = null
+
+  if (selectedBranchStock) {
+    if (selectedBranchStock.discount_value && selectedBranchStock.discount_value > 0) {
+      displayDiscountValue = Number(selectedBranchStock.discount_value)
+      displayDiscountType = selectedBranchStock.discount_type
+      displayDiscountedPrice = Number(selectedBranchStock.discounted_price)
+    }
+  } else if (activeProduct?.discount_value && activeProduct.discount_value > 0) {
+    displayDiscountValue = Number(activeProduct.discount_value)
+    displayDiscountType = activeProduct.discount_type
+    displayDiscountedPrice = getDiscountedPrice(activeProduct)
+  }
+
+  const hasDisplayDiscount = displayDiscountValue !== null && Number.isFinite(displayDiscountValue) && displayDiscountValue > 0 && Boolean(displayDiscountType)
 
   // ⚡ 3. ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const handleAddToCart = async () => {
@@ -472,7 +485,7 @@ export default function ProductDetailClient({
               <div className="mt-3 flex items-center gap-3 flex-wrap">
                 {isSelectedBranchSpecial && (
                   <span className="bg-[#84492C] text-white text-[8.5px] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-xs shadow-xs">
-                    {selectedBranchStock?.branches?.branch_name || 'BRANCH'} SPECIAL
+                    {specialBranchName ? `${specialBranchName} SPECIAL` : 'STORE SPECIAL'}
                   </span>
                 )}
                 <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
@@ -484,7 +497,7 @@ export default function ProductDetailClient({
                 <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C] font-mono">
                   THB {Number(displayDiscountedPrice).toLocaleString()}
                 </p>
-                {isSelectedBranchSpecial && (
+                {selectedBranchId && (
                   <button
                     type="button"
                     onClick={() => {
@@ -493,9 +506,9 @@ export default function ProductDetailClient({
                       window.history.replaceState(null, "", newPath)
                     }}
                     className="text-[9px] tracking-wider text-[#8C8A86] hover:text-[#84492C] underline ml-1 cursor-pointer"
-                    title="Clear branch special price and view standard price"
+                    title="Clear branch filter and view featured price"
                   >
-                    (Reset)
+                    (Show all stores)
                   </button>
                 )}
               </div>
@@ -504,7 +517,7 @@ export default function ProductDetailClient({
                 <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C] font-mono">
                   {activeProduct.price > 0 ? `THB ${Number(activeProduct.price).toLocaleString()}` : 'POA'}
                 </p>
-                {isSelectedBranchSpecial && (
+                {selectedBranchId && (
                   <button
                     type="button"
                     onClick={() => {
@@ -514,7 +527,7 @@ export default function ProductDetailClient({
                     }}
                     className="text-[9px] tracking-wider text-[#8C8A86] hover:text-[#84492C] underline ml-1 cursor-pointer"
                   >
-                    (Reset)
+                    (Show all stores)
                   </button>
                 )}
               </div>
@@ -804,7 +817,8 @@ export default function ProductDetailClient({
                     width_cm: p.width_cm ?? p.specs?.width_cm ?? null,
                     length_cm: p.length_cm ?? p.specs?.length_cm ?? null,
                     thickness_cm: p.thickness_cm ?? p.specs?.thickness_cm ?? null,
-                    discount_value: p.discount_value, discount_type: p.discount_type
+                    discount_value: p.discount_value, discount_type: p.discount_type,
+                    is_branch_special: p.is_branch_special, special_branch_name: p.special_branch_name,
                   })) || []
                 if (slides.length === 0 && group.cover_image_url) {
                   slides.push({
@@ -812,7 +826,8 @@ export default function ProductDetailClient({
                     width_cm: group.products?.[0]?.width_cm ?? group.products?.[0]?.specs?.width_cm ?? null,
                     length_cm: group.products?.[0]?.length_cm ?? group.products?.[0]?.specs?.length_cm ?? null,
                     thickness_cm: group.products?.[0]?.thickness_cm ?? group.products?.[0]?.specs?.thickness_cm ?? null,
-                    discount_value: null, discount_type: null
+                    discount_value: null, discount_type: null,
+                    is_branch_special: false, special_branch_name: null,
                   })
                 }
                 return (

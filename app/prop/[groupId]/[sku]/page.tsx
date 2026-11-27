@@ -372,10 +372,31 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
       }
     })
 
+    // 🌟 หากไม่มี Global Discount แต่มีสาขาที่มีโปรโมชั่นพิเศษ ดึงโปรโมชั่นสาขาที่ดีที่สุดมาแสดงเป็น Featured Special ทันที เพื่อไม่ให้เสียโอกาสการขาย
+    const specialBranchStocks = mappedStock.filter((s: any) => s.is_branch_special && s.discount_value > 0)
+    let bestSpecialBranch: any = null
+    if (specialBranchStocks.length > 0) {
+      bestSpecialBranch = specialBranchStocks.reduce((best: any, current: any) => {
+        const bestSavings = rawPrice - (best.discounted_price ?? rawPrice)
+        const currentSavings = rawPrice - (current.discounted_price ?? rawPrice)
+        return currentSavings > bestSavings ? current : best
+      }, specialBranchStocks[0])
+    }
+
+    const finalDiscountValue = hasGlobalDiscount
+      ? globalDiscountVal
+      : (bestSpecialBranch ? bestSpecialBranch.discount_value : null)
+    const finalDiscountType = hasGlobalDiscount
+      ? globalDiscount?.discount_type
+      : (bestSpecialBranch ? bestSpecialBranch.discount_type : null)
+
     return {
       ...product,
-      discount_value: hasGlobalDiscount ? globalDiscountVal : null,
-      discount_type: globalDiscount ? globalDiscount.discount_type : null,
+      discount_value: finalDiscountValue,
+      discount_type: finalDiscountType,
+      is_branch_special: !hasGlobalDiscount && Boolean(bestSpecialBranch),
+      special_branch_name: !hasGlobalDiscount && bestSpecialBranch ? bestSpecialBranch.branches?.branch_name : null,
+      special_branch_id: !hasGlobalDiscount && bestSpecialBranch ? bestSpecialBranch.branches?.id : null,
       stock: mappedStock,
     }
   }

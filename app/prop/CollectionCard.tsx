@@ -14,6 +14,8 @@ interface ProductSlide {
   thickness_cm?: number | string | null
   discount_value?: number | null
   discount_type?: 'PERCENT' | 'FIXED' | null
+  is_branch_special?: boolean
+  special_branch_name?: string | null
   availability_status?: 'available' | 'preorder'
 }
 
@@ -374,6 +376,11 @@ export default function CollectionCard({
                   </p>
                 ) : isDiscounted ? (
                   <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                    {currentSlide.is_branch_special && (
+                      <span className="text-[7.5px] text-[#84492C] font-semibold tracking-wider uppercase mb-0.5">
+                        {currentSlide.special_branch_name ? `${currentSlide.special_branch_name} SPECIAL` : 'STORE SPECIAL'}
+                      </span>
+                    )}
                     <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-[0.12em]">
                       <span className="text-[#8C8A86] line-through opacity-60">
                         THB {slidePriceNum.toLocaleString()}

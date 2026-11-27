@@ -12,6 +12,8 @@ export interface RawCatalogData {
   discountByProductId: Map<number, any>
   branchDiscountByProductBranch: Map<string, any>
   branchWideDiscount: Map<string, any>
+  bestBranchDiscountByProductId: Map<number, { discount: any; branchId: number; branchName: string }>
+  branchById: Map<number, any>
   propGroups: any[]
   productsByGroup: Map<string, any[]>
   groupById: Map<string, any>
@@ -260,15 +262,21 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     return isStarted && isNotEnded
   })
 
+  const branchById = new Map<number, any>()
+  for (const b of branches) {
+    branchById.set(Number(b.id), b)
+  }
+
   let globalDiscount: any | null = null
   const discountByProductId = new Map<number, any>()
   const branchDiscountByProductBranch = new Map<string, any>()
   const branchWideDiscount = new Map<string, any>()
+  const bestBranchDiscountByProductId = new Map<number, { discount: any; branchId: number; branchName: string }>()
 
   for (const discount of validDiscounts) {
     for (const rule of discount.discount_rules || []) {
       const pid = rule.product_id !== null && rule.product_id !== undefined ? Number(rule.product_id) : null
-      const bid = rule.branch_id !== null && rule.branch_id !== undefined ? String(rule.branch_id) : null
+      const bid = rule.branch_id !== null && rule.branch_id !== undefined ? Number(rule.branch_id) : null
 
       if (bid !== null && pid !== null) {
         // ส่วนลดเฉพาะสินค้า + สาขา
@@ -276,10 +284,18 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
         if (!branchDiscountByProductBranch.has(key)) {
           branchDiscountByProductBranch.set(key, discount)
         }
+        if (!bestBranchDiscountByProductId.has(pid)) {
+          const bInfo = branchById.get(bid)
+          bestBranchDiscountByProductId.set(pid, {
+            discount,
+            branchId: bid,
+            branchName: bInfo?.branch_name || 'Store',
+          })
+        }
       } else if (bid !== null && pid === null) {
         // ส่วนลดทั้งสาขานั้น
-        if (!branchWideDiscount.has(bid)) {
-          branchWideDiscount.set(bid, discount)
+        if (!branchWideDiscount.has(String(bid))) {
+          branchWideDiscount.set(String(bid), discount)
         }
       } else if (bid === null && pid !== null) {
         // ส่วนลดเฉพาะสินค้านี้ ทุกสาขา
@@ -358,6 +374,8 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     discountByProductId,
     branchDiscountByProductBranch,
     branchWideDiscount,
+    bestBranchDiscountByProductId,
+    branchById,
     propGroups,
     productsByGroup,
     groupById,
@@ -442,14 +460,36 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       }
     }
 
-    const applicableDiscount =
-      normalizedBranch !== "all"
-        ? (raw.branchDiscountByProductBranch.get(`${normalizedBranch}:${product.id}`) ??
-           raw.branchWideDiscount.get(normalizedBranch) ??
-           raw.discountByProductId.get(Number(product.id)) ??
-           raw.globalDiscount ??
-           null)
-        : (raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null)
+    let applicableDiscount: any = null
+    let isBranchSpecial = false
+    let specialBranchName: string | null = null
+
+    if (normalizedBranch !== "all") {
+      applicableDiscount =
+        raw.branchDiscountByProductBranch.get(`${normalizedBranch}:${product.id}`) ??
+        raw.branchWideDiscount.get(normalizedBranch) ??
+        raw.discountByProductId.get(Number(product.id)) ??
+        raw.globalDiscount ??
+        null
+
+      if (raw.branchDiscountByProductBranch.has(`${normalizedBranch}:${product.id}`) || raw.branchWideDiscount.has(normalizedBranch)) {
+        isBranchSpecial = true
+        specialBranchName = raw.branchById?.get(Number(normalizedBranch))?.branch_name || null
+      }
+    } else {
+      // 🌟 ดูแบบรวมทุกสาขา (ALL): หากมีโปรโมชั่นเฉพาะสาขา ดึงโปรโมชั่นที่ดีที่สุดมาแสดงทันที เพื่อไม่ให้เสียโอกาสการขาย!
+      const productGlobal = raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null
+      if (productGlobal) {
+        applicableDiscount = productGlobal
+      } else {
+        const branchSpecial = raw.bestBranchDiscountByProductId?.get(Number(product.id))
+        if (branchSpecial) {
+          applicableDiscount = branchSpecial.discount
+          isBranchSpecial = true
+          specialBranchName = branchSpecial.branchName
+        }
+      }
+    }
 
     const normalizedDiscountValue =
       applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
@@ -474,6 +514,8 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       hot_score: hotScore,
       discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
       discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+      is_branch_special: isBranchSpecial,
+      special_branch_name: specialBranchName,
     }
 
     const group = product.collection_group_id ? raw.groupById?.get(String(product.collection_group_id)) : null

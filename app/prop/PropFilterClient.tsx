@@ -849,6 +849,8 @@ export default function PropFilterClient({
                         thickness_cm: p.thickness_cm ?? p.specs?.thickness_cm ?? null,
                         discount_value: p.discount_value,
                         discount_type: p.discount_type,
+                        is_branch_special: p.is_branch_special,
+                        special_branch_name: p.special_branch_name,
                         availability_status: p.availability_status,
                       }))
 
@@ -863,6 +865,8 @@ export default function PropFilterClient({
                         thickness_cm: group.products?.[0]?.thickness_cm ?? group.products?.[0]?.specs?.thickness_cm ?? null,
                         discount_value: null,
                         discount_type: null,
+                        is_branch_special: false,
+                        special_branch_name: null,
                         availability_status: targetProducts[0]?.availability_status || group.products?.[0]?.availability_status,
                       }
                     ] : [])
