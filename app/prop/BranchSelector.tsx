@@ -35,7 +35,7 @@ export default function BranchSelector({
 
   const [isOpen, setIsOpen] = useState(false)
   const [isExpandModalOpen, setIsExpandModalOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"map" | "list">("map")
+  const [viewMode, setViewMode] = useState<"map" | "list">("list")
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -102,6 +102,9 @@ export default function BranchSelector({
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node
+      // Ignore if target was removed from DOM during click (e.g. Leaflet popup close button)
+      if (!target || !document.contains(target)) return
+
       if (
         buttonRef.current && !buttonRef.current.contains(target) &&
         menuRef.current && !menuRef.current.contains(target)
@@ -172,11 +175,16 @@ export default function BranchSelector({
         </div>
       )}
 
-      {/* 🌟 ปุ่มเลือกสาขา */}
+      {/* ปุ่มเลือกสาขา */}
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) {
+            setViewMode("list")
+          }
+          setIsOpen(!isOpen)
+        }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={`Current branch: ${selectedBranch.branch_name}. Click to change branch.`}
@@ -194,7 +202,7 @@ export default function BranchSelector({
       {/* 🌟 Dropdown Menu เรนเดอร์ผ่าน Portal เพื่อไม่ให้โดนตัดขอบจาก overflow ของ parent ใดๆ */}
       {mounted && isOpen && createPortal(
         isMobile ? (
-          /* 📱 Mobile Bottom Sheet */
+          /* Mobile Bottom Sheet */
           <div className="fixed inset-0 z-[99998] flex flex-col justify-end">
             {/* Backdrop ปิดเมนูเมื่อแตะข้างนอก */}
             <div
@@ -221,7 +229,7 @@ export default function BranchSelector({
                 <div className="flex items-center gap-1.5 min-w-0">
                   <MapPin className="w-4 h-4 text-[#84492C] shrink-0" />
                   <span className="text-[11px] uppercase tracking-[0.22em] text-[#3A3835] font-semibold truncate">
-                    LOCATION / สาขา
+                    SELECT LOCATION
                   </span>
                 </div>
 
@@ -290,12 +298,7 @@ export default function BranchSelector({
                         : "text-[#3A3835] hover:bg-[#F9F8F6]"
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium">🌍 แสดงทุกสาขา (ALL LOCATIONS)</span>
-                      <span className="text-[10px] text-[#8C8A86] normal-case tracking-normal">
-                        รวมสินค้าจากทุกโชว์รูมและคลังสินค้า
-                      </span>
-                    </div>
+                    <span className="font-medium">ALL LOCATIONS</span>
                     {selectedBranch.id === "all" && <Check className="w-4 h-4 text-[#84492C]" />}
                   </button>
 
@@ -303,7 +306,7 @@ export default function BranchSelector({
                   {categorizedBranches.showrooms.length > 0 && (
                     <div className="pt-2">
                       <div className="px-5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold text-[#84492C] bg-[#FAF8F5]">
-                        🏬 โชว์รูม • SHOWROOMS ({categorizedBranches.showrooms.length})
+                        SHOWROOMS ({categorizedBranches.showrooms.length})
                       </div>
                       {categorizedBranches.showrooms.map((b) => {
                         const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -318,12 +321,7 @@ export default function BranchSelector({
                                 : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]"
                             }`}
                           >
-                            <div className="flex flex-col">
-                              <span>{b.branch_name}</span>
-                              <span className="text-[9.5px] text-[#8C8A86] normal-case tracking-normal">
-                                {getBranchLocationHint(b.branch_name)}
-                              </span>
-                            </div>
+                            <span>{b.branch_name.trim()}</span>
                             {isActive && <Check className="w-4 h-4 text-[#84492C] shrink-0" />}
                           </button>
                         )
@@ -335,7 +333,7 @@ export default function BranchSelector({
                   {categorizedBranches.warehouses.length > 0 && (
                     <div className="pt-2">
                       <div className="px-5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold text-[#6F6861] bg-[#FAF8F5]">
-                        📦 คลังสินค้า • WAREHOUSES ({categorizedBranches.warehouses.length})
+                        WAREHOUSES ({categorizedBranches.warehouses.length})
                       </div>
                       {categorizedBranches.warehouses.map((b) => {
                         const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -350,12 +348,7 @@ export default function BranchSelector({
                                 : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]"
                             }`}
                           >
-                            <div className="flex flex-col">
-                              <span>{b.branch_name}</span>
-                              <span className="text-[9.5px] text-[#8C8A86] normal-case tracking-normal">
-                                {getBranchLocationHint(b.branch_name)}
-                              </span>
-                            </div>
+                            <span>{b.branch_name.trim()}</span>
                             {isActive && <Check className="w-4 h-4 text-[#84492C] shrink-0" />}
                           </button>
                         )
@@ -367,7 +360,7 @@ export default function BranchSelector({
                   {categorizedBranches.events.length > 0 && (
                     <div className="pt-2">
                       <div className="px-5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold text-[#84492C] bg-[#FAF8F5]">
-                        🎪 อีเวนต์พิเศษ • EVENTS & POP-UPS
+                        SPECIAL EVENTS & POP-UPS
                       </div>
                       {categorizedBranches.events.map((b) => {
                         const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -382,12 +375,7 @@ export default function BranchSelector({
                                 : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#3A3835]"
                             }`}
                           >
-                            <div className="flex flex-col">
-                              <span>{b.branch_name}</span>
-                              <span className="text-[9.5px] text-[#8C8A86] normal-case tracking-normal">
-                                {getBranchLocationHint(b.branch_name)}
-                              </span>
-                            </div>
+                            <span>{b.branch_name.trim()}</span>
                             {isActive && <Check className="w-4 h-4 text-[#84492C] shrink-0" />}
                           </button>
                         )
@@ -399,7 +387,7 @@ export default function BranchSelector({
             </div>
           </div>
         ) : (
-          /* 💻 Desktop Floating Dropdown Menu */
+          /* Desktop Floating Dropdown Menu */
           <div
             ref={menuRef}
             role="listbox"
@@ -478,12 +466,7 @@ export default function BranchSelector({
                       : "text-[#3A3835] hover:bg-[#F9F8F6]"
                   }`}
                 >
-                  <div className="flex flex-col">
-                    <span className="font-medium">🌍 ทุกสาขา (ALL LOCATIONS)</span>
-                    <span className="text-[9px] text-[#8C8A86] normal-case tracking-normal">
-                      รวมสินค้าจากทุกโชว์รูมและคลังสินค้า
-                    </span>
-                  </div>
+                  <span className="font-medium">ALL LOCATIONS</span>
                   {selectedBranch.id === "all" && <Check className="w-4 h-4 text-[#84492C]" />}
                 </button>
 
@@ -491,7 +474,7 @@ export default function BranchSelector({
                 {categorizedBranches.showrooms.length > 0 && (
                   <div className="pt-2">
                     <div className="px-5 py-1 text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#84492C] bg-[#FAF8F5]">
-                      🏬 โชว์รูม • SHOWROOMS ({categorizedBranches.showrooms.length})
+                      SHOWROOMS ({categorizedBranches.showrooms.length})
                     </div>
                     {categorizedBranches.showrooms.map((b) => {
                       const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -506,12 +489,7 @@ export default function BranchSelector({
                               : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#292524]"
                           }`}
                         >
-                          <div className="flex flex-col">
-                            <span>{b.branch_name}</span>
-                            <span className="text-[9px] text-[#8C8A86] normal-case tracking-normal">
-                              {getBranchLocationHint(b.branch_name)}
-                            </span>
-                          </div>
+                          <span>{b.branch_name.trim()}</span>
                           {isActive && <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />}
                         </button>
                       )
@@ -523,7 +501,7 @@ export default function BranchSelector({
                 {categorizedBranches.warehouses.length > 0 && (
                   <div className="pt-2">
                     <div className="px-5 py-1 text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#6F6861] bg-[#FAF8F5]">
-                      📦 คลังสินค้า • WAREHOUSES ({categorizedBranches.warehouses.length})
+                      WAREHOUSES ({categorizedBranches.warehouses.length})
                     </div>
                     {categorizedBranches.warehouses.map((b) => {
                       const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -538,12 +516,7 @@ export default function BranchSelector({
                               : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#292524]"
                           }`}
                         >
-                          <div className="flex flex-col">
-                            <span>{b.branch_name}</span>
-                            <span className="text-[9px] text-[#8C8A86] normal-case tracking-normal">
-                              {getBranchLocationHint(b.branch_name)}
-                            </span>
-                          </div>
+                          <span>{b.branch_name.trim()}</span>
                           {isActive && <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />}
                         </button>
                       )
@@ -555,7 +528,7 @@ export default function BranchSelector({
                 {categorizedBranches.events.length > 0 && (
                   <div className="pt-2">
                     <div className="px-5 py-1 text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#84492C] bg-[#FAF8F5]">
-                      🎪 อีเวนต์พิเศษ • EVENTS & POP-UPS
+                      SPECIAL EVENTS & POP-UPS
                     </div>
                     {categorizedBranches.events.map((b) => {
                       const isActive = selectedBranch.id.toString() === b.id.toString()
@@ -570,12 +543,7 @@ export default function BranchSelector({
                               : "text-[#5C5854] hover:bg-[#F9F8F6] hover:text-[#292524]"
                           }`}
                         >
-                          <div className="flex flex-col">
-                            <span>{b.branch_name}</span>
-                            <span className="text-[9px] text-[#8C8A86] normal-case tracking-normal">
-                              {getBranchLocationHint(b.branch_name)}
-                            </span>
-                          </div>
+                          <span>{b.branch_name.trim()}</span>
                           {isActive && <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />}
                         </button>
                       )

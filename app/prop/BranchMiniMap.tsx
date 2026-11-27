@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { Navigation, Compass, Check, Maximize2 } from "lucide-react"
+import { Navigation, Compass, Check, Maximize2, ChevronDown, MapPin } from "lucide-react"
 import {
   Branch,
   getCleanBranchName,
@@ -37,13 +37,17 @@ function MiniMapController({
   branches,
   fitBangkokTrigger,
   fitAllTrigger,
+  flyTarget,
 }: {
   activeBranch: (Branch & { displayLat: number; displayLng: number }) | null
   branches: (Branch & { displayLat: number; displayLng: number })[]
   fitBangkokTrigger: number
   fitAllTrigger: number
+  flyTarget: { lat: number; lng: number; zoom: number; key: number } | null
 }) {
   const map = useMap()
+  const lastFitBkkRef = useRef<number>(0)
+  const lastFitAllRef = useRef<number>(0)
 
   // Invalidate map size on mount and animation completion
   useEffect(() => {
@@ -55,18 +59,22 @@ function MiniMapController({
     }
   }, [map])
 
-  // Fly to active branch with street-level luxury zoom
+  // Deep street-level luxury zoom into selected branch
   useEffect(() => {
-    if (activeBranch && activeBranch.displayLat && activeBranch.displayLng) {
-      map.flyTo([activeBranch.displayLat, activeBranch.displayLng], 15.5, { duration: 0.9 })
+    if (flyTarget) {
+      map.flyTo([flyTarget.lat, flyTarget.lng], flyTarget.zoom, {
+        duration: 1.1,
+        easeLinearity: 0.25,
+      })
     }
-  }, [activeBranch, map])
+  }, [flyTarget, map])
 
-  // Fit Bangkok area (focused view avoiding nationwide collapse)
+  // Fit Bangkok area ONLY when fitBangkokTrigger actually increments
   useEffect(() => {
-    if (fitBangkokTrigger > 0 && branches.length > 0) {
+    if (fitBangkokTrigger > lastFitBkkRef.current && branches.length > 0) {
+      lastFitBkkRef.current = fitBangkokTrigger
       const bkkBranches = branches.filter(
-        (b) => b.latitude && b.latitude > 13.5 && b.latitude < 14.0 // Focused Bangkok metropolitan showroom hub
+        (b) => b.latitude && b.latitude > 13.0 && b.latitude < 14.6 // Greater Bangkok & Central (excludes Phuket at 7.94)
       )
       const target = bkkBranches.length > 0 ? bkkBranches : branches
       const bounds = L.latLngBounds(target.map((b) => [b.displayLat, b.displayLng]))
@@ -76,9 +84,10 @@ function MiniMapController({
     }
   }, [fitBangkokTrigger, branches, map])
 
-  // Fit all branches nationwide
+  // Fit all branches nationwide ONLY when fitAllTrigger actually increments
   useEffect(() => {
-    if (fitAllTrigger > 0 && branches.length > 0) {
+    if (fitAllTrigger > lastFitAllRef.current && branches.length > 0) {
+      lastFitAllRef.current = fitAllTrigger
       const bounds = L.latLngBounds(branches.map((b) => [b.displayLat, b.displayLng]))
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12.5 })
@@ -96,28 +105,38 @@ export default function BranchMiniMap({
   onOpenExpandModal,
   isMobile = false,
 }: BranchMiniMapProps) {
-  const validBranches = branches.filter(
-    (b) => typeof b.latitude === "number" && typeof b.longitude === "number" && !isNaN(b.latitude) && !isNaN(b.longitude)
+  const validBranches = useMemo(
+    () =>
+      branches.filter(
+        (b) =>
+          typeof b.latitude === "number" &&
+          typeof b.longitude === "number" &&
+          !isNaN(b.latitude) &&
+          !isNaN(b.longitude)
+      ),
+    [branches]
   )
 
   // 🌟 Smart Micro-Offset: Prevents pins at identical buildings from stacking!
-  const processedBranches = validBranches.map((branch, i) => {
-    let lat = branch.latitude!
-    let lng = branch.longitude!
-    for (let j = 0; j < i; j++) {
-      const prev = validBranches[j]
-      if (prev.latitude && prev.longitude) {
-        const dLat = Math.abs(lat - prev.latitude)
-        const dLng = Math.abs(lng - prev.longitude)
-        if (dLat < 0.0018 && dLng < 0.0018) {
-          lat += 0.0012
-          lng += 0.0016
-          break
+  const processedBranches = useMemo(() => {
+    return validBranches.map((branch, i) => {
+      let lat = branch.latitude!
+      let lng = branch.longitude!
+      for (let j = 0; j < i; j++) {
+        const prev = validBranches[j]
+        if (prev.latitude && prev.longitude) {
+          const dLat = Math.abs(lat - prev.latitude)
+          const dLng = Math.abs(lng - prev.longitude)
+          if (dLat < 0.0018 && dLng < 0.0018) {
+            lat += 0.0012
+            lng += 0.0016
+            break
+          }
         }
       }
-    }
-    return { ...branch, displayLat: lat, displayLng: lng }
-  })
+      return { ...branch, displayLat: lat, displayLng: lng }
+    })
+  }, [validBranches])
 
   const initiallySelected = processedBranches.find((b) => b.id.toString() === selectedBranchId.toString()) || null
   const [activeBranch, setActiveBranch] = useState<(Branch & { displayLat: number; displayLng: number }) | null>(
@@ -125,8 +144,33 @@ export default function BranchMiniMap({
   )
   const [fitBangkokTrigger, setFitBangkokTrigger] = useState<number>(() => (initiallySelected ? 0 : 1))
   const [fitAllTrigger, setFitAllTrigger] = useState<number>(0)
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; key: number } | null>(
+    () =>
+      initiallySelected
+        ? { lat: initiallySelected.displayLat + 0.0015, lng: initiallySelected.displayLng, zoom: 16.8, key: 1 }
+        : null
+  )
+  const [viewScope, setViewScope] = useState<"bkk" | "nationwide">("bkk")
+  const [isTopDropdownOpen, setIsTopDropdownOpen] = useState(false)
+  const topDropdownRef = useRef<HTMLDivElement>(null)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({})
+
+  // Close top dropdown on click outside
+  useEffect(() => {
+    if (!isTopDropdownOpen) return
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (topDropdownRef.current && !topDropdownRef.current.contains(e.target as Node)) {
+        setIsTopDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("touchstart", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("touchstart", handleClickOutside)
+    }
+  }, [isTopDropdownOpen])
 
   const defaultCenter: [number, number] = initiallySelected
     ? [initiallySelected.displayLat, initiallySelected.displayLng]
@@ -137,25 +181,34 @@ export default function BranchMiniMap({
 
   const handlePickBranch = (branch: Branch & { displayLat: number; displayLng: number }) => {
     setActiveBranch(branch)
+    setViewScope("bkk")
+    setFlyTarget({
+      lat: branch.displayLat + 0.0015, // 🌟 Smart vertical offset: leaves headroom so popup is not clipped
+      lng: branch.displayLng,
+      zoom: 16.8, // 🌟 Deep street & soi level zoom
+      key: Date.now(),
+    })
     const key = `${branch.latitude},${branch.longitude}`
     setTimeout(() => {
       markerRefs.current[key]?.openPopup()
-    }, 250)
+    }, 450)
   }
 
   const handleFitBangkok = () => {
     setActiveBranch(null)
+    setViewScope("bkk")
     setFitBangkokTrigger((c) => c + 1)
   }
 
   const handleFitAllNationwide = () => {
     setActiveBranch(null)
+    setViewScope("nationwide")
     setFitAllTrigger((c) => c + 1)
   }
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่งครับ")
+      alert("Geolocation is not supported by your browser.")
       return
     }
     navigator.geolocation.getCurrentPosition(
@@ -165,7 +218,7 @@ export default function BranchMiniMap({
         setActiveBranch({
           id: "user-loc",
           branch_code: "USER",
-          branch_name: "ตำแหน่งปัจจุบันของคุณ",
+          branch_name: "YOUR CURRENT LOCATION",
           latitude: coords[0],
           longitude: coords[1],
           displayLat: coords[0],
@@ -174,7 +227,7 @@ export default function BranchMiniMap({
       },
       (err) => {
         console.warn("Geolocation warning:", err)
-        alert("โปรดอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่งเพื่อใช้งานฟังก์ชันนี้นะครับ")
+        alert("Please enable location permissions in your browser to use this feature.")
       },
       { enableHighAccuracy: true }
     )
@@ -193,7 +246,6 @@ export default function BranchMiniMap({
     const dotColor = isFocused || isCurrent ? "#FAF8F5" : type === "warehouse" ? "#6F6861" : "#84492C"
     const scale = isFocused ? "scale(1.18)" : isCurrent ? "scale(1.08)" : "scale(1)"
     const zIndex = isFocused ? 500 : isCurrent ? 350 : 30
-    const iconPrefix = type === "warehouse" ? "📦" : type === "event" ? "🎪" : "🏬"
 
     return L.divIcon({
       className: "bg-transparent border-none",
@@ -207,7 +259,7 @@ export default function BranchMiniMap({
           cursor: pointer;
           z-index: ${zIndex};
         ">
-          <!-- 🏷️ Floating Branch Name Pill Badge (Always Visible!) -->
+          <!-- Floating Branch Name Pill Badge (Always Visible!) -->
           <div style="
             position: absolute;
             bottom: 43px;
@@ -231,15 +283,14 @@ export default function BranchMiniMap({
             border: 1px solid ${isFocused || isCurrent ? "rgba(255, 255, 255, 0.7)" : "rgba(132, 73, 44, 0.3)"};
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
             backdrop-filter: blur(4px);
             transition: all 0.2s ease;
           ">
-            <span style="font-size: 10px; line-height: 1;">${iconPrefix}</span>
             <span>${pinLabel}</span>
           </div>
 
-          <!-- 📍 Teardrop Pin SVG -->
+          <!-- Teardrop Pin SVG -->
           <svg width="32" height="40" viewBox="0 0 32 40" fill="none" style="filter: drop-shadow(0 4px 10px rgba(58,56,53,${isFocused ? "0.45" : "0.22"}));">
             <path d="M16 0C7.163 0 0 7.163 0 16C0 28 16 40 16 40C16 40 32 28 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="2" />
             <circle cx="16" cy="15" r="5" fill="${dotColor}" />
@@ -267,7 +318,7 @@ export default function BranchMiniMap({
   return (
     <div className="flex flex-col w-full font-sans select-none">
       {/* 🗺️ Mini Map Display Container */}
-      <div className={`relative w-full ${isMobile ? "h-[270px]" : "h-[330px]"} rounded-md overflow-hidden border border-[#D5D2CA]/80 bg-[#EAE7E0]`}>
+      <div className={`relative w-full ${isMobile ? "h-[290px]" : "h-[350px]"} rounded-md overflow-hidden border border-[#D5D2CA]/80 bg-[#EAE7E0]`}>
         <MapContainer
           center={defaultCenter}
           zoom={12.5}
@@ -283,6 +334,7 @@ export default function BranchMiniMap({
             branches={processedBranches}
             fitBangkokTrigger={fitBangkokTrigger}
             fitAllTrigger={fitAllTrigger}
+            flyTarget={flyTarget}
           />
 
           {processedBranches.map((branch) => {
@@ -299,20 +351,17 @@ export default function BranchMiniMap({
                 position={[branch.displayLat, branch.displayLng]}
                 icon={createTeardropIcon(branch, isFocused, isCurrent)}
                 eventHandlers={{
-                  click: () => setActiveBranch(branch),
+                  click: () => handlePickBranch(branch),
                 }}
               >
-                <Popup className="terra-luxury-popup font-sans border-none">
+                <Popup autoPan={false} className="terra-luxury-popup font-sans border-none">
                   <div className="flex flex-col items-center text-center p-0.5 min-w-[180px] max-w-[220px]">
                     <span className="text-[8px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-0.5">
                       {getBranchTypeLabel(branch.branch_name)}
                     </span>
-                    <p className="font-serif text-[#3A3835] mb-1 text-[13px] uppercase tracking-[0.05em] font-medium leading-snug">
+                    <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.05em] font-medium leading-snug">
                       {branch.branch_name}
                     </p>
-                    <span className="text-[9.5px] text-[#8C8A86] mb-2">
-                      {getBranchLocationHint(branch.branch_name)}
-                    </span>
 
                     <button
                       type="button"
@@ -320,7 +369,7 @@ export default function BranchMiniMap({
                       className="w-full mb-1.5 py-1.5 px-3 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[10px] uppercase font-medium tracking-[0.16em] rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                     >
                       <Check className="w-3.5 h-3.5 text-white" />
-                      <span>เลือกสาขานี้</span>
+                      <span>SELECT THIS LOCATION</span>
                     </button>
 
                     <a
@@ -332,7 +381,7 @@ export default function BranchMiniMap({
                       className="w-full py-1 px-3 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
                     >
                       <Navigation className="w-2.5 h-2.5" />
-                      <span style={{ color: "#3A3835" }}>นำทาง (Google Maps)</span>
+                      <span style={{ color: "#3A3835" }}>DIRECTIONS (GOOGLE MAPS)</span>
                     </a>
                   </div>
                 </Popup>
@@ -342,51 +391,157 @@ export default function BranchMiniMap({
 
           {userLocation && (
             <Marker position={userLocation} icon={userMarkerIcon}>
-              <Popup className="terra-luxury-popup font-sans border-none">
+              <Popup autoPan={false} className="terra-luxury-popup font-sans border-none">
                 <div className="text-center font-medium text-[11px] text-[#3A3835] px-2 py-1 tracking-wide">
-                  📍 ตำแหน่งปัจจุบันของคุณ
+                  YOUR CURRENT LOCATION
                 </div>
               </Popup>
             </Marker>
           )}
         </MapContainer>
 
-        {/* 🧭 ปุ่มควบคุมด่วนบน Mini Map พร้อมปุ่ม [ ⛶ ขยายเต็มจอ ] */}
+        {/* Top-Left Floating Branch Dropdown inside Mini Map */}
+        <div ref={topDropdownRef} className="absolute top-2.5 left-2.5 z-[400]">
+          <button
+            type="button"
+            onClick={() => setIsTopDropdownOpen(!isTopDropdownOpen)}
+            className="bg-[#FAF8F5]/95 hover:bg-white backdrop-blur-md border border-[#D5D2CA] text-[#3A3835] hover:border-[#84492C]/50 px-2.5 sm:px-3 py-1.5 rounded-lg text-left transition-all duration-200 shadow-sm flex items-center gap-2 cursor-pointer active:scale-98"
+          >
+            <div className="w-5 h-5 rounded-md bg-[#84492C]/10 flex items-center justify-center shrink-0">
+              <MapPin className="w-3 h-3 text-[#84492C]" />
+            </div>
+
+            <div className="flex flex-col min-w-0 pr-1">
+              <span className="text-[7.5px] uppercase tracking-[0.16em] text-[#8C8A86] font-medium leading-none mb-0.5">
+                SELECT LOCATION
+              </span>
+              <span className="text-[10.5px] sm:text-[11px] uppercase tracking-[0.06em] font-semibold text-[#3A3835] truncate max-w-[125px] sm:max-w-[170px] leading-tight">
+                {activeBranch ? getCleanBranchName(activeBranch.branch_name) : "ALL LOCATIONS"}
+              </span>
+            </div>
+
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-[#8C8A86] transition-transform duration-200 shrink-0 ${
+                isTopDropdownOpen ? "rotate-180 text-[#84492C]" : ""
+              }`}
+            />
+          </button>
+
+          {/* Expanded Dropdown Menu */}
+          {isTopDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1.5 w-[260px] sm:w-[290px] bg-[#FAF8F5] border border-[#D5D2CA] rounded-xl shadow-xl overflow-hidden backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 z-[401]">
+              <div className="px-3 py-2 border-b border-[#D5D2CA]/60 bg-white/70 flex items-center justify-between">
+                <span className="text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#84492C]">
+                  ALL LOCATIONS ({processedBranches.length})
+                </span>
+                <span className="text-[8px] text-[#8C8A86] font-light">Click to zoom</span>
+              </div>
+
+              <div className="max-h-[220px] overflow-y-auto divide-y divide-[#D5D2CA]/40 [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFitBangkok()
+                    setIsTopDropdownOpen(false)
+                  }}
+                  className={`w-full px-3 py-2 flex items-center justify-between text-left transition-colors cursor-pointer ${
+                    activeBranch === null ? "bg-white text-[#84492C] font-semibold" : "hover:bg-white/80 text-[#3A3835]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {activeBranch === null ? (
+                      <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />
+                    ) : (
+                      <span className="w-3.5 h-3.5 rounded-full border border-[#D5D2CA] shrink-0" />
+                    )}
+                    <span className="text-[10.5px] uppercase tracking-wide">ALL LOCATIONS</span>
+                  </div>
+                </button>
+
+                {processedBranches.map((b) => {
+                  const isSelected = activeBranch?.id === b.id
+                  const clean = getCleanBranchName(b.branch_name)
+
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => {
+                        handlePickBranch(b)
+                        setIsTopDropdownOpen(false)
+                      }}
+                      className={`w-full px-3 py-2 flex items-center justify-between text-left transition-colors cursor-pointer ${
+                        isSelected ? "bg-white text-[#84492C] font-semibold" : "hover:bg-white/80 text-[#3A3835]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        {isSelected ? (
+                          <Check className="w-3.5 h-3.5 text-[#84492C] shrink-0" />
+                        ) : (
+                          <span className="w-3.5 h-3.5 rounded-full border border-[#D5D2CA] shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-[10.5px] uppercase tracking-[0.04em] font-medium truncate">
+                            {clean}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Quick controls on Mini Map with Expand Button */}
         <div className="absolute top-2.5 right-2.5 z-[400] flex flex-col items-end gap-1.5">
-          {/* 🌟 ปุ่มขยายแผนที่เต็มจอ (EXPAND FULLSCREEN MODAL) */}
+          {/* EXPAND FULLSCREEN MODAL */}
           {onOpenExpandModal && (
             <button
               type="button"
               onClick={onOpenExpandModal}
-              title="ขยายแผนที่เต็มจอ (Expand Fullscreen Map)"
+              title="Expand Fullscreen Map"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#84492C] hover:bg-[#6D3B23] text-white rounded-md shadow-md text-[10px] uppercase font-medium tracking-wider transition-all cursor-pointer active:scale-95 border border-white/30"
             >
               <Maximize2 className="w-3.5 h-3.5 text-white" />
-              <span className="font-semibold">ขยายแผนที่ (EXPAND)</span>
+              <span className="font-semibold">EXPAND MAP</span>
             </button>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={handleFitBangkok}
-              title="โฟกัสสาขากรุงเทพฯ (Bangkok Hub)"
-              className="px-2 py-1 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded shadow-xs text-[9px] font-semibold tracking-wider transition-colors cursor-pointer"
-            >
-              BKK
-            </button>
-            <button
-              type="button"
-              onClick={handleFitAllNationwide}
-              title="แสดงทุกสาขาทั่วประเทศรวมภูเก็ต (All Nationwide)"
-              className="w-7 h-7 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded shadow-xs flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
+          {/* Two-Way Segmented View Toggle: BKK <-> NATIONWIDE */}
+          <div className="flex items-center gap-1">
+            <div className="flex items-center rounded-md bg-[#FAF8F5]/95 border border-[#D5D2CA] p-0.5 shadow-xs text-[9px] font-semibold tracking-wider">
+              <button
+                type="button"
+                onClick={handleFitBangkok}
+                title="Bangkok Hub"
+                className={`px-2 py-1 rounded transition-all cursor-pointer ${
+                  viewScope === "bkk"
+                    ? "bg-[#84492C] text-white shadow-2xs"
+                    : "text-[#6F6861] hover:text-[#3A3835] hover:bg-white/60"
+                }`}
+              >
+                BKK
+              </button>
+              <button
+                type="button"
+                onClick={handleFitAllNationwide}
+                title="Nationwide (All Branches)"
+                className={`px-2 py-1 rounded transition-all cursor-pointer ${
+                  viewScope === "nationwide"
+                    ? "bg-[#84492C] text-white shadow-2xs"
+                    : "text-[#6F6861] hover:text-[#3A3835] hover:bg-white/60"
+                }`}
+              >
+                NATIONWIDE
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={handleLocateMe}
-              title="ตำแหน่งของฉัน (Locate Me)"
+              title="Locate Me"
               className="w-7 h-7 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded shadow-xs flex items-center justify-center transition-colors cursor-pointer"
             >
               <Compass className="w-3.5 h-3.5" />
@@ -395,54 +550,14 @@ export default function BranchMiniMap({
         </div>
       </div>
 
-      {/* 🏷️ แถบเลื่อนชิปสาขาแนวนอนด้านล่างแผนที่ */}
-      <div className="py-2.5 px-0.5 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveBranch(null)
-            handleFitBangkok()
-          }}
-          className={`px-3 py-1.5 text-[10px] uppercase tracking-wider rounded-full transition-all cursor-pointer border whitespace-nowrap ${
-            activeBranch === null
-              ? "bg-[#84492C] text-white border-[#84492C] font-medium shadow-xs"
-              : "bg-white text-[#6F6861] border-[#D5D2CA] hover:text-[#3A3835]"
-          }`}
-        >
-          🌍 ทุกสาขา (ALL)
-        </button>
-
-        {processedBranches.map((b) => {
-          const isFocused = activeBranch?.id === b.id
-          const clean = getCleanBranchName(b.branch_name)
-          const type = getBranchType(b.branch_name)
-          const iconPrefix = type === "warehouse" ? "📦" : type === "event" ? "🎪" : "🏬"
-
-          return (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => handlePickBranch(b)}
-              className={`px-3 py-1.5 text-[10px] uppercase tracking-wider rounded-full transition-all cursor-pointer border whitespace-nowrap ${
-                isFocused
-                  ? "bg-[#84492C] text-white border-[#84492C] font-medium shadow-xs"
-                  : "bg-white text-[#6F6861] border-[#D5D2CA] hover:border-[#84492C]/40 hover:text-[#3A3835]"
-              }`}
-            >
-              {iconPrefix} {clean}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* 📌 แถบล่าง: แสดงสถานะสาขาที่กำลังดู + ปุ่มเลือกเพื่อกรองสินค้า */}
+      {/* Bottom bar: Active branch status + Select action */}
       <div className="pt-2 pb-1 px-1 border-t border-[#D5D2CA]/60 flex items-center justify-between gap-2">
         <div className="flex flex-col min-w-0 pr-2">
           <span className="text-[9px] uppercase tracking-wider text-[#8C8A86] truncate">
-            {activeBranch ? getBranchTypeLabel(activeBranch.branch_name) : "มุมมองภาพรวมทุกพื้นที่"}
+            {activeBranch ? getBranchTypeLabel(activeBranch.branch_name) : "ALL LOCATIONS OVERVIEW"}
           </span>
           <span className="text-[11px] font-medium text-[#3A3835] truncate">
-            {activeBranch ? activeBranch.branch_name : "แสดงสินค้าทุกสาขา (ALL LOCATIONS)"}
+            {activeBranch ? activeBranch.branch_name : "SHOWING ALL LOCATIONS"}
           </span>
         </div>
 
@@ -463,7 +578,7 @@ export default function BranchMiniMap({
               className="px-3.5 py-1.5 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[10.5px] uppercase font-medium tracking-[0.16em] rounded transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>เลือก {getCleanBranchName(activeBranch.branch_name)}</span>
+              <span>SELECT {getCleanBranchName(activeBranch.branch_name)}</span>
             </button>
           </div>
         ) : (
@@ -473,7 +588,7 @@ export default function BranchMiniMap({
             className="px-3.5 py-1.5 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[10.5px] uppercase font-medium tracking-[0.16em] rounded transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 shrink-0"
           >
             <Check className="w-3.5 h-3.5" />
-            <span>เลือกดูทุกสาขา</span>
+            <span>SELECT ALL LOCATIONS</span>
           </button>
         )}
       </div>

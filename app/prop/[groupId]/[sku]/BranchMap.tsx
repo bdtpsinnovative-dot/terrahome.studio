@@ -188,7 +188,7 @@ export default function BranchMap({
         <div style="display: flex; flex-direction: column; align-items: center; position: relative;">
           ${clean ? `
             <div style="background: rgba(253, 252, 251, 0.95); color: #3A3835; font-size: 9px; font-weight: 700; padding: 2px 7.5px; border-radius: 9999px; border: 1px solid rgba(132,73,44,0.3); box-shadow: 0 2px 6px rgba(0,0,0,0.15); margin-bottom: 3px; white-space: nowrap; letter-spacing: 0.04em;">
-              📍 ${clean}
+              ${clean}
             </div>
           ` : ''}
           <div style="background: #FAF8F5; border: 1.5px solid #84492C; border-radius: 6px; padding: 3px; box-shadow: 0 4px 14px rgba(58,56,53,0.18); display: flex; flex-direction: column; align-items: center; width: 44px; height: 44px; position: relative;">
@@ -288,7 +288,7 @@ export default function BranchMap({
         <Marker position={userLocation} icon={userIcon}>
           <Popup className="terra-luxury-popup font-sans border-none">
             <div className="text-center font-medium text-[11px] text-[#3A3835] px-2 py-1 tracking-wide">
-              📍 YOUR CURRENT LOCATION
+              YOUR CURRENT LOCATION
             </div>
           </Popup>
         </Marker>

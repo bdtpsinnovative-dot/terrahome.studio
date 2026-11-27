@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from "react-leaflet"
 import L from "leaflet"
@@ -27,13 +27,17 @@ function ModalMapController({
   branches,
   fitBangkokTrigger,
   fitAllTrigger,
+  flyTarget,
 }: {
   activeBranch: (Branch & { displayLat: number; displayLng: number }) | null
   branches: (Branch & { displayLat: number; displayLng: number })[]
   fitBangkokTrigger: number
   fitAllTrigger: number
+  flyTarget: { lat: number; lng: number; zoom: number; key: number } | null
 }) {
   const map = useMap()
+  const lastFitBkkRef = useRef<number>(0)
+  const lastFitAllRef = useRef<number>(0)
 
   // Invalidate map size on mount and after modal animation completes
   useEffect(() => {
@@ -47,18 +51,22 @@ function ModalMapController({
     }
   }, [map])
 
-  // Fly to active branch with street-level luxury zoom
+  // Deep street-level luxury zoom into selected branch
   useEffect(() => {
-    if (activeBranch && activeBranch.displayLat && activeBranch.displayLng) {
-      map.flyTo([activeBranch.displayLat, activeBranch.displayLng], 15.5, { duration: 0.9 })
+    if (flyTarget) {
+      map.flyTo([flyTarget.lat, flyTarget.lng], flyTarget.zoom, {
+        duration: 1.1,
+        easeLinearity: 0.25,
+      })
     }
-  }, [activeBranch, map])
+  }, [flyTarget, map])
 
-  // Fit Bangkok metropolitan hub
+  // Fit Bangkok metropolitan hub ONLY when fitBangkokTrigger actually increments
   useEffect(() => {
-    if (fitBangkokTrigger > 0 && branches.length > 0) {
+    if (fitBangkokTrigger > lastFitBkkRef.current && branches.length > 0) {
+      lastFitBkkRef.current = fitBangkokTrigger
       const bkkBranches = branches.filter(
-        (b) => b.latitude && b.latitude > 13.5 && b.latitude < 14.0
+        (b) => b.latitude && b.latitude > 13.0 && b.latitude < 14.6
       )
       const target = bkkBranches.length > 0 ? bkkBranches : branches
       const bounds = L.latLngBounds(target.map((b) => [b.displayLat, b.displayLng]))
@@ -68,9 +76,10 @@ function ModalMapController({
     }
   }, [fitBangkokTrigger, branches, map])
 
-  // Fit all branches nationwide
+  // Fit all branches nationwide ONLY when fitAllTrigger actually increments
   useEffect(() => {
-    if (fitAllTrigger > 0 && branches.length > 0) {
+    if (fitAllTrigger > lastFitAllRef.current && branches.length > 0) {
+      lastFitAllRef.current = fitAllTrigger
       const bounds = L.latLngBounds(branches.map((b) => [b.displayLat, b.displayLng]))
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [35, 35], maxZoom: 12.5 })
@@ -92,28 +101,38 @@ export default function BranchModal({
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({})
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
 
-  const validBranches = branches.filter(
-    (b) => typeof b.latitude === "number" && typeof b.longitude === "number" && !isNaN(b.latitude) && !isNaN(b.longitude)
+  const validBranches = useMemo(
+    () =>
+      branches.filter(
+        (b) =>
+          typeof b.latitude === "number" &&
+          typeof b.longitude === "number" &&
+          !isNaN(b.latitude) &&
+          !isNaN(b.longitude)
+      ),
+    [branches]
   )
 
   // Smart Micro-Offset for co-located branches
-  const processedBranches = validBranches.map((branch, i) => {
-    let lat = branch.latitude!
-    let lng = branch.longitude!
-    for (let j = 0; j < i; j++) {
-      const prev = validBranches[j]
-      if (prev.latitude && prev.longitude) {
-        const dLat = Math.abs(lat - prev.latitude)
-        const dLng = Math.abs(lng - prev.longitude)
-        if (dLat < 0.0018 && dLng < 0.0018) {
-          lat += 0.0012
-          lng += 0.0016
-          break
+  const processedBranches = useMemo(() => {
+    return validBranches.map((branch, i) => {
+      let lat = branch.latitude!
+      let lng = branch.longitude!
+      for (let j = 0; j < i; j++) {
+        const prev = validBranches[j]
+        if (prev.latitude && prev.longitude) {
+          const dLat = Math.abs(lat - prev.latitude)
+          const dLng = Math.abs(lng - prev.longitude)
+          if (dLat < 0.0018 && dLng < 0.0018) {
+            lat += 0.0012
+            lng += 0.0016
+            break
+          }
         }
       }
-    }
-    return { ...branch, displayLat: lat, displayLng: lng }
-  })
+      return { ...branch, displayLat: lat, displayLng: lng }
+    })
+  }, [validBranches])
 
   const initiallySelected = processedBranches.find((b) => b.id.toString() === selectedBranchId.toString()) || null
   const [activeBranch, setActiveBranch] = useState<(Branch & { displayLat: number; displayLng: number }) | null>(
@@ -121,6 +140,13 @@ export default function BranchModal({
   )
   const [fitBangkokTrigger, setFitBangkokTrigger] = useState<number>(() => (initiallySelected ? 0 : 1))
   const [fitAllTrigger, setFitAllTrigger] = useState<number>(0)
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; key: number } | null>(
+    () =>
+      initiallySelected
+        ? { lat: initiallySelected.displayLat + 0.0015, lng: initiallySelected.displayLng, zoom: 16.8, key: 1 }
+        : null
+  )
+  const [viewScope, setViewScope] = useState<"bkk" | "nationwide">("bkk")
 
   // ESC key to close modal and body scroll lock
   useEffect(() => {
@@ -163,25 +189,34 @@ export default function BranchModal({
 
   const handlePickBranch = (branch: Branch & { displayLat: number; displayLng: number }) => {
     setActiveBranch(branch)
+    setViewScope("bkk")
+    setFlyTarget({
+      lat: branch.displayLat + 0.0015, // 🌟 Smart vertical offset so popup is not clipped
+      lng: branch.displayLng,
+      zoom: 16.8, // 🌟 Deep street & soi level zoom
+      key: Date.now(),
+    })
     const key = `${branch.latitude},${branch.longitude}`
     setTimeout(() => {
       markerRefs.current[key]?.openPopup()
-    }, 250)
+    }, 450)
   }
 
   const handleFitBangkok = () => {
     setActiveBranch(null)
+    setViewScope("bkk")
     setFitBangkokTrigger((c) => c + 1)
   }
 
   const handleFitAllNationwide = () => {
     setActiveBranch(null)
+    setViewScope("nationwide")
     setFitAllTrigger((c) => c + 1)
   }
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่งครับ")
+      alert("Geolocation is not supported by your browser.")
       return
     }
     navigator.geolocation.getCurrentPosition(
@@ -191,7 +226,7 @@ export default function BranchModal({
         setActiveBranch({
           id: "user-loc",
           branch_code: "USER",
-          branch_name: "ตำแหน่งปัจจุบันของคุณ",
+          branch_name: "YOUR CURRENT LOCATION",
           latitude: coords[0],
           longitude: coords[1],
           displayLat: coords[0],
@@ -200,7 +235,7 @@ export default function BranchModal({
       },
       (err) => {
         console.warn("Geolocation warning:", err)
-        alert("โปรดอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่งเพื่อใช้งานฟังก์ชันนี้นะครับ")
+        alert("Please enable location permissions in your browser to use this feature.")
       },
       { enableHighAccuracy: true }
     )
@@ -224,7 +259,6 @@ export default function BranchModal({
     const dotColor = isFocused || isCurrent ? "#FAF8F5" : type === "warehouse" ? "#6F6861" : "#84492C"
     const scale = isFocused ? "scale(1.18)" : isCurrent ? "scale(1.08)" : "scale(1)"
     const zIndex = isFocused ? 500 : isCurrent ? 350 : 30
-    const iconPrefix = type === "warehouse" ? "📦" : type === "event" ? "🎪" : "🏬"
 
     return L.divIcon({
       className: "bg-transparent border-none",
@@ -238,7 +272,7 @@ export default function BranchModal({
           cursor: pointer;
           z-index: ${zIndex};
         ">
-          <!-- 🏷️ Floating Branch Name Pill Badge (Always Visible!) -->
+          <!-- Floating Branch Name Pill Badge (Always Visible!) -->
           <div style="
             position: absolute;
             bottom: 43px;
@@ -262,15 +296,14 @@ export default function BranchModal({
             border: 1px solid ${isFocused || isCurrent ? "rgba(255, 255, 255, 0.7)" : "rgba(132, 73, 44, 0.3)"};
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
             backdrop-filter: blur(4px);
             transition: all 0.2s ease;
           ">
-            <span style="font-size: 10px; line-height: 1;">${iconPrefix}</span>
             <span>${pinLabel}</span>
           </div>
 
-          <!-- 📍 Teardrop Pin SVG -->
+          <!-- Teardrop Pin SVG -->
           <svg width="32" height="40" viewBox="0 0 32 40" fill="none" style="filter: drop-shadow(0 4px 10px rgba(58,56,53,${isFocused ? "0.45" : "0.22"}));">
             <path d="M16 0C7.163 0 0 7.163 0 16C0 28 16 40 16 40C16 40 32 28 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="2" />
             <circle cx="16" cy="15" r="5" fill="${dotColor}" />
@@ -318,7 +351,7 @@ export default function BranchModal({
                 Terra Studio · Showroom Map & Locations
               </h3>
               <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.12em] text-[#8C8A86] font-light truncate">
-                เลือกดูสาขาและแผนที่นำทาง ({validBranches.length} สาขา)
+                Explore Studio Locations & Directions ({validBranches.length} Locations)
               </p>
             </div>
           </div>
@@ -330,7 +363,7 @@ export default function BranchModal({
               className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#D5D2CA] bg-white hover:bg-[#FAF8F5] text-[#3A3835] hover:text-[#84492C] hover:border-[#84492C]/50 text-[10px] uppercase tracking-[0.16em] font-medium transition-all cursor-pointer shadow-2xs"
             >
               <Compass className="w-3.5 h-3.5 text-[#84492C]" />
-              <span>ตำแหน่งของฉัน</span>
+              <span>MY LOCATION</span>
             </button>
 
             <button
@@ -338,16 +371,16 @@ export default function BranchModal({
               onClick={onClose}
               className="w-8 h-8 rounded-full border border-[#D5D2CA] bg-white hover:bg-[#3A3835] text-[#3A3835] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-2xs"
               aria-label="Close modal"
-              title="ปิด (ESC)"
+              title="Close (ESC)"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* 🗺️ Modal Full-Bleed Map */}
+        {/* Modal Full-Bleed Map */}
         <div className="flex-1 relative w-full h-full min-h-0 bg-[#EAE7E0] overflow-hidden">
-          {/* 📍 Top Floating Branch Dropdown inside Modal */}
+          {/* Top Floating Branch Dropdown inside Modal */}
           <div className="absolute top-3.5 left-3.5 right-3.5 z-[1000] flex items-center justify-between pointer-events-none gap-2">
             <div ref={dropdownRef} className="relative pointer-events-auto">
               <button
@@ -361,10 +394,10 @@ export default function BranchModal({
 
                 <div className="flex flex-col min-w-0 pr-1">
                   <span className="text-[7.5px] sm:text-[8px] uppercase tracking-[0.16em] text-[#8C8A86] font-medium leading-none mb-0.5">
-                    เลือกสาขา
+                    SELECT LOCATION
                   </span>
                   <span className="text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.08em] font-medium text-[#3A3835] truncate max-w-[150px] sm:max-w-[220px] leading-tight">
-                    {activeBranch ? activeBranch.branch_name : "แสดงทุกสาขา (ALL)"}
+                    {activeBranch ? activeBranch.branch_name : "ALL LOCATIONS"}
                   </span>
                 </div>
 
@@ -380,9 +413,9 @@ export default function BranchModal({
                 <div className="absolute top-full left-0 mt-1.5 w-[280px] sm:w-[320px] bg-[#FAF8F5] border border-[#D5D2CA] rounded-xl shadow-xl overflow-hidden backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 z-[1001]">
                   <div className="px-3.5 py-2 border-b border-[#D5D2CA]/60 bg-white/70 flex items-center justify-between">
                     <span className="text-[8.5px] uppercase tracking-[0.2em] font-semibold text-[#84492C]">
-                      สาขาทั้งหมด ({processedBranches.length})
+                      ALL LOCATIONS ({processedBranches.length})
                     </span>
-                    <span className="text-[8.5px] text-[#8C8A86] font-light">คลิกเพื่อดูหมุด</span>
+                    <span className="text-[8.5px] text-[#8C8A86] font-light">Click to view pin</span>
                   </div>
 
                   <div className="max-h-[260px] overflow-y-auto divide-y divide-[#D5D2CA]/40 [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
@@ -403,7 +436,7 @@ export default function BranchModal({
                         ) : (
                           <span className="w-3.5 h-3.5 rounded-full border border-[#D5D2CA] shrink-0" />
                         )}
-                        <span className="text-[11px] uppercase tracking-wide">🌍 ทุกสาขา (ALL LOCATIONS)</span>
+                        <span className="text-[11px] uppercase tracking-wide">ALL LOCATIONS</span>
                       </div>
                     </button>
 
@@ -433,9 +466,6 @@ export default function BranchModal({
                               <div className="text-[11px] uppercase tracking-[0.06em] font-medium truncate">
                                 {clean}
                               </div>
-                              <div className="text-[8.5px] text-[#8C8A86] mt-0.5 truncate">
-                                {getBranchLocationHint(b.branch_name)}
-                              </div>
                             </div>
                           </div>
                         </button>
@@ -446,28 +476,39 @@ export default function BranchModal({
               )}
             </div>
 
-            {/* Quick Floating Map Action Buttons */}
+            {/* Two-Way Segmented View Toggle: BKK <-> NATIONWIDE */}
             <div className="flex items-center gap-1.5 pointer-events-auto">
-              <button
-                type="button"
-                onClick={handleFitBangkok}
-                title="โฟกัสสาขากรุงเทพฯ (Bangkok Hub)"
-                className="px-2.5 py-1.5 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded-lg shadow-sm text-[10px] font-semibold tracking-wider transition-colors cursor-pointer"
-              >
-                BKK
-              </button>
-              <button
-                type="button"
-                onClick={handleFitAllNationwide}
-                title="แสดงทุกสาขาทั่วประเทศรวมภูเก็ต (All Nationwide)"
-                className="w-8 h-8 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded-lg shadow-sm flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center rounded-lg bg-[#FAF8F5]/95 border border-[#D5D2CA] p-0.5 shadow-sm text-[9.5px] font-semibold tracking-wider">
+                <button
+                  type="button"
+                  onClick={handleFitBangkok}
+                  title="Bangkok Hub"
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                    viewScope === "bkk"
+                      ? "bg-[#84492C] text-white shadow-2xs"
+                      : "text-[#6F6861] hover:text-[#3A3835] hover:bg-white/60"
+                  }`}
+                >
+                  BKK
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFitAllNationwide}
+                  title="Nationwide (All Branches)"
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                    viewScope === "nationwide"
+                      ? "bg-[#84492C] text-white shadow-2xs"
+                      : "text-[#6F6861] hover:text-[#3A3835] hover:bg-white/60"
+                  }`}
+                >
+                  NATIONWIDE
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={handleLocateMe}
-                title="ตำแหน่งของฉัน (Locate Me)"
+                title="Locate Me"
                 className="w-8 h-8 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded-lg shadow-sm flex items-center justify-center transition-colors cursor-pointer"
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -491,6 +532,7 @@ export default function BranchModal({
               branches={processedBranches}
               fitBangkokTrigger={fitBangkokTrigger}
               fitAllTrigger={fitAllTrigger}
+              flyTarget={flyTarget}
             />
 
             {processedBranches.map((branch) => {
@@ -507,20 +549,17 @@ export default function BranchModal({
                   position={[branch.displayLat, branch.displayLng]}
                   icon={createTeardropIcon(branch, isFocused, isCurrent)}
                   eventHandlers={{
-                    click: () => setActiveBranch(branch),
+                    click: () => handlePickBranch(branch),
                   }}
                 >
-                  <Popup className="terra-luxury-popup font-sans border-none">
+                  <Popup autoPan={false} className="terra-luxury-popup font-sans border-none">
                     <div className="flex flex-col items-center text-center p-0.5 min-w-[180px] max-w-[220px]">
                       <span className="text-[8px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-0.5">
                         {getBranchTypeLabel(branch.branch_name)}
                       </span>
-                      <p className="font-serif text-[#3A3835] mb-1 text-[13px] uppercase tracking-[0.05em] font-medium leading-snug">
+                      <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.05em] font-medium leading-snug">
                         {branch.branch_name}
                       </p>
-                      <span className="text-[9.5px] text-[#8C8A86] mb-2">
-                        {getBranchLocationHint(branch.branch_name)}
-                      </span>
 
                       <button
                         type="button"
@@ -528,7 +567,7 @@ export default function BranchModal({
                         className="w-full mb-1.5 py-1.5 px-3 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[10px] uppercase font-medium tracking-[0.16em] rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                       >
                         <Check className="w-3.5 h-3.5 text-white" />
-                        <span>เลือกสาขานี้</span>
+                        <span>SELECT THIS LOCATION</span>
                       </button>
 
                       <a
@@ -540,7 +579,7 @@ export default function BranchModal({
                         className="w-full py-1 px-3 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] text-[9.5px] uppercase font-medium tracking-[0.14em] rounded transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
                       >
                         <Navigation className="w-2.5 h-2.5" />
-                        <span style={{ color: "#3A3835" }}>นำทาง (Google Maps)</span>
+                        <span style={{ color: "#3A3835" }}>DIRECTIONS (GOOGLE MAPS)</span>
                       </a>
                     </div>
                   </Popup>
@@ -552,7 +591,7 @@ export default function BranchModal({
               <Marker position={userLocation} icon={userMarkerIcon}>
                 <Popup className="terra-luxury-popup font-sans border-none">
                   <div className="text-center font-medium text-[11px] text-[#3A3835] px-2 py-1 tracking-wide">
-                    📍 ตำแหน่งปัจจุบันของคุณ
+                    YOUR CURRENT LOCATION
                   </div>
                 </Popup>
               </Marker>
@@ -560,58 +599,28 @@ export default function BranchModal({
           </MapContainer>
         </div>
 
-        {/* 🏷️ Modal Bottom Bar: Branch Chips & Selection Action */}
-        <div className="p-3 sm:p-4 bg-[#FAF8F5] border-t border-[#D5D2CA]/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveBranch(null)
-                handleFitBangkok()
-              }}
-              className={`px-3 py-1.5 text-[10.5px] uppercase tracking-wider rounded-full transition-all cursor-pointer border whitespace-nowrap ${
-                activeBranch === null
-                  ? "bg-[#84492C] text-white border-[#84492C] font-medium shadow-xs"
-                  : "bg-white text-[#6F6861] border-[#D5D2CA] hover:text-[#3A3835]"
-              }`}
-            >
-              🌍 ทุกสาขา (ALL)
-            </button>
-
-            {processedBranches.map((b) => {
-              const isFocused = activeBranch?.id === b.id
-              const clean = getCleanBranchName(b.branch_name)
-              const type = getBranchType(b.branch_name)
-              const iconPrefix = type === "warehouse" ? "📦" : type === "event" ? "🎪" : "🏬"
-
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => handlePickBranch(b)}
-                  className={`px-3 py-1.5 text-[10.5px] uppercase tracking-wider rounded-full transition-all cursor-pointer border whitespace-nowrap ${
-                    isFocused
-                      ? "bg-[#84492C] text-white border-[#84492C] font-medium shadow-xs"
-                      : "bg-white text-[#6F6861] border-[#D5D2CA] hover:border-[#84492C]/40 hover:text-[#3A3835]"
-                  }`}
-                >
-                  {iconPrefix} {clean}
-                </button>
-              )
-            })}
+        {/* Modal Bottom Action Bar */}
+        <div className="py-2.5 px-4 bg-[#FAF8F5] border-t border-[#D5D2CA]/70 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex flex-col min-w-0 pr-2">
+            <span className="text-[9px] uppercase tracking-wider text-[#8C8A86] truncate">
+              {activeBranch ? getBranchTypeLabel(activeBranch.branch_name) : "ALL LOCATIONS OVERVIEW"}
+            </span>
+            <span className="text-[11.5px] sm:text-[12px] font-medium text-[#3A3835] truncate">
+              {activeBranch ? activeBranch.branch_name : "SHOWING ALL LOCATIONS"}
+            </span>
           </div>
 
-          <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-[#D5D2CA]/40">
+          <div className="flex items-center gap-2 shrink-0">
             {activeBranch && (
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${activeBranch.latitude},${activeBranch.longitude}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Google Maps"
-                className="px-3.5 py-2 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] hover:border-[#84492C]/40 rounded-lg transition-colors bg-white cursor-pointer shadow-xs text-[10px] uppercase font-medium tracking-wider flex items-center gap-1.5"
+                className="px-3.5 py-2 border border-[#D5D2CA] text-[#3A3835] hover:text-[#84492C] hover:border-[#84492C]/40 rounded-lg transition-colors bg-white cursor-pointer shadow-xs text-[10.5px] uppercase font-medium tracking-wider flex items-center gap-1.5"
               >
                 <Navigation className="w-3.5 h-3.5" />
-                <span>นำทาง</span>
+                <span className="hidden sm:inline">DIRECTIONS</span>
               </a>
             )}
 
@@ -621,7 +630,7 @@ export default function BranchModal({
               className="px-5 py-2 bg-[#84492C] hover:bg-[#6D3B23] text-white text-[11px] uppercase font-medium tracking-[0.16em] rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm active:scale-98"
             >
               <Check className="w-4 h-4" />
-              <span>{activeBranch ? `เลือก ${getCleanBranchName(activeBranch.branch_name)}` : "เลือกดูทุกสาขา"}</span>
+              <span>{activeBranch ? `SELECT ${getCleanBranchName(activeBranch.branch_name)}` : "SELECT ALL LOCATIONS"}</span>
             </button>
           </div>
         </div>

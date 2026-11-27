@@ -392,14 +392,35 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
     })
 
   const mappedProductItems = (raw.allProducts || []).map((product: any) => {
-    const stockItems =
+    const allStockItems = product.stock || []
+    const totalCompanyStock = allStockItems.reduce(
+      (sum: number, stockItem: any) => sum + Number(stockItem.qty || 0),
+      0
+    )
+    const branchStockItems =
       normalizedBranch !== "all"
-        ? (product.stock || []).filter(
+        ? allStockItems.filter(
             (stockItem: any) => String(stockItem.branch_id) === normalizedBranch
           )
-        : product.stock || []
-    const totalStock =
-      stockItems.reduce((sum: number, stockItem: any) => sum + Number(stockItem.qty || 0), 0) || 0
+        : allStockItems
+    const branchStock =
+      branchStockItems.reduce(
+        (sum: number, stockItem: any) => sum + Number(stockItem.qty || 0),
+        0
+      )
+
+    let availabilityStatus: "available" | "available_other_branch" | "preorder"
+    if (normalizedBranch === "all") {
+      availabilityStatus = totalCompanyStock > 0 ? "available" : "preorder"
+    } else {
+      if (branchStock > 0) {
+        availabilityStatus = "available"
+      } else if (totalCompanyStock > 0) {
+        availabilityStatus = "available_other_branch"
+      } else {
+        availabilityStatus = "preorder"
+      }
+    }
 
     const applicableDiscount =
       raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null
@@ -415,12 +436,13 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
 
     const hotRank = raw.hotRankByProductId.get(Number(product.id)) || null
     const hotScore = raw.hotScoreByProductId.get(Number(product.id)) || null
-    const availabilityStatus: "available" | "preorder" = totalStock > 0 ? "available" : "preorder"
 
     const productObj = {
       ...product,
-      stock: stockItems,
-      total_stock: totalStock,
+      stock: allStockItems,
+      branch_stock_items: branchStockItems,
+      branch_stock_qty: branchStock,
+      total_stock: totalCompanyStock,
       availability_status: availabilityStatus,
       hot_rank: hotRank,
       hot_score: hotScore,
@@ -440,7 +462,7 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       image_url: product.image_url,
       created_at: product.created_at || group?.created_at,
       products: [productObj],
-      has_available_products: availabilityStatus === "available",
+      has_available_products: availabilityStatus !== "preorder",
       is_preorder_only: availabilityStatus === "preorder",
       hot_rank: hotRank,
       hot_score: hotScore,
@@ -453,15 +475,21 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
     const categoryOrder = getCategoryOrder(item.product_sup)
     const isHotAvailable = item.hot_rank !== null && item.availability_status === "available"
     const isAvailable = item.availability_status === "available"
+    const isHotOtherBranch = item.hot_rank !== null && item.availability_status === "available_other_branch"
+    const isOtherBranch = item.availability_status === "available_other_branch"
     const isHotPreorder = item.hot_rank !== null && item.availability_status === "preorder"
 
     const bucket = isHotAvailable
       ? 0
       : isAvailable
         ? 100 + categoryOrder
-        : isHotPreorder
-          ? 200
-          : 300 + categoryOrder
+        : isHotOtherBranch
+          ? 150
+          : isOtherBranch
+            ? 160 + categoryOrder
+            : isHotPreorder
+              ? 200
+              : 300 + categoryOrder
     const items = productBuckets.get(bucket) || []
     items.push(item)
     productBuckets.set(bucket, items)
@@ -482,6 +510,19 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
     6
   )
 
+  const hotOtherBranchProducts = sortHot(productBuckets.get(150) || [])
+  const otherBranchMainProducts = [
+    ...shuffleArray(productBuckets.get(161) || []),
+    ...shuffleArray(productBuckets.get(162) || []),
+    ...shuffleArray(productBuckets.get(163) || []),
+  ]
+  const otherBranchFlowerProducts = shuffleArray(productBuckets.get(164) || [])
+  const otherBranchInterleaved = interleaveWithAccent(
+    otherBranchMainProducts,
+    otherBranchFlowerProducts,
+    6
+  )
+
   const hotPreorderProducts = sortHot(productBuckets.get(200) || [])
 
   const preorderOtherProducts = [
@@ -494,6 +535,8 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
   const ordered = [
     ...hotAvailableProducts,
     ...availableInterleaved,
+    ...hotOtherBranchProducts,
+    ...otherBranchInterleaved,
     ...hotPreorderProducts,
     ...preorderOtherProducts,
   ]

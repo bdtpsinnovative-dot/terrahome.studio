@@ -31,7 +31,11 @@ export default function CollectionCard({
   const [isNavigating, setIsNavigating] = useState(false)
 
   const stockQtyForProduct = (product: any) =>
-    (product?.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+    Number(
+      product?.total_stock !== undefined
+        ? product.total_stock
+        : (product?.stock || []).reduce((sum: number, stockItem: any) => sum + Number(stockItem?.qty || 0), 0)
+    )
 
   const availableProducts = (group.products || []).filter((product: any) => stockQtyForProduct(product) > 0)
   const isPreOrderGroup = availableProducts.length === 0
@@ -50,6 +54,16 @@ export default function CollectionCard({
   const isSlidePreOrder = activeMatchedProduct
     ? stockQtyForProduct(activeMatchedProduct) <= 0
     : currentSlide.availability_status === 'preorder' || isPreOrderGroup
+
+  const groupCoverStatus: "available" | "available_other_branch" | "preorder" =
+    group.products?.[0]?.availability_status ||
+    group.availability_status ||
+    (isPreOrderGroup ? "preorder" : "available")
+
+  const activeStatus: "available" | "available_other_branch" | "preorder" =
+    activeMatchedProduct?.availability_status ||
+    currentSlide.availability_status ||
+    (isSlidePreOrder ? "preorder" : "available")
 
   // 🌟 ถ้ามีรูปปกกลุ่ม cover_image_url ให้ใช้รูปนี้เป็นหลักเดี่ยวๆ
   const groupCoverImage = group?.cover_image_url && String(group.cover_image_url).trim() !== "" ? String(group.cover_image_url).trim() : null
@@ -187,13 +201,28 @@ export default function CollectionCard({
           className="w-full aspect-square relative overflow-hidden flex items-center justify-center"
           style={{ backgroundColor: bgColor }}
         >
-          {(groupCoverImage ? isPreOrderGroup : isSlidePreOrder) && (
-            <div className="absolute top-2.5 right-2.5 z-20">
-              <span className="bg-[#DC2626] text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs shadow-xs">
-                OUT OF STOCK
-              </span>
-            </div>
-          )}
+          {(() => {
+            const status = groupCoverImage ? groupCoverStatus : activeStatus
+            if (status === "preorder") {
+              return (
+                <div className="absolute top-2.5 right-2.5 z-20">
+                  <span className="bg-[#DC2626] text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs shadow-xs">
+                    OUT OF STOCK
+                  </span>
+                </div>
+              )
+            }
+            if (status === "available_other_branch") {
+              return (
+                <div className="absolute top-2.5 right-2.5 z-20">
+                  <span className="bg-[#84492C] text-white text-[7.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-xs shadow-xs">
+                    OTHER STORES
+                  </span>
+                </div>
+              )
+            }
+            return null
+          })()}
           {groupCoverImage ? (
             <img
               src={groupCoverImage}
@@ -228,11 +257,36 @@ export default function CollectionCard({
           {(() => {
             // 🌟 1. กรณีที่มีรูปภาพปกกลุ่มรวมเซ็ต (groupCoverImage ภาพนิ่งไม่สไลด์)
             if (groupCoverImage) {
-              if (isPreOrderGroup) {
+              if (groupCoverStatus === "preorder") {
                 return (
                   <div className="mt-0.5 flex flex-col items-center">
                     <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
                       OUT OF STOCK
+                    </p>
+                    {minPrice !== null && minPrice > 0 ? (
+                      hasPriceRange ? (
+                        <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-1 opacity-95">
+                          THB {minPrice.toLocaleString()}–{maxPrice?.toLocaleString()}
+                        </p>
+                      ) : (
+                        <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-1 opacity-95">
+                          THB {minPrice.toLocaleString()}
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-[#8C8A86] text-[9px] tracking-widest uppercase font-light mt-1">
+                        Price upon request
+                      </p>
+                    )}
+                  </div>
+                )
+              }
+
+              if (groupCoverStatus === "available_other_branch") {
+                return (
+                  <div className="mt-0.5 flex flex-col items-center">
+                    <p className="text-[#84492C] text-[9.5px] tracking-[0.14em] uppercase font-semibold mb-0.5">
+                      OTHER STORES
                     </p>
                     {minPrice !== null && minPrice > 0 ? (
                       hasPriceRange ? (
@@ -299,9 +353,14 @@ export default function CollectionCard({
 
             return (
               <div className="mt-0.5 flex flex-col items-center">
-                {isSlidePreOrder && (
+                {activeStatus === "preorder" && (
                   <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
                     OUT OF STOCK
+                  </p>
+                )}
+                {activeStatus === "available_other_branch" && (
+                  <p className="text-[#84492C] text-[9.5px] tracking-[0.14em] uppercase font-semibold mb-0.5">
+                    OTHER STORES
                   </p>
                 )}
 
