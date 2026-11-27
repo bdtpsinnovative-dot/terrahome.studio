@@ -296,27 +296,31 @@ export default function ProductDetailClient({
 
   // ข้อมูลสาขาที่เลือก (ถ้ามี)
   const selectedBranchStock = selectedBranchId
-    ? activeProduct.stock?.find((s: any) => String(s.branches?.id) === String(selectedBranchId))
+    ? activeProduct.stock?.find((s: any) => 
+        String(s.branches?.id) === String(selectedBranchId) || 
+        String(s.branches?.branch_code) === String(selectedBranchId)
+      )
     : null
-  const isSelectedBranchSpecial = selectedBranchStock
+
+  const branchHasDiscount = Boolean(selectedBranchStock?.discount_value && Number(selectedBranchStock.discount_value) > 0)
+
+  const isSelectedBranchSpecial = branchHasDiscount
     ? Boolean(selectedBranchStock?.is_branch_special)
     : Boolean(activeProduct?.is_branch_special)
 
-  const specialBranchName = selectedBranchStock
-    ? selectedBranchStock.branches?.branch_name
+  const specialBranchName = branchHasDiscount
+    ? selectedBranchStock?.branches?.branch_name
     : activeProduct?.special_branch_name
 
-  // ส่วนลดและราคาที่จะแสดง (ถ้าเลือกสาขาที่มีโปรเฉพาะ ให้แสดงโปรสาขานั้นเป็นอันดับแรก หากยังไม่เลือกสาขา ให้แสดงโปรโมชั่นที่ดีที่สุดของสินค้า)
+  // ส่วนลดและราคาที่จะแสดง (ถ้าเลือกสาขาที่มีโปรเฉพาะ ให้แสดงโปรสาขานั้นเป็นอันดับแรก หากสาขาที่เลือกไม่มีโปรโมชั่น ให้แสดงโปรโมชั่นที่ดีที่สุดของสินค้าเสมอเพื่อไม่ให้เสียโอกาสการขาย)
   let displayDiscountValue: number | null = null
   let displayDiscountType: string | null = null
   let displayDiscountedPrice: number | null = null
 
-  if (selectedBranchStock) {
-    if (selectedBranchStock.discount_value && selectedBranchStock.discount_value > 0) {
-      displayDiscountValue = Number(selectedBranchStock.discount_value)
-      displayDiscountType = selectedBranchStock.discount_type
-      displayDiscountedPrice = Number(selectedBranchStock.discounted_price)
-    }
+  if (branchHasDiscount && selectedBranchStock) {
+    displayDiscountValue = Number(selectedBranchStock.discount_value)
+    displayDiscountType = selectedBranchStock.discount_type
+    displayDiscountedPrice = Number(selectedBranchStock.discounted_price)
   } else if (activeProduct?.discount_value && activeProduct.discount_value > 0) {
     displayDiscountValue = Number(activeProduct.discount_value)
     displayDiscountType = activeProduct.discount_type

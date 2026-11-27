@@ -145,7 +145,9 @@ export default function PropFilterClient({
 
   const selectedBranchObj = useMemo(() => {
     if (!currentBranchId || currentBranchId === "all") return null
-    return (branches || []).find((b: any) => String(b.id) === String(currentBranchId))
+    return (branches || []).find(
+      (b: any) => String(b.id) === String(currentBranchId) || String(b.branch_code) === String(currentBranchId)
+    )
   }, [branches, currentBranchId])
 
   const handleClearBranch = () => {

@@ -423,6 +423,20 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
   const cached = orderedCollectionsByBranch.get(normalizedBranch)
   if (cached) return cached
 
+  // Resolve target branch object if branchId is specified (by id or branch_code)
+  let matchedBranchObj: any = null
+  let targetBranchId: number | null = null
+  if (normalizedBranch !== "all") {
+    matchedBranchObj = (raw.branches || []).find(
+      (b: any) => String(b.id) === normalizedBranch || String(b.branch_code) === normalizedBranch
+    )
+    if (matchedBranchObj) {
+      targetBranchId = Number(matchedBranchObj.id)
+    } else if (!isNaN(Number(normalizedBranch))) {
+      targetBranchId = Number(normalizedBranch)
+    }
+  }
+
   const sortHot = (items: any[]) =>
     items.sort((a: any, b: any) => {
       const rankDiff = (a.hot_rank || Infinity) - (b.hot_rank || Infinity)
@@ -436,9 +450,9 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       0
     )
     const branchStockItems =
-      normalizedBranch !== "all"
+      targetBranchId !== null
         ? allStockItems.filter(
-            (stockItem: any) => String(stockItem.branch_id) === normalizedBranch
+            (stockItem: any) => Number(stockItem.branch_id) === targetBranchId
           )
         : allStockItems
     const branchStock =
@@ -448,7 +462,7 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
       )
 
     let availabilityStatus: "available" | "available_other_branch" | "preorder"
-    if (normalizedBranch === "all") {
+    if (targetBranchId === null) {
       availabilityStatus = totalCompanyStock > 0 ? "available" : "preorder"
     } else {
       if (branchStock > 0) {
@@ -464,17 +478,30 @@ export function getOrderedCollectionsForBranch(raw: RawCatalogData, branchId?: s
     let isBranchSpecial = false
     let specialBranchName: string | null = null
 
-    if (normalizedBranch !== "all") {
-      applicableDiscount =
-        raw.branchDiscountByProductBranch.get(`${normalizedBranch}:${product.id}`) ??
-        raw.branchWideDiscount.get(normalizedBranch) ??
-        raw.discountByProductId.get(Number(product.id)) ??
-        raw.globalDiscount ??
+    if (targetBranchId !== null) {
+      const directBranchDiscount =
+        raw.branchDiscountByProductBranch.get(`${targetBranchId}:${product.id}`) ??
+        raw.branchWideDiscount.get(String(targetBranchId)) ??
         null
 
-      if (raw.branchDiscountByProductBranch.has(`${normalizedBranch}:${product.id}`) || raw.branchWideDiscount.has(normalizedBranch)) {
+      if (directBranchDiscount) {
+        applicableDiscount = directBranchDiscount
         isBranchSpecial = true
-        specialBranchName = raw.branchById?.get(Number(normalizedBranch))?.branch_name || null
+        specialBranchName = matchedBranchObj?.branch_name || raw.branchById?.get(targetBranchId)?.branch_name || null
+      } else {
+        const productGlobal = raw.discountByProductId.get(Number(product.id)) ?? raw.globalDiscount ?? null
+        if (productGlobal) {
+          applicableDiscount = productGlobal
+        } else {
+          // 🌟 หากสาขาที่เลือกไม่มีส่วนลดเฉพาะ (หรือไม่มีสต็อกที่สาขานี้) แต่มีสาขาอื่นจัดโปรโมชั่นพิเศษ
+          // ดึงส่วนลดของสาขาที่มีโปรมาแสดงพร้อมชื่อสาขาเสมอ เพื่อไม่ให้เสียโอกาสการขาย
+          const otherBranchSpecial = raw.bestBranchDiscountByProductId?.get(Number(product.id))
+          if (otherBranchSpecial) {
+            applicableDiscount = otherBranchSpecial.discount
+            isBranchSpecial = true
+            specialBranchName = otherBranchSpecial.branchName
+          }
+        }
       }
     } else {
       // 🌟 ดูแบบรวมทุกสาขา (ALL): หากมีโปรโมชั่นเฉพาะสาขา ดึงโปรโมชั่นที่ดีที่สุดมาแสดงทันที เพื่อไม่ให้เสียโอกาสการขาย!

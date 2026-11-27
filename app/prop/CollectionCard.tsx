@@ -291,9 +291,6 @@ export default function CollectionCard({
               if (groupCoverStatus === "available_other_branch") {
                 return (
                   <div className="mt-0.5 flex flex-col items-center">
-                    <p className="text-[#84492C] text-[9.5px] tracking-[0.14em] uppercase font-semibold mb-0.5">
-                      OTHER STORES
-                    </p>
                     {minPrice !== null && minPrice > 0 ? (
                       hasPriceRange ? (
                         <p className="text-[#3A3835] text-[12px] font-medium tracking-widest font-mono mt-1 opacity-95">
@@ -362,11 +359,6 @@ export default function CollectionCard({
                 {activeStatus === "preorder" && (
                   <p className="text-[#DC2626] text-[10px] tracking-[0.2em] uppercase font-bold mb-0.5">
                     OUT OF STOCK
-                  </p>
-                )}
-                {activeStatus === "available_other_branch" && (
-                  <p className="text-[#84492C] text-[9.5px] tracking-[0.14em] uppercase font-semibold mb-0.5">
-                    OTHER STORES
                   </p>
                 )}
 

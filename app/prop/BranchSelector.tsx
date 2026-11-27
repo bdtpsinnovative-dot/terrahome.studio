@@ -65,7 +65,10 @@ export default function BranchSelector({
   }
 
   const options = [allOption, ...branches]
-  const selectedBranch = options.find((b) => b.id.toString() === currentBranchId) || allOption
+  const selectedBranch =
+    options.find(
+      (b) => b.id.toString() === currentBranchId || (b.branch_code && b.branch_code.toString() === currentBranchId)
+    ) || allOption
 
   const categorizedBranches = useMemo(() => {
     const showrooms: Branch[] = []
