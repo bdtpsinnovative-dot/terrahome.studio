@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { MapPin, X } from "lucide-react"
 import CollectionCard from "./CollectionCard"
 import BranchSelector from "./BranchSelector"
 import PropBanner from "./PropBanner"
@@ -108,6 +109,19 @@ export default function PropFilterClient({
   const bannerGroups = hasServerCatalog ? initialBannerGroups : (rawCatalog?.bannerGroups || [])
   const allBannerImages = hasServerCatalog ? initialAllBannerImages : (rawCatalog?.allBannerImages || [])
 
+  const selectedBranchObj = useMemo(() => {
+    if (!currentBranchId || currentBranchId === "all") return null
+    return (branches || []).find((b: any) => String(b.id) === String(currentBranchId))
+  }, [branches, currentBranchId])
+
+  const handleClearBranch = () => {
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString())
+    params.delete('branch')
+    params.delete('page')
+    const query = params.toString()
+    router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
+  }
+
   const initialCategory = searchParams.get('category') || "All"
   const initialPage = Number(searchParams.get('page')) || 1
   const initialSearch = searchParams.get('search') || "" // 🌟 1. ดึงค่าค้นหาเริ่มต้นจาก URL
@@ -201,7 +215,22 @@ export default function PropFilterClient({
     setOpenColorPanel(false)
     setOpenMaterialPanel(false)
     setOpenSizePanel(false)
-    updateURL('All', 1, '', 'ALL_ATTRIBUTE', '', EMPTY_DIMENSION_FILTER, false)
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString())
+    params.delete('category')
+    params.delete('page')
+    params.delete('search')
+    params.delete('attribute')
+    params.delete('material')
+    params.delete('min_h')
+    params.delete('max_h')
+    params.delete('min_w')
+    params.delete('max_w')
+    params.delete('min_d')
+    params.delete('max_d')
+    params.delete('filter')
+    params.delete('branch')
+    const query = params.toString()
+    router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
     closeSidebar()
   }
 
@@ -343,7 +372,7 @@ export default function PropFilterClient({
 
   const selectedColors = useMemo(() => selectedAttributeValues(attributeFilter), [attributeFilter])
   const selectedMaterials = useMemo(() => selectedMaterialValues(materialFilter), [materialFilter])
-    const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || hasActiveDimensions(dimensionFilter) || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1
+  const hasActiveFilters = activeFilter !== 'All' || selectedColors.length > 0 || selectedMaterials.length > 0 || hasActiveDimensions(dimensionFilter) || searchQuery.trim() !== '' || activeImageSearch !== null || currentPage > 1 || (currentBranchId !== 'all')
 
   const handleColorsChange = (filterValue: string, colors: string[]) => {
     const nextAttribute = colors.length > 0 ? colors.join(",") : "ALL_ATTRIBUTE"
@@ -588,6 +617,23 @@ export default function PropFilterClient({
               <h1 className="text-xl md:text-2xl font-serif uppercase tracking-widest text-[#3A3835] font-normal">
                 {getDisplayTitle()}
               </h1>
+              {selectedBranchObj && currentBranchId !== "all" && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAF8F5] border border-[#D5D2CA] text-[#3A3835] shadow-2xs text-[10px] sm:text-[10.5px] uppercase tracking-wider font-medium">
+                    <MapPin className="w-3 h-3 text-[#84492C] shrink-0" />
+                    <span className="text-[#84492C] font-semibold">{selectedBranchObj.branch_name.trim()}</span>
+                    <button
+                      type="button"
+                      onClick={handleClearBranch}
+                      title="Clear location filter"
+                      className="w-4 h-4 rounded-full hover:bg-[#84492C]/10 text-[#8C8A86] hover:text-[#84492C] flex items-center justify-center transition-colors cursor-pointer ml-0.5"
+                      aria-label={`Clear ${selectedBranchObj.branch_name} filter`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 🌟 กล่องค้นหาพรีเมียม สไตล์เรียบหรู คลีน มินิมอล พร้อมปุ่ม FILTER และ BranchSelector */}
