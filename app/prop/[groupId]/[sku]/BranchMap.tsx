@@ -16,6 +16,15 @@ interface BranchMapProps {
   selectedBranch: { lat: number; lng: number; timestamp: number } | null
 }
 
+function getCleanBranchName(name: string): string {
+  if (!name) return 'TERRA BRANCH'
+  return name
+    .replace(/^SHOWROOM\s+TERRA\s+/i, '')
+    .replace(/^SHOWROOM\s+/i, '')
+    .replace(/^EVENT\s+FIND\s+-\s+/i, '')
+    .trim()
+}
+
 function MapController({ 
   userLocation, 
   selectedBranch,
@@ -414,26 +423,30 @@ export default function BranchMap({
               </div>
 
               {/* 📱 MOBILE FLOATING CHIPS BAR (below md - Minimal, non-intrusive) */}
-              <div className="md:hidden absolute z-[1000] bottom-3 left-3 right-3 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <div className="md:hidden absolute z-[1000] bottom-3 left-3 right-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                 {validLocations.map((s: any, idx: number) => {
                   const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
                                      internalSelectedBranch?.lng === Number(s.branches.longitude)
+                  const cleanName = getCleanBranchName(s.branches?.branch_name)
+
                   return (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))}
-                      className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-full border backdrop-blur-md shadow-md text-left transition-all active:scale-95 cursor-pointer ${
+                      className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border backdrop-blur-md shadow-xs text-left transition-all active:scale-95 cursor-pointer ${
                         isSelected 
-                          ? 'bg-white border-[#84492C] ring-1 ring-[#84492C]/30 text-[#84492C]'
-                          : 'bg-[#FAF8F5]/92 border-[#D5D2CA] text-[#3A3835]'
+                          ? 'bg-[#FAF8F5] border-[#84492C] text-[#84492C] ring-1 ring-[#84492C]/30 shadow-sm font-semibold'
+                          : 'bg-[#FAF8F5]/90 border-[#D5D2CA] text-[#706D67] hover:text-[#3A3835]'
                       }`}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#84492C] shrink-0"></span>
-                      <span className="text-[10px] uppercase tracking-[0.08em] font-medium max-w-[150px] truncate">
-                        {s.branches?.branch_name}
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-[#84492C]' : 'bg-[#D5D2CA]'}`}></span>
+                      <span className="text-[8.5px] uppercase tracking-[0.12em] font-medium whitespace-nowrap">
+                        {cleanName}
                       </span>
-                      <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#84492C]/10 text-[#84492C] whitespace-nowrap">
+                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full whitespace-nowrap font-medium ${
+                        isSelected ? 'bg-[#84492C]/10 text-[#84492C]' : 'bg-black/5 text-[#8C8A86]'
+                      }`}>
                         {s.qty} PCS
                       </span>
                     </button>
