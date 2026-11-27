@@ -16,15 +16,27 @@ export function getMapPinBranchName(name: string): string {
   return name.trim()
 }
 
-export function getBranchType(branchName: string): "showroom" | "warehouse" | "event" {
-  const lower = (branchName || "").toLowerCase()
-  if (lower.includes("warehouse") || lower.includes("คลัง")) return "warehouse"
-  if (lower.includes("event") || lower.includes("find")) return "event"
+export function getBranchType(branchName: string, branchCode?: string): "showroom" | "warehouse" | "event" {
+  const lowerName = (branchName || "").toLowerCase()
+  const lowerCode = (branchCode || "").toLowerCase()
+
+  if (lowerName.includes("warehouse") || lowerName.includes("คลัง") || lowerCode.startsWith("wh")) {
+    return "warehouse"
+  }
+  if (
+    lowerName.includes("event") ||
+    lowerName.includes("find") ||
+    lowerName.includes("cdc") ||
+    lowerCode.includes("event") ||
+    lowerCode.includes("cdc")
+  ) {
+    return "event"
+  }
   return "showroom"
 }
 
-export function getBranchTypeLabel(branchName: string): string {
-  const type = getBranchType(branchName)
+export function getBranchTypeLabel(branchName: string, branchCode?: string): string {
+  const type = getBranchType(branchName, branchCode)
   if (type === "warehouse") return "WAREHOUSE"
   if (type === "event") return "SPECIAL EVENT"
   return "SHOWROOM"

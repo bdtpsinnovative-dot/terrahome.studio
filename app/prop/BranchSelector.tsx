@@ -76,7 +76,7 @@ export default function BranchSelector({
     const events: Branch[] = []
 
     for (const b of branches) {
-      const type = getBranchType(b.branch_name)
+      const type = getBranchType(b.branch_name, b.branch_code)
       if (type === "warehouse") warehouses.push(b)
       else if (type === "event") events.push(b)
       else showrooms.push(b)

@@ -253,7 +253,7 @@ export default function BranchModal({
     isCurrent: boolean
   ) => {
     const pinLabel = getMapPinBranchName(branch.branch_name)
-    const type = getBranchType(branch.branch_name)
+    const type = getBranchType(branch.branch_name, branch.branch_code)
     const pinColor = isFocused ? "#84492C" : isCurrent ? "#84492C" : "#FAF8F5"
     const strokeColor = isFocused ? "#FAF8F5" : "#84492C"
     const dotColor = isFocused || isCurrent ? "#FAF8F5" : type === "warehouse" ? "#6F6861" : "#84492C"
@@ -555,7 +555,7 @@ export default function BranchModal({
                   <Popup autoPan={false} className="terra-luxury-popup font-sans border-none">
                     <div className="flex flex-col items-center text-center p-0.5 min-w-[180px] max-w-[220px]">
                       <span className="text-[8px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-0.5">
-                        {getBranchTypeLabel(branch.branch_name)}
+                        {getBranchTypeLabel(branch.branch_name, branch.branch_code)}
                       </span>
                       <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.05em] font-medium leading-snug">
                         {branch.branch_name}
@@ -603,7 +603,7 @@ export default function BranchModal({
         <div className="py-2.5 px-4 bg-[#FAF8F5] border-t border-[#D5D2CA]/70 flex items-center justify-between gap-3 shrink-0">
           <div className="flex flex-col min-w-0 pr-2">
             <span className="text-[9px] uppercase tracking-wider text-[#8C8A86] truncate">
-              {activeBranch ? getBranchTypeLabel(activeBranch.branch_name) : "ALL LOCATIONS OVERVIEW"}
+              {activeBranch ? getBranchTypeLabel(activeBranch.branch_name, activeBranch.branch_code) : "ALL LOCATIONS OVERVIEW"}
             </span>
             <span className="text-[11.5px] sm:text-[12px] font-medium text-[#3A3835] truncate">
               {activeBranch ? activeBranch.branch_name : "SHOWING ALL LOCATIONS"}
