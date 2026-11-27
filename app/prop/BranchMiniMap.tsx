@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { Navigation, Compass, Check, Maximize2 } from "lucide-react"
@@ -34,10 +34,12 @@ export function getCleanBranchName(name: string): string {
 function MiniMapController({
   activeBranch,
   branches,
+  fitBangkokTrigger,
   fitAllTrigger,
 }: {
   activeBranch: Branch | null
   branches: Branch[]
+  fitBangkokTrigger: number
   fitAllTrigger: number
 }) {
   const map = useMap()
@@ -59,14 +61,28 @@ function MiniMapController({
     }
   }, [activeBranch, map])
 
-  // Fit all branches
+  // Fit Bangkok area (focused view avoiding nationwide collapse)
+  useEffect(() => {
+    if (fitBangkokTrigger > 0 && branches.length > 0) {
+      const bkkBranches = branches.filter(
+        (b) => b.latitude && b.latitude > 12 && b.latitude < 15
+      )
+      const target = bkkBranches.length > 0 ? bkkBranches : branches
+      const bounds = L.latLngBounds(target.map((b) => [b.latitude!, b.longitude!]))
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 })
+      }
+    }
+  }, [fitBangkokTrigger, branches, map])
+
+  // Fit all branches nationwide (including Phuket)
   useEffect(() => {
     if (fitAllTrigger > 0 && branches.length > 0) {
       const valid = branches.filter((b) => b.latitude && b.longitude)
       if (valid.length > 0) {
         const bounds = L.latLngBounds(valid.map((b) => [b.latitude!, b.longitude!]))
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [25, 25], maxZoom: 14 })
+          map.fitBounds(bounds, { padding: [25, 25], maxZoom: 13 })
         }
       }
     }
@@ -87,20 +103,18 @@ export default function BranchMiniMap({
 
   const initiallySelected = validBranches.find((b) => b.id.toString() === selectedBranchId.toString()) || null
   const [activeBranch, setActiveBranch] = useState<Branch | null>(() => initiallySelected)
-  const [fitAllTrigger, setFitAllTrigger] = useState<number>(() => (initiallySelected ? 0 : 1))
+  // Default to Bangkok fit if ALL is selected, so pins don't collapse into a tiny blob with Phuket
+  const [fitBangkokTrigger, setFitBangkokTrigger] = useState<number>(() => (initiallySelected ? 0 : 1))
+  const [fitAllTrigger, setFitAllTrigger] = useState<number>(0)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({})
 
   const defaultCenter: [number, number] = initiallySelected
     ? [initiallySelected.latitude!, initiallySelected.longitude!]
-    : validBranches.length > 0
-    ? [validBranches[0].latitude!, validBranches[0].longitude!]
-    : [13.7563, 100.5018]
+    : [13.7466, 100.5681] // Center around Sukhumvit / Central Bangkok
 
-  const tileUrl = process.env.NEXT_PUBLIC_CARTO_API_KEY
-    ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-
+  // Standard OpenStreetMap tiles - 100% free with NO "API KEY REQUIRED" watermark
+  const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
   const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
   const handlePickBranch = (branch: Branch) => {
@@ -111,7 +125,12 @@ export default function BranchMiniMap({
     }, 250)
   }
 
-  const handleFitAll = () => {
+  const handleFitBangkok = () => {
+    setActiveBranch(null)
+    setFitBangkokTrigger((prev) => prev + 1)
+  }
+
+  const handleFitAllNationwide = () => {
     setActiveBranch(null)
     setFitAllTrigger((prev) => prev + 1)
   }
@@ -134,41 +153,65 @@ export default function BranchMiniMap({
     )
   }
 
-  const createBadgeIcon = (branch: Branch, isFocused: boolean, isCurrent: boolean) => {
+  // 📍 Luxury Teardrop Map Pin with dynamic label on focus/selection
+  const createTeardropIcon = (branch: Branch, isFocused: boolean, isCurrent: boolean) => {
     const clean = getCleanBranchName(branch.branch_name)
-    const bgColor = isFocused ? "#84492C" : isCurrent ? "#A35C38" : "#FAF8F5"
-    const textColor = isFocused || isCurrent ? "#FFFFFF" : "#3A3835"
-    const borderColor = isFocused ? "#FFFFFF" : isCurrent ? "#84492C" : "#D5D2CA"
-    const dotColor = isFocused || isCurrent ? "#FFFFFF" : "#84492C"
+    const pinColor = isFocused ? "#84492C" : isCurrent ? "#84492C" : "#FAF8F5"
+    const strokeColor = isFocused ? "#FAF8F5" : "#84492C"
+    const dotColor = isFocused || isCurrent ? "#FAF8F5" : "#84492C"
+    const scale = isFocused ? "scale(1.18)" : isCurrent ? "scale(1.1)" : "scale(1)"
+    const zIndex = isFocused ? 200 : isCurrent ? 150 : 10
 
     return L.divIcon({
       className: "bg-transparent border-none",
       html: `
         <div style="
-          background: ${bgColor};
-          color: ${textColor};
-          border: 1.5px solid ${borderColor};
-          border-radius: 16px;
-          padding: 2.5px 8px;
-          box-shadow: 0 4px 12px rgba(58,56,53,${isFocused ? "0.3" : "0.15"});
-          font-size: 10px;
-          font-weight: 600;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          white-space: nowrap;
-          display: flex;
-          align-items: center;
-          gap: 4.5px;
-          transform: translate(-50%, -100%);
+          position: relative;
+          width: 30px;
+          height: 38px;
+          transform: translate(-50%, -100%) ${scale};
+          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
           cursor: pointer;
-          transition: transform 0.15s ease;
+          z-index: ${zIndex};
         ">
-          <span style="width: 5px; height: 5px; border-radius: 50%; background: ${dotColor}; flex-shrink: 0;"></span>
-          <span style="letter-spacing: 0.05em;">${clean}</span>
+          <!-- Teardrop Pin SVG -->
+          <svg width="30" height="38" viewBox="0 0 30 38" fill="none" style="filter: drop-shadow(0 4px 8px rgba(58,56,53,0.3));">
+            <path d="M15 0C6.716 0 0 6.716 0 15C0 26.25 15 38 15 38C15 38 30 26.25 30 15C30 6.716 23.284 0 15 0Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="1.8" />
+            <circle cx="15" cy="14" r="5" fill="${dotColor}" />
+          </svg>
+
+          <!-- Floating Label: shows for active / current branch, and on hover -->
+          ${
+            isFocused || isCurrent
+              ? `
+              <div style="
+                position: absolute;
+                bottom: 42px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${isFocused ? "#84492C" : "#3A3835"};
+                color: #FFFFFF;
+                font-size: 10px;
+                font-weight: 600;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                padding: 2.5px 8px;
+                border-radius: 4px;
+                white-space: nowrap;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+                letter-spacing: 0.04em;
+                pointer-events: none;
+                border: 1px solid rgba(255,255,255,0.25);
+              ">
+                ${clean}
+              </div>
+            `
+              : ""
+          }
         </div>
       `,
       iconSize: [0, 0],
       iconAnchor: [0, 0],
-      popupAnchor: [0, -22],
+      popupAnchor: [0, -40],
     })
   }
 
@@ -187,19 +230,21 @@ export default function BranchMiniMap({
   return (
     <div className="flex flex-col w-full bg-[#FAF8F5]">
       {/* 🗺️ 1. Interactive Mini Map View */}
-      <div className={`relative w-full ${isMobile ? "h-[250px]" : "h-[220px]"} bg-[#EAE7E0] overflow-hidden border-b border-[#D5D2CA]/60`}>
+      <div className={`relative w-full ${isMobile ? "h-[280px]" : "h-[250px]"} bg-[#EAE7E0] overflow-hidden border-b border-[#D5D2CA]/60`}>
         <MapContainer
           center={defaultCenter}
-          zoom={13}
+          zoom={12}
           scrollWheelZoom={true}
           zoomControl={false}
           className="w-full h-full z-0 font-sans"
         >
           <TileLayer attribution={tileAttribution} url={tileUrl} maxZoom={19} />
+          <ZoomControl position="bottomright" />
 
           <MiniMapController
             activeBranch={activeBranch}
             branches={validBranches}
+            fitBangkokTrigger={fitBangkokTrigger}
             fitAllTrigger={fitAllTrigger}
           />
 
@@ -215,7 +260,7 @@ export default function BranchMiniMap({
                   if (ref) markerRefs.current[key] = ref
                 }}
                 position={[branch.latitude!, branch.longitude!]}
-                icon={createBadgeIcon(branch, isFocused, isCurrent)}
+                icon={createTeardropIcon(branch, isFocused, isCurrent)}
                 eventHandlers={{
                   click: () => setActiveBranch(branch),
                 }}
@@ -269,8 +314,16 @@ export default function BranchMiniMap({
         <div className="absolute top-2.5 right-2.5 z-[400] flex flex-col gap-1.5">
           <button
             type="button"
-            onClick={handleFitAll}
-            title="แสดงทุกสาขา (Fit All)"
+            onClick={handleFitBangkok}
+            title="ซูมกรุงเทพฯ และปริมณฑล"
+            className="px-2 py-1 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded shadow-xs text-[9px] font-semibold tracking-wider transition-colors cursor-pointer"
+          >
+            BKK
+          </button>
+          <button
+            type="button"
+            onClick={handleFitAllNationwide}
+            title="แสดงทุกสาขาทั่วประเทศ (Fit All Nationwide)"
             className="w-7 h-7 bg-[#FAF8F5]/95 hover:bg-white text-[#3A3835] hover:text-[#84492C] border border-[#D5D2CA] rounded shadow-xs flex items-center justify-center transition-colors cursor-pointer"
           >
             <Maximize2 className="w-3.5 h-3.5" />
@@ -293,7 +346,7 @@ export default function BranchMiniMap({
             type="button"
             onClick={() => {
               setActiveBranch(null)
-              handleFitAll()
+              handleFitBangkok()
             }}
             className={`px-2.5 py-1 text-[10px] uppercase tracking-wider rounded-full transition-all cursor-pointer border ${
               activeBranch === null && selectedBranchId === "all"
