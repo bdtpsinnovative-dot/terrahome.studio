@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, Navigation, X, Maximize2, Compass, ChevronDown, Check } from 'lucide-react'
@@ -248,14 +248,14 @@ export default function BranchMap({
             icon={createCustomIcon(stockItem.qty)}
           >
             <Popup className="terra-luxury-popup font-sans border-none">
-              <div className="flex flex-col items-center text-center p-1 min-w-[190px]">
-                <span className="text-[8.5px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
-                  TERRA HOME STUDIO
+              <div className="flex flex-col items-center text-center p-0.5 min-w-[170px] max-w-[220px]">
+                <span className="text-[8px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-0.5">
+                  TERRA STUDIO
                 </span>
-                <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.08em] font-normal leading-snug">
-                  {stockItem.branches.branch_name}
+                <p className="font-serif text-[#3A3835] mb-2 text-[12.5px] uppercase tracking-[0.06em] font-medium leading-snug">
+                  {getCleanBranchName(stockItem.branches.branch_name)}
                 </p>
-                <div className="text-[10px] text-[#84492C] font-medium bg-[#F5F2EB] border border-[#84492C]/15 px-3 py-1 rounded-full font-mono mb-2.5 flex items-center gap-1.5">
+                <div className="text-[9.5px] text-[#84492C] font-medium bg-[#F5F2EB] border border-[#84492C]/15 px-3 py-0.5 rounded-full font-mono mb-2 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
                   <span>{stockItem.qty} IN STOCK</span>
                 </div>
@@ -502,8 +502,9 @@ export default function BranchMap({
                   minZoom={10}
                   style={{ width: '100%', height: '100%', zIndex: 1 }}
                   scrollWheelZoom={true} 
-                  zoomControl={true} 
+                  zoomControl={false} 
                 >
+                  <ZoomControl position="bottomright" />
                   <MapController 
                     userLocation={userLocation} 
                     selectedBranch={internalSelectedBranch} 

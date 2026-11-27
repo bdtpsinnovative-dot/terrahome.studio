@@ -205,8 +205,9 @@ body {
   background-color: #FAF8F5 !important;
   border: 1px solid #D5D2CA !important;
   border-radius: 12px !important;
-  box-shadow: 0 16px 36px -8px rgba(58, 56, 53, 0.22) !important;
+  box-shadow: 0 14px 30px -6px rgba(58, 56, 53, 0.2) !important;
   padding: 0 !important;
+  max-width: 240px !important;
 }
 
 .terra-luxury-popup .leaflet-popup-tip {
@@ -216,21 +217,43 @@ body {
 }
 
 .terra-luxury-popup .leaflet-popup-content {
-  margin: 14px 16px !important;
+  margin: 10px 12px !important;
   line-height: 1.4 !important;
 }
 
 .terra-luxury-popup .leaflet-popup-close-button {
   color: #8C8A86 !important;
-  top: 8px !important;
-  right: 10px !important;
-  font-size: 16px !important;
+  top: 6px !important;
+  right: 8px !important;
+  font-size: 15px !important;
   padding: 2px !important;
   transition: color 0.2s ease !important;
 }
 
 .terra-luxury-popup .leaflet-popup-close-button:hover {
   color: #3A3835 !important;
+}
+
+/* Move default zoom control out of the way and give luxury rounded style */
+.leaflet-control-zoom {
+  border: 1px solid #D5D2CA !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(58, 56, 53, 0.1) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: #FAF8F5 !important;
+  color: #3A3835 !important;
+  border-bottom: 1px solid #D5D2CA !important;
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #FFFFFF !important;
+  color: #84492C !important;
 }
 
 /* Force override leaflet anchor tags color so it never turns blue (#0078A8) */
