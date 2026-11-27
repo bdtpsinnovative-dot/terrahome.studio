@@ -32,6 +32,19 @@ export function getCleanBranchName(name: string): string {
     .trim()
 }
 
+export function getMapPinBranchName(name: string): string {
+  if (!name) return "TERRA"
+  return name
+    .replace(/^SHOWROOM\s+TERRA\s+/i, "")
+    .replace(/^SHOWROOM\s+SESIA\s+/i, "")
+    .replace(/^SHOWROOM\s+WOODEN\s+/i, "WOODEN ")
+    .replace(/^SHOWROOM\s+/i, "")
+    .replace(/^EVENT\s+FIND\s+-\s+(DESIGN\s+FAIR\s+)?/i, "FIND ")
+    .replace(/^EVENT\s+/i, "")
+    .replace(/^WAREHOUSE\s+/i, "WH: ")
+    .trim()
+}
+
 export function getBranchType(branchName: string): "showroom" | "warehouse" | "event" {
   const lower = (branchName || "").toLowerCase()
   if (lower.includes("warehouse") || lower.includes("คลัง")) return "warehouse"
@@ -140,9 +153,9 @@ export default function BranchMiniMap({
       if (prev.latitude && prev.longitude) {
         const dLat = Math.abs(lat - prev.latitude)
         const dLng = Math.abs(lng - prev.longitude)
-        if (dLat < 0.0006 && dLng < 0.0006) {
-          lat += 0.0004
-          lng += 0.0005
+        if (dLat < 0.0018 && dLng < 0.0018) {
+          lat += 0.0012
+          lng += 0.0016
           break
         }
       }
@@ -253,13 +266,14 @@ export default function BranchMiniMap({
     isFocused: boolean,
     isCurrent: boolean
   ) => {
-    const clean = getCleanBranchName(branch.branch_name)
+    const pinLabel = getMapPinBranchName(branch.branch_name)
     const type = getBranchType(branch.branch_name)
     const pinColor = isFocused ? "#84492C" : isCurrent ? "#84492C" : "#FAF8F5"
     const strokeColor = isFocused ? "#FAF8F5" : "#84492C"
     const dotColor = isFocused || isCurrent ? "#FAF8F5" : type === "warehouse" ? "#6F6861" : "#84492C"
-    const scale = isFocused ? "scale(1.22)" : isCurrent ? "scale(1.12)" : "scale(1)"
-    const zIndex = isFocused ? 300 : isCurrent ? 200 : 20
+    const scale = isFocused ? "scale(1.18)" : isCurrent ? "scale(1.08)" : "scale(1)"
+    const zIndex = isFocused ? 500 : isCurrent ? 350 : 30
+    const iconPrefix = type === "warehouse" ? "📦" : type === "event" ? "🎪" : "🏬"
 
     return L.divIcon({
       className: "bg-transparent border-none",
@@ -273,47 +287,48 @@ export default function BranchMiniMap({
           cursor: pointer;
           z-index: ${zIndex};
         ">
-          <!-- Teardrop Pin SVG -->
-          <svg width="32" height="40" viewBox="0 0 32 40" fill="none" style="filter: drop-shadow(0 4px 10px rgba(58,56,53,${isFocused ? "0.4" : "0.2"}));">
+          <!-- 🏷️ Floating Branch Name Pill Badge (Always Visible!) -->
+          <div style="
+            position: absolute;
+            bottom: 43px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${isFocused ? "#84492C" : isCurrent ? "#84492C" : "rgba(253, 252, 251, 0.96)"};
+            color: ${isFocused || isCurrent ? "#FFFFFF" : "#3A3835"};
+            font-size: ${isFocused ? "10px" : "9.5px"};
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: ${isFocused ? "3px 9px" : "2px 8px"};
+            border-radius: 9999px;
+            white-space: nowrap;
+            box-shadow: ${
+              isFocused
+                ? "0 4px 14px rgba(132, 73, 44, 0.45), 0 1px 3px rgba(0,0,0,0.2)"
+                : "0 2px 8px rgba(58, 56, 53, 0.18), 0 1px 2px rgba(0,0,0,0.06)"
+            };
+            letter-spacing: 0.04em;
+            pointer-events: none;
+            border: 1px solid ${isFocused || isCurrent ? "rgba(255, 255, 255, 0.7)" : "rgba(132, 73, 44, 0.3)"};
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+          ">
+            <span style="font-size: 10px; line-height: 1;">${iconPrefix}</span>
+            <span>${pinLabel}</span>
+          </div>
+
+          <!-- 📍 Teardrop Pin SVG -->
+          <svg width="32" height="40" viewBox="0 0 32 40" fill="none" style="filter: drop-shadow(0 4px 10px rgba(58,56,53,${isFocused ? "0.45" : "0.22"}));">
             <path d="M16 0C7.163 0 0 7.163 0 16C0 28 16 40 16 40C16 40 32 28 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="2" />
             <circle cx="16" cy="15" r="5" fill="${dotColor}" />
           </svg>
-
-          <!-- Floating Label: Only shown when selected/focused to eliminate overlapping clutter! -->
-          ${
-            isFocused || isCurrent
-              ? `
-              <div style="
-                position: absolute;
-                bottom: 44px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${isFocused ? "#84492C" : "#3A3835"};
-                color: #FFFFFF;
-                font-size: 10.5px;
-                font-weight: 600;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                padding: 3px 9px;
-                border-radius: 6px;
-                white-space: nowrap;
-                box-shadow: 0 4px 14px rgba(0,0,0,0.28);
-                letter-spacing: 0.04em;
-                pointer-events: none;
-                border: 1px solid rgba(255,255,255,0.3);
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              ">
-                <span>${clean}</span>
-              </div>
-            `
-              : ""
-          }
         </div>
       `,
       iconSize: [0, 0],
       iconAnchor: [0, 0],
-      popupAnchor: [0, -42],
+      popupAnchor: [0, -68],
     })
   }
 

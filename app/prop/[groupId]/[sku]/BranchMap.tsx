@@ -180,20 +180,28 @@ export default function BranchMap({
     )
   }
 
-  const createCustomIcon = (qty: number) => {
+  const createCustomIcon = (qty: number, branchName?: string) => {
+    const clean = branchName ? getCleanBranchName(branchName) : ''
     return L.divIcon({
       className: 'bg-transparent border-none',
       html: `
-        <div style="background: #FAF8F5; border: 1.5px solid #84492C; border-radius: 6px; padding: 3px; box-shadow: 0 4px 14px rgba(58,56,53,0.18); display: flex; flex-direction: column; align-items: center; width: 44px; height: 44px; position: relative;">
-          <img src="${productImage}" alt="Branch Map Pin" title="Branch Map" style="width: 100%; height: 100%; object-fit: contain; mix-blend-multiply;" />
-          <div style="position: absolute; bottom: -10px; background: #84492C; color: white; font-size: 9px; font-weight: 600; padding: 0.5px 5px; border-radius: 8px; border: 1.5px solid #FAF8F5; font-family: monospace; letter-spacing: 0.05em;">
-            ${qty}
+        <div style="display: flex; flex-direction: column; align-items: center; position: relative;">
+          ${clean ? `
+            <div style="background: rgba(253, 252, 251, 0.95); color: #3A3835; font-size: 9px; font-weight: 700; padding: 2px 7.5px; border-radius: 9999px; border: 1px solid rgba(132,73,44,0.3); box-shadow: 0 2px 6px rgba(0,0,0,0.15); margin-bottom: 3px; white-space: nowrap; letter-spacing: 0.04em;">
+              📍 ${clean}
+            </div>
+          ` : ''}
+          <div style="background: #FAF8F5; border: 1.5px solid #84492C; border-radius: 6px; padding: 3px; box-shadow: 0 4px 14px rgba(58,56,53,0.18); display: flex; flex-direction: column; align-items: center; width: 44px; height: 44px; position: relative;">
+            <img src="${productImage}" alt="Branch Map Pin" title="Branch Map" style="width: 100%; height: 100%; object-fit: contain; mix-blend-multiply;" />
+            <div style="position: absolute; bottom: -10px; background: #84492C; color: white; font-size: 9px; font-weight: 600; padding: 0.5px 5px; border-radius: 8px; border: 1.5px solid #FAF8F5; font-family: monospace; letter-spacing: 0.05em;">
+              ${qty}
+            </div>
           </div>
         </div>
       `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 44],
-      popupAnchor: [0, -48]
+      iconSize: [44, clean ? 64 : 44],
+      iconAnchor: [22, clean ? 64 : 44],
+      popupAnchor: [0, clean ? -68 : -48]
     })
   }
 
@@ -245,7 +253,7 @@ export default function BranchMap({
               if (ref) markerRefs.current[key] = ref
             }}
             position={[stockItem.branches.latitude, stockItem.branches.longitude]}
-            icon={createCustomIcon(stockItem.qty)}
+            icon={createCustomIcon(stockItem.qty, stockItem.branches?.branch_name)}
           >
             <Popup className="terra-luxury-popup font-sans border-none">
               <div className="flex flex-col items-center text-center p-0.5 min-w-[170px] max-w-[220px]">
