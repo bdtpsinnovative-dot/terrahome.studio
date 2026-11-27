@@ -181,7 +181,7 @@ export default function BranchMap({
           icon={createCustomIcon(stockItem.qty)}
         >
           <Popup className="terra-luxury-popup font-sans border-none">
-            <div className="flex flex-col items-center text-center p-1">
+            <div className="flex flex-col items-center text-center p-1 min-w-[190px]">
               <span className="text-[8.5px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
                 TERRA HOME STUDIO
               </span>
@@ -198,10 +198,10 @@ export default function BranchMap({
                 rel="noopener noreferrer"
                 title={`Get directions to ${stockItem.branches.branch_name} branch on Google Maps`}
                 style={{ color: '#FFFFFF', backgroundColor: '#84492C' }}
-                className="directions-btn w-full text-white hover:bg-[#6D3B23] text-[9.5px] uppercase font-medium tracking-[0.16em] py-2 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                className="w-full text-white bg-[#84492C] hover:bg-[#6D3B23] text-[9.5px] uppercase font-medium tracking-[0.16em] py-2 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors shadow-xs"
               >
                 <Navigation className="w-3 h-3 text-white" />
-                <span>DIRECTIONS (นำทาง)</span>
+                <span className="text-white">DIRECTIONS (นำทาง)</span>
               </a>
             </div>
           </Popup>
@@ -315,75 +315,48 @@ export default function BranchMap({
             {/* 🗺️ MODAL BODY: Full-Bleed Map with Smart Responsive Branch Cards */}
             <div className="flex-1 relative w-full h-full min-h-0 bg-[#EAE7E0] overflow-hidden">
               
-              {/* 📋 SMART RESPONSIVE BRANCH PANEL */}
-              <div className="
-                absolute z-[1000]
-                bottom-3 left-3 right-3
-                md:bottom-auto md:top-4 md:left-4 md:right-auto md:w-[320px] md:max-h-[calc(100%-32px)]
-                bg-[#FAF8F5]/92 backdrop-blur-md rounded-xl border border-[#D5D2CA]/90 shadow-[0_12px_36px_-8px_rgba(58,56,53,0.18)]
-                flex flex-col overflow-hidden transition-all
-              ">
-                {/* Panel Header */}
-                <div className="px-3.5 py-2 sm:py-2.5 border-b border-[#D5D2CA]/60 bg-white/60 flex items-center justify-between shrink-0">
+              {/* 📋 DESKTOP FLOATING BRANCH PANEL (md and up) */}
+              <div className="hidden md:flex absolute z-[1000] top-4 left-4 w-[280px] max-h-[calc(100%-32px)] bg-[#FAF8F5]/92 backdrop-blur-md rounded-xl border border-[#D5D2CA]/90 shadow-[0_12px_36px_-8px_rgba(58,56,53,0.18)] flex-col overflow-hidden">
+                <div className="px-3.5 py-2.5 border-b border-[#D5D2CA]/60 bg-white/60 flex items-center justify-between shrink-0">
                   <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-[#84492C]">
-                    Available Locations ({validLocations.length})
+                    Available Stores ({validLocations.length})
                   </span>
                   <span className="text-[8.5px] text-[#8C8A86] tracking-wide font-light">
-                    {validLocations.length > 2 ? 'เลื่อนดูสาขาเพิ่มเติม →' : 'คลิกเพื่อดูหมุด'}
+                    คลิกเพื่อดูหมุด
                   </span>
                 </div>
-
-                {/* Branch Cards */}
-                <div className="
-                  p-2 sm:p-2.5 
-                  flex flex-row md:flex-col gap-2 
-                  overflow-x-auto md:overflow-x-hidden md:overflow-y-auto 
-                  snap-x md:snap-none 
-                  [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]
-                ">
+                <div className="p-2 flex flex-col gap-1.5 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent]">
                   {validLocations.map((s: any, idx: number) => {
                     const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
                                        internalSelectedBranch?.lng === Number(s.branches.longitude)
-
                     return (
                       <div 
                         key={idx}
                         onClick={() => handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))}
-                        className={`
-                          p-2.5 sm:p-3 rounded-lg transition-all duration-200 cursor-pointer border flex flex-col justify-between shrink-0
-                          w-[220px] sm:w-[250px] md:w-full snap-center
-                          ${isSelected
-                            ? 'bg-white border-[#84492C] shadow-sm ring-1 ring-[#84492C]/20'
-                            : 'bg-white/80 border-[#D5D2CA]/60 hover:bg-white hover:border-[#84492C]/40 hover:shadow-2xs'
-                          }
-                        `}
+                        className={`p-2.5 rounded-lg transition-all duration-200 cursor-pointer border flex flex-col justify-between shrink-0 ${isSelected ? 'bg-white border-[#84492C] shadow-sm ring-1 ring-[#84492C]/20' : 'bg-white/80 border-[#D5D2CA]/60 hover:bg-white hover:border-[#84492C]/40'}`}
                       >
                         <div className="flex items-start justify-between gap-1.5">
-                          <span className={`text-[10.5px] sm:text-[11px] font-medium uppercase tracking-[0.1em] leading-snug line-clamp-2 ${isSelected ? 'text-[#84492C]' : 'text-[#3A3835]'}`}>
+                          <span className={`text-[11px] font-medium uppercase tracking-[0.08em] leading-snug line-clamp-2 ${isSelected ? 'text-[#84492C]' : 'text-[#3A3835]'}`}>
                             {s.branches?.branch_name || 'TERRA BRANCH'}
                           </span>
                           <span className="text-[8.5px] font-mono tracking-wider text-[#84492C] bg-[#84492C]/8 px-1.5 py-0.5 rounded-xs shrink-0 font-semibold whitespace-nowrap">
                             {s.qty} IN STOCK
                           </span>
                         </div>
-
-                        <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-[#3A3835]/5 text-[9.5px]">
+                        <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-[#3A3835]/5 text-[9px]">
                           {s.distance !== null && s.distance !== undefined ? (
                             <span className="text-[#8C8A86] font-mono flex items-center gap-1">
                               <MapPin className="w-2.5 h-2.5 text-[#84492C]" /> {s.distance.toFixed(1)} km
                             </span>
                           ) : (
-                            <span className="text-[#8C8A86] text-[8.5px] tracking-wide font-light">
-                              แตะเพื่อซูมหมุด
-                            </span>
+                            <span className="text-[#8C8A86] font-light">แตะเพื่อซูมหมุด</span>
                           )}
-
                           <a
                             href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()} 
-                            className="text-[#84492C] hover:text-[#3A3835] text-[9px] uppercase tracking-[0.12em] font-medium flex items-center gap-1 transition-colors"
+                            className="text-[#84492C] hover:text-[#3A3835] font-medium flex items-center gap-1 transition-colors uppercase tracking-[0.1em]"
                             title="เปิด Google Maps นำทาง"
                           >
                             <Navigation className="w-2.5 h-2.5" />
@@ -394,6 +367,34 @@ export default function BranchMap({
                     )
                   })}
                 </div>
+              </div>
+
+              {/* 📱 MOBILE FLOATING CHIPS BAR (below md - Minimal, non-intrusive) */}
+              <div className="md:hidden absolute z-[1000] bottom-3 left-3 right-3 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                {validLocations.map((s: any, idx: number) => {
+                  const isSelected = internalSelectedBranch?.lat === Number(s.branches.latitude) && 
+                                     internalSelectedBranch?.lng === Number(s.branches.longitude)
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectBranchInMap(Number(s.branches.latitude), Number(s.branches.longitude))}
+                      className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-full border backdrop-blur-md shadow-md text-left transition-all active:scale-95 cursor-pointer ${
+                        isSelected 
+                          ? 'bg-white border-[#84492C] ring-1 ring-[#84492C]/30 text-[#84492C]'
+                          : 'bg-[#FAF8F5]/92 border-[#D5D2CA] text-[#3A3835]'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#84492C] shrink-0"></span>
+                      <span className="text-[10px] uppercase tracking-[0.08em] font-medium max-w-[150px] truncate">
+                        {s.branches?.branch_name}
+                      </span>
+                      <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#84492C]/10 text-[#84492C] whitespace-nowrap">
+                        {s.qty} PCS
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* 🗺️ MAP CONTAINER (เต็มพื้นที่ 100% ยิ่งใหญ่ สบายตา) */}
@@ -421,45 +422,6 @@ export default function BranchMap({
         </div>,
         document.body
       )}
-
-      {/* 🌟 Custom Global CSS For Leaflet Popups to match TERRA Quiet Luxury */}
-      <style jsx global>{`
-        .terra-luxury-popup .leaflet-popup-content-wrapper {
-          background-color: #FAF8F5 !important;
-          border: 1px solid #D5D2CA !important;
-          border-radius: 14px !important;
-          box-shadow: 0 16px 36px -8px rgba(58, 56, 53, 0.2) !important;
-          padding: 2px !important;
-        }
-        .terra-luxury-popup .leaflet-popup-tip {
-          background-color: #FAF8F5 !important;
-        }
-        .terra-luxury-popup .leaflet-popup-content {
-          margin: 12px 14px !important;
-          line-height: 1.4 !important;
-        }
-        .terra-luxury-popup .leaflet-popup-close-button {
-          color: #8C8A86 !important;
-          top: 10px !important;
-          right: 12px !important;
-          font-size: 16px !important;
-          padding: 2px !important;
-        }
-        .terra-luxury-popup .leaflet-popup-close-button:hover {
-          color: #3A3835 !important;
-        }
-        .terra-luxury-popup a.directions-btn {
-          color: #FFFFFF !important;
-          background-color: #84492C !important;
-          text-decoration: none !important;
-        }
-        .terra-luxury-popup a.directions-btn:hover {
-          background-color: #6D3B23 !important;
-        }
-        .terra-luxury-popup a.directions-btn * {
-          color: #FFFFFF !important;
-        }
-      `}</style>
     </>
   )
 }
