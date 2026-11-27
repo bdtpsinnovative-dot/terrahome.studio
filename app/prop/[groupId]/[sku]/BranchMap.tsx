@@ -180,26 +180,28 @@ export default function BranchMap({
           position={[stockItem.branches.latitude, stockItem.branches.longitude]}
           icon={createCustomIcon(stockItem.qty)}
         >
-          <Popup className="font-sans border-none shadow-xl rounded-xl min-w-[170px]">
-            <div className="flex flex-col items-center text-center p-1.5">
-              <span className="text-[8px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
-                TERRA STUDIO
+          <Popup className="terra-luxury-popup font-sans border-none">
+            <div className="flex flex-col items-center text-center p-1">
+              <span className="text-[8.5px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
+                TERRA HOME STUDIO
               </span>
-              <p className="font-medium text-[#3A3835] mb-2 text-[12px] leading-snug">
+              <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.08em] font-normal leading-snug">
                 {stockItem.branches.branch_name}
               </p>
-              <div className="text-[10px] text-[#84492C] font-medium bg-[#F5F2EB] px-2.5 py-1 rounded-sm w-full font-mono mb-2">
-                IN STOCK: {stockItem.qty}
+              <div className="text-[10px] text-[#84492C] font-medium bg-[#F5F2EB] border border-[#84492C]/15 px-3 py-1 rounded-full font-mono mb-2.5 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                <span>{stockItem.qty} IN STOCK</span>
               </div>
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${stockItem.branches.latitude},${stockItem.branches.longitude}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`Get directions to ${stockItem.branches.branch_name} branch on Google Maps`}
-                className="w-full bg-[#3A3835] text-white hover:bg-[#84492C] text-[9.5px] uppercase font-medium tracking-[0.15em] py-2 px-3 rounded-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                style={{ color: '#FFFFFF', backgroundColor: '#84492C' }}
+                className="directions-btn w-full text-white hover:bg-[#6D3B23] text-[9.5px] uppercase font-medium tracking-[0.16em] py-2 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors shadow-xs"
               >
-                <Navigation className="w-3 h-3" />
-                Directions
+                <Navigation className="w-3 h-3 text-white" />
+                <span>DIRECTIONS (นำทาง)</span>
               </a>
             </div>
           </Popup>
@@ -208,7 +210,7 @@ export default function BranchMap({
 
       {userLocation && (
         <Marker position={userLocation} icon={userIcon}>
-          <Popup className="font-sans border-none shadow-lg rounded-xl">
+          <Popup className="terra-luxury-popup font-sans border-none">
             <div className="text-center font-medium text-[11px] text-[#3A3835] px-2 py-1 tracking-wide">
               📍 YOUR CURRENT LOCATION
             </div>
@@ -313,10 +315,7 @@ export default function BranchMap({
             {/* 🗺️ MODAL BODY: Full-Bleed Map with Smart Responsive Branch Cards */}
             <div className="flex-1 relative w-full h-full min-h-0 bg-[#EAE7E0] overflow-hidden">
               
-              {/* 📋 SMART RESPONSIVE BRANCH PANEL 
-                  - บนคอม (Desktop): กล่องกระจกลอยฝั่งซ้าย กว้างพอดี 320px เรียงลงมา ไม่บังแผนที่
-                  - บนมือถือ (Mobile): ย้ายมาลอยด้านล่างสุด เป็นการ์ดเลื่อนแนวนอน (Horizontal Swipe) สูงเพียง 110px ไม่บังแผนที่ด้านบนเด็ดขาด ไม่ว่าจะ 2, 4 หรือ 10 สาขา!
-              */}
+              {/* 📋 SMART RESPONSIVE BRANCH PANEL */}
               <div className="
                 absolute z-[1000]
                 bottom-3 left-3 right-3
@@ -334,10 +333,7 @@ export default function BranchMap({
                   </span>
                 </div>
 
-                {/* Branch Cards: 
-                    📱 มือถือ: เลื่อนแนวนอน (flex-row overflow-x-auto) ไม่บังแผนที่ด้านบน
-                    💻 คอม: ลิสต์แนวตั้ง (md:flex-col md:overflow-y-auto) พอดีด้านซ้าย
-                */}
+                {/* Branch Cards */}
                 <div className="
                   p-2 sm:p-2.5 
                   flex flex-row md:flex-col gap-2 
@@ -425,6 +421,45 @@ export default function BranchMap({
         </div>,
         document.body
       )}
+
+      {/* 🌟 Custom Global CSS For Leaflet Popups to match TERRA Quiet Luxury */}
+      <style jsx global>{`
+        .terra-luxury-popup .leaflet-popup-content-wrapper {
+          background-color: #FAF8F5 !important;
+          border: 1px solid #D5D2CA !important;
+          border-radius: 14px !important;
+          box-shadow: 0 16px 36px -8px rgba(58, 56, 53, 0.2) !important;
+          padding: 2px !important;
+        }
+        .terra-luxury-popup .leaflet-popup-tip {
+          background-color: #FAF8F5 !important;
+        }
+        .terra-luxury-popup .leaflet-popup-content {
+          margin: 12px 14px !important;
+          line-height: 1.4 !important;
+        }
+        .terra-luxury-popup .leaflet-popup-close-button {
+          color: #8C8A86 !important;
+          top: 10px !important;
+          right: 12px !important;
+          font-size: 16px !important;
+          padding: 2px !important;
+        }
+        .terra-luxury-popup .leaflet-popup-close-button:hover {
+          color: #3A3835 !important;
+        }
+        .terra-luxury-popup a.directions-btn {
+          color: #FFFFFF !important;
+          background-color: #84492C !important;
+          text-decoration: none !important;
+        }
+        .terra-luxury-popup a.directions-btn:hover {
+          background-color: #6D3B23 !important;
+        }
+        .terra-luxury-popup a.directions-btn * {
+          color: #FFFFFF !important;
+        }
+      `}</style>
     </>
   )
 }
