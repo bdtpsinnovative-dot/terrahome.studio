@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 interface ProductSlide {
   image_url: string
@@ -156,14 +156,18 @@ export default function CollectionCard({
     dimensionText = dimParts.length > 0 ? `${dimParts.join(" x ")} cm` : null
   }
 
+  const searchParams = useSearchParams()
+  const branchParam = searchParams.get("branch")
+  const branchQuery = branchParam ? `?branch=${encodeURIComponent(branchParam)}` : ""
+
   const firstAvailableProduct = availableProducts[0] || group.products?.[0]
   const targetSku = groupCoverImage
     ? (firstAvailableProduct?.sku || currentSlide.sku)
     : (currentSlide.sku || firstAvailableProduct?.sku)
   const targetGroupId = group.collection_group_id || group.id
   const targetHref = targetSku
-    ? `/prop/${encodeURIComponent(targetGroupId)}/${encodeURIComponent(targetSku)}`
-    : `/prop/${encodeURIComponent(targetGroupId)}`
+    ? `/prop/${encodeURIComponent(targetGroupId)}/${encodeURIComponent(targetSku)}${branchQuery}`
+    : `/prop/${encodeURIComponent(targetGroupId)}${branchQuery}`
 
   const handleNavigate = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()

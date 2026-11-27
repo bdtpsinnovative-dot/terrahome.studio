@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation" 
+import { useRouter, useSearchParams } from "next/navigation" 
 import dynamic from "next/dynamic"
 import { CheckCircle2, MapPin, Navigation, MessageCircle } from "lucide-react"
 // ⚡ 1. นำเข้า Supabase Client
@@ -83,7 +83,16 @@ export default function ProductDetailClient({
   productSup?: string | null
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const branchParam = searchParams.get('branch')
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(branchParam || null)
   const supabase = createClient() // ⚡ เรียกใช้ Supabase
+
+  useEffect(() => {
+    if (branchParam !== null) {
+      setSelectedBranchId(branchParam)
+    }
+  }, [branchParam])
   
   const [activeProduct, setActiveProduct] = useState(() => {
     return groupProducts.find(p => p.sku === initialSku) || groupProducts[0]
@@ -255,7 +264,8 @@ export default function ProductDetailClient({
     setActiveProduct(product)
     setSelectedImageIndex(0)
     setShowStock(false)
-    const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(product.sku)}`
+    const branchParamStr = selectedBranchId ? `?branch=${encodeURIComponent(selectedBranchId)}` : ""
+    const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(product.sku)}${branchParamStr}`
     
     window.history.replaceState(null, "", newPath)
   }
@@ -283,10 +293,24 @@ export default function ProductDetailClient({
   // คำนวณสต็อกรวมทั้งหมดของสินค้าชิ้นที่เปิดดูอยู่
   const totalStock = activeProduct.stock?.reduce((sum: number, s: any) => sum + Number(s.qty), 0) || 0
   const outOfStock = totalStock <= 0
-  const activeDiscountValue = Number(activeProduct?.discount_value)
-  const activeDiscountType = activeProduct?.discount_type
-  const activeDiscountedPrice = getDiscountedPrice(activeProduct)
-  const hasActiveDiscount = Number.isFinite(activeDiscountValue) && activeDiscountValue > 0 && activeDiscountType
+
+  // ข้อมูลสาขาที่เลือก (ถ้ามี)
+  const selectedBranchStock = selectedBranchId
+    ? activeProduct.stock?.find((s: any) => String(s.branches?.id) === String(selectedBranchId))
+    : null
+  const isSelectedBranchSpecial = Boolean(selectedBranchStock?.is_branch_special)
+
+  // ส่วนลดและราคาที่จะแสดง (ถ้าเลือกสาขาที่มีโปรเฉพาะ ให้แสดงโปรสาขานั้นเป็นอันดับแรก)
+  const displayDiscountValue = isSelectedBranchSpecial
+    ? Number(selectedBranchStock.discount_value)
+    : Number(activeProduct?.discount_value)
+  const displayDiscountType = isSelectedBranchSpecial
+    ? selectedBranchStock.discount_type
+    : activeProduct?.discount_type
+  const displayDiscountedPrice = isSelectedBranchSpecial
+    ? Number(selectedBranchStock.discounted_price)
+    : getDiscountedPrice(activeProduct)
+  const hasDisplayDiscount = Number.isFinite(displayDiscountValue) && displayDiscountValue > 0 && Boolean(displayDiscountType)
 
   // ⚡ 3. ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const handleAddToCart = async () => {
@@ -444,22 +468,56 @@ export default function ProductDetailClient({
                   </span>
                 )}
               </div>
-            ) : hasActiveDiscount && activeDiscountedPrice !== null ? (
+            ) : hasDisplayDiscount && displayDiscountedPrice !== null ? (
               <div className="mt-3 flex items-center gap-3 flex-wrap">
+                {isSelectedBranchSpecial && (
+                  <span className="bg-[#84492C] text-white text-[8.5px] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-xs shadow-xs">
+                    {selectedBranchStock?.branches?.branch_name || 'BRANCH'} SPECIAL
+                  </span>
+                )}
                 <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#DC2626]">
-                  {activeDiscountType === 'PERCENT' ? `-${activeDiscountValue}%` : `-฿${activeDiscountValue}`}
+                  {displayDiscountType === 'PERCENT' ? `-${displayDiscountValue}%` : `-฿${displayDiscountValue}`}
                 </span>
-                <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase">
+                <span className="text-[10px] text-[#8C8A86] line-through tracking-[0.12em] uppercase font-mono">
                   THB {Number(activeProduct.price).toLocaleString()}
                 </span>
-                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                  THB {Number(activeDiscountedPrice).toLocaleString()}
+                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C] font-mono">
+                  THB {Number(displayDiscountedPrice).toLocaleString()}
                 </p>
+                {isSelectedBranchSpecial && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBranchId(null)
+                      const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(activeProduct.sku)}`
+                      window.history.replaceState(null, "", newPath)
+                    }}
+                    className="text-[9px] tracking-wider text-[#8C8A86] hover:text-[#84492C] underline ml-1 cursor-pointer"
+                    title="Clear branch special price and view standard price"
+                  >
+                    (Reset)
+                  </button>
+                )}
               </div>
             ) : (
-              <p className="mt-3 text-[13px] font-medium tracking-[0.12em] text-[#84492C]">
-                {activeProduct.price > 0 ? `THB ${activeProduct.price.toLocaleString()}` : 'POA'}
-              </p>
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                <p className="text-[13px] font-medium tracking-[0.12em] text-[#84492C] font-mono">
+                  {activeProduct.price > 0 ? `THB ${Number(activeProduct.price).toLocaleString()}` : 'POA'}
+                </p>
+                {isSelectedBranchSpecial && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBranchId(null)
+                      const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(activeProduct.sku)}`
+                      window.history.replaceState(null, "", newPath)
+                    }}
+                    className="text-[9px] tracking-wider text-[#8C8A86] hover:text-[#84492C] underline ml-1 cursor-pointer"
+                  >
+                    (Reset)
+                  </button>
+                )}
+              </div>
             )}
 
             <div className="mt-10 py-6 border-y border-[#3A3835]/10 grid grid-cols-4 text-center text-xs divide-x divide-[#3A3835]/10 max-w-xl">
@@ -511,53 +569,83 @@ export default function ProductDetailClient({
                   </button>
                 )}
 
-                <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1">
+                <div className="bg-[#F2EFE9]/50 p-2 rounded-sm border border-[#3A3835]/5 flex flex-col gap-1.5">
                   {activeStock.length > 0 ? (
-                    activeStock.map((s: any, idx: number) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => {
-                          if (s.branches?.latitude && s.branches?.longitude) {
-                            setSelectedBranch({
-                              lat: Number(s.branches.latitude),
-                              lng: Number(s.branches.longitude),
-                              timestamp: Date.now()
-                            })
-                          }
-                        }}
-                        className="flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-[#3A3835]/10"
-                      >
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[#3A3835] font-medium tracking-[0.1em]">
-                            {s.branches?.branch_name || 'Unknown Branch'}
-                          </span>
-                          {s.distance !== null && (
-                            <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                            <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
+                    activeStock.map((s: any, idx: number) => {
+                      const isSelected = selectedBranchId && String(s.branches?.id) === String(selectedBranchId)
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            const newBranchId = isSelected ? null : String(s.branches?.id)
+                            setSelectedBranchId(newBranchId)
+                            const branchParamStr = newBranchId ? `?branch=${encodeURIComponent(newBranchId)}` : ""
+                            const newPath = `/prop/${encodeURIComponent(currentGroupId)}/${encodeURIComponent(activeProduct.sku)}${branchParamStr}`
+                            window.history.replaceState(null, "", newPath)
+                            if (s.branches?.latitude && s.branches?.longitude) {
+                              setSelectedBranch({
+                                lat: Number(s.branches.latitude),
+                                lng: Number(s.branches.longitude),
+                                timestamp: Date.now()
+                              })
+                            }
+                          }}
+                          className={`flex justify-between items-center text-[10px] uppercase tracking-wider p-3 rounded-sm cursor-pointer transition-all duration-300 border ${
+                            isSelected
+                              ? 'bg-white border-[#84492C] ring-1 ring-[#84492C]/40 shadow-xs'
+                              : 'border-transparent hover:bg-white/60 hover:border-[#3A3835]/10'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`font-medium tracking-[0.1em] ${isSelected ? 'text-[#84492C] font-semibold' : 'text-[#3A3835]'}`}>
+                                {s.branches?.branch_name || 'Unknown Branch'}
+                              </span>
+                              {s.is_branch_special && (
+                                <span className="bg-[#84492C] text-white text-[8px] font-bold tracking-wider px-1.5 py-0.5 rounded-xs">
+                                  SPECIAL -{s.discount_value}{s.discount_type === 'PERCENT' ? '%' : '฿'}
+                                </span>
+                              )}
+                            </div>
+                            {s.distance !== null && (
+                              <span className="text-[8.5px] text-[#84492C] font-medium flex items-center gap-1">
+                                <MapPin className="w-2.5 h-2.5" /> {s.distance.toFixed(1)} km away
+                              </span>
+                            )}
                           </div>
                           
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
-                            title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
-                            data-analytics-event="open_directions"
-                            className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
-                          >
-                            <Navigation className="w-3.5 h-3.5" />
-                          </a>
+                          <div className="flex items-center gap-4">
+                            {s.is_branch_special && s.discounted_price !== undefined ? (
+                              <div className="flex flex-col items-end">
+                                <span className="text-[8px] text-[#8C8A86] line-through font-mono">
+                                  THB {Number(activeProduct.price).toLocaleString()}
+                                </span>
+                                <span className="text-[#84492C] font-mono font-bold text-[11px]">
+                                  THB {Number(s.discounted_price).toLocaleString()}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                              <span className="font-mono text-[#3A3835] font-semibold">{s.qty} in stock</span>
+                            </div>
+                            
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${s.branches.latitude},${s.branches.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()} 
+                              title={`Get directions to ${s.branches.branch_name} branch on Google Maps`}
+                              data-analytics-event="open_directions"
+                              className="text-[#8C8A86] hover:text-[#84492C] p-1 rounded-sm transition-colors"
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   ) : (
                     <div className="text-center text-[9px] text-[#84492C] uppercase tracking-[0.2em] py-5 flex flex-col items-center gap-1 font-semibold">
                       <span>OUT OF STOCK</span>

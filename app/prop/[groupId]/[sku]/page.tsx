@@ -27,7 +27,7 @@ async function getActiveDiscounts() {
   }
   const { data } = await supabaseAnon
     .from("discounts")
-    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
+    .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id, branch_id )`)
     .eq("active", true)
     .order("id", { ascending: false })
   const list = data || []
@@ -285,26 +285,98 @@ export default async function ProductDetailWithGroupSidebarPage({ params }: Prop
   const { activeDiscounts, groupData, error } = await getGroupDetailData(currentGroupId, currentSku)
 
   const now = new Date()
+  const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
+    const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+    const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+    return isStarted && isNotEnded
+  })
+
+  const computeDiscountPrice = (price: number, discountType?: string | null, value?: number | null): number => {
+    if (!discountType || value === null || value === undefined || isNaN(value) || value <= 0) return price
+    if (discountType === 'PERCENT') return Math.max(0, Math.round(price * (1 - value / 100)))
+    if (discountType === 'FIXED') return Math.max(0, Math.round(price - value))
+    return price
+  }
+
   const mapProductDiscount = (product: any) => {
-    let applicableDiscount = null
-    if (activeDiscounts && activeDiscounts.length > 0) {
-      applicableDiscount = activeDiscounts.find((discount: any) => {
-        const isStarted = !discount.start_date || new Date(discount.start_date) <= now
-        const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
-        if (!isStarted || !isNotEnded) return false
-        return discount.discount_rules.some((rule: any) => rule.product_id === product.id || rule.product_id === null)
+    const rawPrice = Number(product.price) || 0
+
+    // 1. หา Global Discount สำหรับสินค้าชิ้นนี้ (branch_id เป็น null)
+    let globalDiscount: any = null
+    for (const discount of validDiscounts) {
+      const match = (discount.discount_rules || []).some((rule: any) => {
+        const isProductMatch = rule.product_id === null || Number(rule.product_id) === Number(product.id)
+        const isGlobalBranch = rule.branch_id === null || rule.branch_id === undefined
+        return isProductMatch && isGlobalBranch
       })
+      if (match) {
+        globalDiscount = discount
+        break
+      }
     }
 
-    const normalizedDiscountValue = applicableDiscount && applicableDiscount.value !== null && applicableDiscount.value !== undefined
-      ? Number(applicableDiscount.value)
+    const globalDiscountVal = globalDiscount && globalDiscount.value !== null && globalDiscount.value !== undefined
+      ? Number(globalDiscount.value)
       : null
-    const hasValidDiscountValue = normalizedDiscountValue !== null && Number.isFinite(normalizedDiscountValue) && normalizedDiscountValue > 0
+    const hasGlobalDiscount = globalDiscountVal !== null && Number.isFinite(globalDiscountVal) && globalDiscountVal > 0
+
+    // 2. แมปสต็อกแต่ละสาขา พร้อมคำนวณส่วนลดเฉพาะสาขา (Branch-Specific Discount)
+    const mappedStock = (product.stock || []).map((s: any) => {
+      const branchId = s.branches?.id ? Number(s.branches.id) : null
+
+      // หาส่วนลดเฉพาะสาขานี้ (product_id ตรง หรือ product_id null + branch_id ตรง)
+      let branchDiscount: any = null
+      if (branchId !== null) {
+        for (const discount of validDiscounts) {
+          const match = (discount.discount_rules || []).some((rule: any) => {
+            const isProductMatch = rule.product_id === null || Number(rule.product_id) === Number(product.id)
+            const isBranchMatch = rule.branch_id !== null && rule.branch_id !== undefined && Number(rule.branch_id) === branchId
+            return isProductMatch && isBranchMatch
+          })
+          if (match) {
+            branchDiscount = discount
+            break
+          }
+        }
+      }
+
+      if (branchDiscount) {
+        const branchVal = Number(branchDiscount.value)
+        const branchType = branchDiscount.discount_type
+        return {
+          ...s,
+          discount_value: branchVal,
+          discount_type: branchType,
+          discounted_price: computeDiscountPrice(rawPrice, branchType, branchVal),
+          is_branch_special: true,
+        }
+      }
+
+      // ถ้าไม่มีส่วนลดเฉพาะสาขา ให้ใช้ Global Discount (ถ้ามี)
+      if (hasGlobalDiscount && globalDiscount) {
+        return {
+          ...s,
+          discount_value: globalDiscountVal,
+          discount_type: globalDiscount.discount_type,
+          discounted_price: computeDiscountPrice(rawPrice, globalDiscount.discount_type, globalDiscountVal),
+          is_branch_special: false,
+        }
+      }
+
+      return {
+        ...s,
+        discount_value: null,
+        discount_type: null,
+        discounted_price: rawPrice,
+        is_branch_special: false,
+      }
+    })
 
     return {
       ...product,
-      discount_value: hasValidDiscountValue ? normalizedDiscountValue : null,
-      discount_type: applicableDiscount ? applicableDiscount.discount_type : null,
+      discount_value: hasGlobalDiscount ? globalDiscountVal : null,
+      discount_type: globalDiscount ? globalDiscount.discount_type : null,
+      stock: mappedStock,
     }
   }
 
