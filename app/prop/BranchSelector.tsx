@@ -410,7 +410,7 @@ export default function BranchSelector({
               zIndex: 99999,
             }}
             className={`bg-[#FDFCFB] border border-[#E5E5E5] shadow-[0_16px_48px_-10px_rgba(0,0,0,0.18)] origin-top-right transition-all duration-200 overflow-hidden rounded-md ${
-              viewMode === "map" ? "w-[440px] sm:w-[500px]" : "w-max min-w-[340px] max-w-[440px]"
+              viewMode === "map" ? "w-[520px] sm:w-[580px] md:w-[620px]" : "w-max min-w-[340px] max-w-[440px]"
             }`}
           >
             {/* ส่วนหัว Dropdown พร้อมตัวสลับ Mini Map / List */}
