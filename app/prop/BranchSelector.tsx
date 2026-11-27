@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
 import dynamic from "next/dynamic"
 import { MapPin, ChevronDown, X, Check, Compass, List } from "lucide-react"
-import { getBranchType, getBranchLocationHint } from "./BranchMiniMap"
+import { getBranchType, getBranchLocationHint, Branch } from "./branchUtils"
 
 const BranchMiniMap = dynamic(() => import("./BranchMiniMap"), {
   ssr: false,
@@ -17,13 +17,9 @@ const BranchMiniMap = dynamic(() => import("./BranchMiniMap"), {
   ),
 })
 
-interface Branch {
-  id: string | number
-  branch_code: string
-  branch_name: string
-  latitude?: number
-  longitude?: number
-}
+const BranchModal = dynamic(() => import("./BranchModal"), {
+  ssr: false,
+})
 
 export default function BranchSelector({
   branches,
@@ -38,6 +34,7 @@ export default function BranchSelector({
   const currentBranchId = searchParams.get("branch") || "all"
 
   const [isOpen, setIsOpen] = useState(false)
+  const [isExpandModalOpen, setIsExpandModalOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"map" | "list">("map")
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -274,6 +271,10 @@ export default function BranchSelector({
                     branches={branches}
                     selectedBranchId={selectedBranch.id}
                     onSelectBranch={handleSelect}
+                    onOpenExpandModal={() => {
+                      setIsOpen(false)
+                      setIsExpandModalOpen(true)
+                    }}
                     isMobile={true}
                   />
                 </div>
@@ -460,6 +461,10 @@ export default function BranchSelector({
                 branches={branches}
                 selectedBranchId={selectedBranch.id}
                 onSelectBranch={handleSelect}
+                onOpenExpandModal={() => {
+                  setIsOpen(false)
+                  setIsExpandModalOpen(true)
+                }}
               />
             ) : (
               <div className="flex flex-col py-1.5 max-h-[380px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D5D2CA_transparent] divide-y divide-[#F0EFEB]/80">
@@ -582,6 +587,16 @@ export default function BranchSelector({
           </div>
         ),
         document.body
+      )}
+
+      {/* 🌟 3. FULL-SCREEN LUXURY STUDIO MAP MODAL (เปิดเต็มจอแยกอิสระ ไม่ชนกับ Dropdown) */}
+      {isExpandModalOpen && (
+        <BranchModal
+          branches={branches}
+          selectedBranchId={selectedBranch.id}
+          onSelectBranch={handleSelect}
+          onClose={() => setIsExpandModalOpen(false)}
+        />
       )}
     </>
   )
