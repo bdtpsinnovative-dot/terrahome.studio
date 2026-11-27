@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -20,44 +20,52 @@ function MapController({
   userLocation, 
   selectedBranch,
   activeStock,
-  autoFit = false
+  autoFit = false,
+  targetZoom = 16.5
 }: { 
   userLocation: [number, number] | null
   selectedBranch: { lat: number; lng: number; timestamp: number } | null
   activeStock: any[]
   autoFit?: boolean
+  targetZoom?: number
 }) {
   const map = useMap()
 
   useEffect(() => {
     if (userLocation) {
-      map.flyTo(userLocation, 13, { duration: 1.5 })
+      map.flyTo(userLocation, 16.5, { duration: 1.2 })
     }
   }, [userLocation, map])
 
   useEffect(() => {
     if (selectedBranch) {
-      map.flyTo([selectedBranch.lat, selectedBranch.lng], 15, { duration: 1.5 })
+      map.flyTo([selectedBranch.lat, selectedBranch.lng], targetZoom, { duration: 1.2 })
     }
-  }, [selectedBranch, map])
+  }, [selectedBranch, targetZoom, map])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize()
       
-      if (autoFit && !selectedBranch && !userLocation && activeStock.length > 0) {
-        const bounds = L.latLngBounds(
-          activeStock
-            .filter(s => s.branches?.latitude && s.branches?.longitude)
-            .map(s => [Number(s.branches.latitude), Number(s.branches.longitude)])
-        )
-        if (bounds.isValid()) {
-          map.flyToBounds(bounds, { padding: [50, 50], duration: 1 })
+      if (selectedBranch) {
+        map.flyTo([selectedBranch.lat, selectedBranch.lng], targetZoom, { duration: 0.8 })
+      } else if (autoFit && !userLocation && activeStock.length > 0) {
+        if (activeStock.length === 1) {
+          map.flyTo([Number(activeStock[0].branches.latitude), Number(activeStock[0].branches.longitude)], targetZoom, { duration: 0.8 })
+        } else {
+          const bounds = L.latLngBounds(
+            activeStock
+              .filter(s => s.branches?.latitude && s.branches?.longitude)
+              .map(s => [Number(s.branches.latitude), Number(s.branches.longitude)])
+          )
+          if (bounds.isValid()) {
+            map.flyToBounds(bounds, { padding: [50, 50], maxZoom: targetZoom, duration: 0.8 })
+          }
         }
       }
     }, 250)
     return () => clearTimeout(timer)
-  }, [map, activeStock, selectedBranch, userLocation, autoFit])
+  }, [map, activeStock, selectedBranch, userLocation, autoFit, targetZoom])
 
   return null
 }
@@ -73,6 +81,7 @@ export default function BranchMap({
   const [mounted, setMounted] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [internalSelectedBranch, setInternalSelectedBranch] = useState<{ lat: number; lng: number; timestamp: number } | null>(null)
+  const markerRefs = useRef<{ [key: string]: L.Marker | null }>({})
 
   useEffect(() => {
     setMounted(true)
@@ -84,6 +93,17 @@ export default function BranchMap({
       setInternalSelectedBranch(selectedBranch)
     }
   }, [selectedBranch])
+
+  // Automatically open marker popup when internalSelectedBranch changes
+  useEffect(() => {
+    if (internalSelectedBranch) {
+      const key = `${internalSelectedBranch.lat},${internalSelectedBranch.lng}`
+      const timer = setTimeout(() => {
+        markerRefs.current[key]?.openPopup()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [internalSelectedBranch])
 
   // Handle ESC key to close modal and prevent body scroll
   useEffect(() => {
@@ -164,6 +184,21 @@ export default function BranchMap({
 
   const handleSelectBranchInMap = (lat: number, lng: number) => {
     setInternalSelectedBranch({ lat, lng, timestamp: Date.now() })
+    const key = `${lat},${lng}`
+    setTimeout(() => {
+      markerRefs.current[key]?.openPopup()
+    }, 350)
+  }
+
+  const handleOpenModal = () => {
+    if (!internalSelectedBranch && validLocations.length > 0) {
+      setInternalSelectedBranch({
+        lat: Number(validLocations[0].branches.latitude),
+        lng: Number(validLocations[0].branches.longitude),
+        timestamp: Date.now()
+      })
+    }
+    setIsModalOpen(true)
   }
 
   const tileUrl = process.env.NEXT_PUBLIC_CARTO_API_KEY
@@ -174,39 +209,45 @@ export default function BranchMap({
 
   const renderMarkers = () => (
     <>
-      {validLocations.map((stockItem, idx) => (
-        <Marker 
-          key={idx} 
-          position={[stockItem.branches.latitude, stockItem.branches.longitude]}
-          icon={createCustomIcon(stockItem.qty)}
-        >
-          <Popup className="terra-luxury-popup font-sans border-none">
-            <div className="flex flex-col items-center text-center p-1 min-w-[190px]">
-              <span className="text-[8.5px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
-                TERRA HOME STUDIO
-              </span>
-              <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.08em] font-normal leading-snug">
-                {stockItem.branches.branch_name}
-              </p>
-              <div className="text-[10px] text-[#84492C] font-medium bg-[#F5F2EB] border border-[#84492C]/15 px-3 py-1 rounded-full font-mono mb-2.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
-                <span>{stockItem.qty} IN STOCK</span>
+      {validLocations.map((stockItem, idx) => {
+        const key = `${stockItem.branches.latitude},${stockItem.branches.longitude}`
+        return (
+          <Marker 
+            key={idx} 
+            ref={(ref) => {
+              if (ref) markerRefs.current[key] = ref
+            }}
+            position={[stockItem.branches.latitude, stockItem.branches.longitude]}
+            icon={createCustomIcon(stockItem.qty)}
+          >
+            <Popup className="terra-luxury-popup font-sans border-none">
+              <div className="flex flex-col items-center text-center p-1 min-w-[190px]">
+                <span className="text-[8.5px] uppercase tracking-[0.25em] text-[#84492C] font-semibold mb-1">
+                  TERRA HOME STUDIO
+                </span>
+                <p className="font-serif text-[#3A3835] mb-2 text-[13px] uppercase tracking-[0.08em] font-normal leading-snug">
+                  {stockItem.branches.branch_name}
+                </p>
+                <div className="text-[10px] text-[#84492C] font-medium bg-[#F5F2EB] border border-[#84492C]/15 px-3 py-1 rounded-full font-mono mb-2.5 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#84492C]"></span>
+                  <span>{stockItem.qty} IN STOCK</span>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${stockItem.branches.latitude},${stockItem.branches.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Get directions to ${stockItem.branches.branch_name} branch on Google Maps`}
+                  style={{ color: '#FFFFFF', backgroundColor: '#84492C' }}
+                  className="w-full text-white bg-[#84492C] hover:bg-[#6D3B23] text-[9.5px] uppercase font-medium tracking-[0.16em] py-2 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <Navigation className="w-3 h-3 text-white" />
+                  <span className="text-white">DIRECTIONS (นำทาง)</span>
+                </a>
               </div>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${stockItem.branches.latitude},${stockItem.branches.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`Get directions to ${stockItem.branches.branch_name} branch on Google Maps`}
-                style={{ color: '#FFFFFF', backgroundColor: '#84492C' }}
-                className="w-full text-white bg-[#84492C] hover:bg-[#6D3B23] text-[9.5px] uppercase font-medium tracking-[0.16em] py-2 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors shadow-xs"
-              >
-                <Navigation className="w-3 h-3 text-white" />
-                <span className="text-white">DIRECTIONS (นำทาง)</span>
-              </a>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
+            </Popup>
+          </Marker>
+        )
+      })}
 
       {userLocation && (
         <Marker position={userLocation} icon={userIcon}>
@@ -239,7 +280,7 @@ export default function BranchMap({
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenModal}
             className="bg-[#FAF8F5]/90 hover:bg-[#FAF8F5] backdrop-blur-md border border-[#3A3835]/15 text-[#3A3835] hover:text-[#84492C] hover:border-[#84492C]/50 px-3.5 py-1.5 rounded-full text-[10px] uppercase tracking-[0.16em] font-medium transition-all duration-300 shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
             title="ขยายแผนที่ดูแบบเต็มหน้าต่าง"
           >
@@ -250,7 +291,9 @@ export default function BranchMap({
 
         <MapContainer 
           center={[centerLat, centerLng]} 
-          zoom={12} 
+          zoom={15} 
+          maxZoom={19}
+          minZoom={10}
           style={{ width: '100%', height: '100%', zIndex: 1 }}
           scrollWheelZoom={false} 
           zoomControl={false} 
@@ -260,8 +303,9 @@ export default function BranchMap({
             selectedBranch={internalSelectedBranch} 
             activeStock={activeStock}
             autoFit={false}
+            targetZoom={15.5}
           />
-          <TileLayer attribution={tileAttribution} url={tileUrl} />
+          <TileLayer maxZoom={19} attribution={tileAttribution} url={tileUrl} />
           {renderMarkers()}
         </MapContainer>
       </div>
@@ -400,8 +444,13 @@ export default function BranchMap({
               {/* 🗺️ MAP CONTAINER (เต็มพื้นที่ 100% ยิ่งใหญ่ สบายตา) */}
               <div className="w-full h-full">
                 <MapContainer 
-                  center={[centerLat, centerLng]} 
-                  zoom={13} 
+                  center={[
+                    internalSelectedBranch?.lat || centerLat,
+                    internalSelectedBranch?.lng || centerLng
+                  ]} 
+                  zoom={16.5} 
+                  maxZoom={19}
+                  minZoom={10}
                   style={{ width: '100%', height: '100%', zIndex: 1 }}
                   scrollWheelZoom={true} 
                   zoomControl={true} 
@@ -410,9 +459,10 @@ export default function BranchMap({
                     userLocation={userLocation} 
                     selectedBranch={internalSelectedBranch} 
                     activeStock={activeStock}
-                    autoFit={true}
+                    autoFit={!internalSelectedBranch}
+                    targetZoom={16.5}
                   />
-                  <TileLayer attribution={tileAttribution} url={tileUrl} />
+                  <TileLayer maxZoom={19} attribution={tileAttribution} url={tileUrl} />
                   {renderMarkers()}
                 </MapContainer>
               </div>
