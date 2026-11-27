@@ -29,8 +29,9 @@ async function getActiveDiscounts() {
     .from("discounts")
     .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
     .eq("active", true)
+    .order("id", { ascending: false })
   const list = data || []
-  cachedDiscounts = { data: list, expiresAt: Date.now() + 60_000 }
+  cachedDiscounts = { data: list, expiresAt: Date.now() + 30_000 }
   return list
 }
 

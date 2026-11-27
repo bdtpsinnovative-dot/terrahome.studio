@@ -84,11 +84,12 @@ export default async function CollectionLookPage({ params }: Props) {
     notFound();
   }
 
-  // 3. ดึงส่วนลดที่ Active อยู่
+  // 3. ดึงส่วนลดที่ Active อยู่ (เรียงจากแคมเปญล่าสุด)
   const { data: activeDiscounts } = await supabase
     .from("discounts")
     .select(`id, discount_type, value, start_date, end_date, discount_rules ( product_id )`)
-    .eq("active", true);
+    .eq("active", true)
+    .order("id", { ascending: false });
 
   // 4. ดึงรูปภาพทั้งหมดในหมวดนี้สำหรับ More Looks
   const { data: allCatImages } = await supabase

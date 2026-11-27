@@ -17,7 +17,7 @@ export interface RawCatalogData {
   fetchedAt: number
 }
 
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes in browser memory
+const CACHE_TTL_MS = 60 * 1000 // 1 minute in browser memory
 let cachedRawCatalog: RawCatalogData | null = null
 let inflightCatalogPromise: Promise<RawCatalogData> | null = null
 const orderedCollectionsByBranch = new Map<string, any[]>()
@@ -72,13 +72,10 @@ const PRODUCT_SELECT_SLIM = "id, collection_group_id, sku, name, image_url, pric
 
 const GROUP_SELECT_SLIM = "id, name, cover_image_url, image_url, product_sup, created_at"
 
-// ⚡ โครงสร้างแคชข้อมูลสินค้าแบบคงที่ (แคช 1 ชม. ไม่ผูกกับสต็อกหรือสาขา)
+// ⚡ โครงสร้างแคชข้อมูลสินค้าแบบคงที่ (แคช 1 ชม. ไม่ผูกกับสต็อก, สาขา หรือส่วนลด)
 interface StaticCatalogCache {
   propProducts: any[]
   rawGroups: any[]
-  validDiscounts: any[]
-  globalDiscount: any | null
-  discountByProductId: Map<number, any>
   hotProductIds: number[]
   hotRankByProductId: Map<number, number>
   hotScoreByProductId: Map<number, number>
@@ -106,7 +103,19 @@ export function getCachedRawCatalog(): RawCatalogData | null {
 async function executeLoadRawCatalog(): Promise<RawCatalogData> {
   const supabase = createClient()
 
-  // 🔴 1. สต็อกสดและสาขา (Real-time Live Stock & Branches) — ยิงสดทุกครั้งที่โหลด
+  // Safe non-critical discounts query: Real-time Live Discounts with order by ID DESC (newest campaign first)
+  const fetchDiscountsSafe = Promise.resolve(
+    supabase
+      .from("discounts")
+      .select("id, discount_type, value, start_date, end_date, discount_rules ( product_id )")
+      .eq("active", true)
+      .order("id", { ascending: false })
+  ).catch((err) => {
+    console.warn("[catalogClient] Discounts query error (fallback to empty):", err)
+    return { data: [] as any[], error: null }
+  })
+
+  // 🔴 1. สต็อกสด สาขา และโปรโมชั่นส่วนลด (Real-time Live Stock, Branches & Discounts) — ยิงสดทุกครั้งที่โหลด
   const liveFetchPromise = Promise.all([
     supabase
       .from("branches")
@@ -119,9 +128,10 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
       .from("stock")
       .select("product_id, branch_id, qty")
       .gt("qty", 0),
+    fetchDiscountsSafe,
   ])
 
-  // 🟢 2. ข้อมูลสินค้าคงที่ (Static Products, Groups, Discounts, Hot Items) — แคช 1 ชั่วโมง
+  // 🟢 2. ข้อมูลสินค้าคงที่ (Static Products, Groups, Hot Items) — แคช 1 ชั่วโมง
   let staticData: StaticCatalogCache
 
   if (cachedStaticCatalog && Date.now() - cachedStaticCatalog.fetchedAt < STATIC_CATALOG_TTL_MS) {
@@ -130,17 +140,6 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     const pageSize = 1000
     const initialPages = 6
 
-    // Safe non-critical queries: if hot items RPC or discounts times out, fall back to empty data so catalog NEVER crashes
-    const fetchDiscountsSafe = Promise.resolve(
-      supabase
-        .from("discounts")
-        .select("id, discount_type, value, start_date, end_date, discount_rules ( product_id )")
-        .eq("active", true)
-    ).catch((err) => {
-      console.warn("[catalogClient] Discounts query error (fallback to empty):", err)
-      return { data: [] as any[], error: null }
-    })
-
     const fetchHotSafe = Promise.resolve(
       supabase.rpc("get_prop_hot_items", { limit_count: 80 })
     ).catch((err) => {
@@ -148,8 +147,7 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
       return { data: [] as any[], error: null }
     })
 
-    const [discountsRes, hotRes, ...pageResults] = await Promise.all([
-      fetchDiscountsSafe,
+    const [hotRes, ...pageResults] = await Promise.all([
       fetchHotSafe,
       ...Array.from({ length: initialPages }, (_, i) =>
         supabase
@@ -213,7 +211,6 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
       }
     }
 
-    const activeDiscounts = (discountsRes as any)?.data || []
     const hotItems = (hotRes as any)?.data || []
 
     const hotRankByProductId = new Map<number, number>()
@@ -227,28 +224,6 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
       hotScoreByProductId.set(productId, Number(item.score) || 0)
     })
 
-    const now = new Date()
-    const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
-      const isStarted = !discount.start_date || new Date(discount.start_date) <= now
-      const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
-      return isStarted && isNotEnded
-    })
-
-    let globalDiscount: any | null = null
-    const discountByProductId = new Map<number, any>()
-    for (const discount of validDiscounts) {
-      for (const rule of discount.discount_rules || []) {
-        if (rule.product_id === null) {
-          if (!globalDiscount) globalDiscount = discount
-        } else {
-          const pid = Number(rule.product_id)
-          if (Number.isSafeInteger(pid) && !discountByProductId.has(pid)) {
-            discountByProductId.set(pid, discount)
-          }
-        }
-      }
-    }
-
     const bannerGroups = rawGroups
       .filter((g: any) => !!g.image_url && String(g.image_url).trim() !== "")
       .slice(0, 300)
@@ -259,9 +234,6 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     staticData = {
       propProducts,
       rawGroups,
-      validDiscounts,
-      globalDiscount,
-      discountByProductId,
       hotProductIds,
       hotRankByProductId,
       hotScoreByProductId,
@@ -272,10 +244,34 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     cachedStaticCatalog = staticData
   }
 
-  // รอผลลัพธ์สต็อกสดและสาขา
-  const [branchesRes, stockRes] = await liveFetchPromise
+  // 🔴 3. รอผลลัพธ์สต็อกสด, สาขา และโปรโมชั่นส่วนลดสด (Real-time Live Stock, Branches & Discounts)
+  const [branchesRes, stockRes, discountsRes] = await liveFetchPromise
   const branches = branchesRes.data || []
   const liveStockRows = stockRes.data || []
+  const activeDiscounts = (discountsRes as any)?.data || []
+
+  // คำนวณส่วนลดสด โดยเรียงจากแคมเปญล่าสุด (order id desc) เพื่อให้แคมเปญใหม่มีผลก่อนเสมอ
+  const now = new Date()
+  const validDiscounts = (activeDiscounts || []).filter((discount: any) => {
+    const isStarted = !discount.start_date || new Date(discount.start_date) <= now
+    const isNotEnded = !discount.end_date || new Date(discount.end_date) >= now
+    return isStarted && isNotEnded
+  })
+
+  let globalDiscount: any | null = null
+  const discountByProductId = new Map<number, any>()
+  for (const discount of validDiscounts) {
+    for (const rule of discount.discount_rules || []) {
+      if (rule.product_id === null) {
+        if (!globalDiscount) globalDiscount = discount
+      } else {
+        const pid = Number(rule.product_id)
+        if (Number.isSafeInteger(pid) && !discountByProductId.has(pid)) {
+          discountByProductId.set(pid, discount)
+        }
+      }
+    }
+  }
 
   const activeBranchIdSet = new Set(branches.map((b: any) => Number(b.id)))
 
@@ -335,9 +331,9 @@ async function executeLoadRawCatalog(): Promise<RawCatalogData> {
     hotProductIds: staticData.hotProductIds,
     hotRankByProductId: staticData.hotRankByProductId,
     hotScoreByProductId: staticData.hotScoreByProductId,
-    validDiscounts: staticData.validDiscounts,
-    globalDiscount: staticData.globalDiscount,
-    discountByProductId: staticData.discountByProductId,
+    validDiscounts,
+    globalDiscount,
+    discountByProductId,
     propGroups,
     productsByGroup,
     groupById,

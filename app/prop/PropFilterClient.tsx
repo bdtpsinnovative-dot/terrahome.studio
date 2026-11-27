@@ -24,11 +24,13 @@ import {
   productMatchesDimensions,
 } from "./productFilterModel"
 import {
+  clearCatalogCache,
   getCachedRawCatalog,
   getOrderedCollectionsForBranch,
   loadRawCatalog,
   type RawCatalogData,
 } from "./catalogClient"
+import { createClient } from "@/src/supabase/client"
 
 export default function PropFilterClient({
   collections: initialCollections,
@@ -95,6 +97,38 @@ export default function PropFilterClient({
         setIsCatalogLoading(false)
       })
   }
+
+  // ⚡ Live Realtime Sync: เมื่อ Admin มีการบันทึก/แก้ไข/ลบส่วนลด ให้ล้างแคชและอัปเดตหน้าจอทันที
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('realtime:prop-discounts-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'discounts' },
+        () => {
+          clearCatalogCache()
+          loadRawCatalog(true)
+            .then((data) => setRawCatalog(data))
+            .catch(() => {})
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'discount_rules' },
+        () => {
+          clearCatalogCache()
+          loadRawCatalog(true)
+            .then((data) => setRawCatalog(data))
+            .catch(() => {})
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const currentBranchId = searchParams.get("branch") || "all"
 

@@ -101,7 +101,8 @@ export async function GET() {
           product_id
         )
       `)
-      .eq("active", true);
+      .eq("active", true)
+      .order("id", { ascending: false });
 
     if (discountsError) {
       console.error('Error fetching discounts for Facebook feed:', discountsError);

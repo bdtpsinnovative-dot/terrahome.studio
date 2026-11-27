@@ -39,7 +39,7 @@ export default async function FeedDiagPage() {
     .ilike('tag', '%prop%')
     .eq('products.category_id', 'prop');
 
-  // ดึงโปรโมชันส่วนลดที่กำลังใช้งาน
+  // ดึงโปรโมชันส่วนลดที่กำลังใช้งาน (เรียงลำดับแคมเปญล่าสุด)
   const { data: activeDiscounts } = await supabase
     .from("discounts")
     .select(`
@@ -52,7 +52,8 @@ export default async function FeedDiagPage() {
         product_id
       )
     `)
-    .eq("active", true);
+    .eq("active", true)
+    .order("id", { ascending: false });
 
   const now = new Date();
 

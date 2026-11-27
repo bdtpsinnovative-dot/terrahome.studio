@@ -145,7 +145,8 @@ export default function CartPage() {
       const { data: activeDiscounts } = await supabase
         .from('discounts')
         .select('id, discount_type, value, start_date, end_date, discount_rules ( product_id )')
-        .eq('active', true);
+        .eq('active', true)
+        .order('id', { ascending: false });
 
       // ⚡ Fetch Journal Images & Sets to detect bundles
       const { data: journalImagesData } = await supabase
