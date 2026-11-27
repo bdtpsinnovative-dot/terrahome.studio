@@ -79,6 +79,22 @@ export default function PropFilterClient({
     }
   }, [hasServerCatalog])
 
+  const handleRetryCatalog = () => {
+    setCatalogError(null)
+    setIsCatalogLoading(true)
+    loadRawCatalog(true)
+      .then((data) => {
+        setRawCatalog(data)
+        setCatalogError(null)
+        setIsCatalogLoading(false)
+      })
+      .catch((err) => {
+        console.error("[PropFilterClient] Failed to retry catalog:", err)
+        setCatalogError(err?.message || String(err))
+        setIsCatalogLoading(false)
+      })
+  }
+
   const currentBranchId = searchParams.get("branch") || "all"
 
   const collections = useMemo(() => {
@@ -710,12 +726,22 @@ export default function PropFilterClient({
                 ))}
               </div>
             ) : catalogError ? (
-              <div className="text-center py-24 px-4">
+              <div className="text-center py-24 px-4 flex flex-col items-center">
                 <p className="text-[#3A3835] font-serif text-xl mb-2">Unavailable</p>
-                <p className="text-[#8C8A86] text-sm font-light tracking-wide mb-2">Unable to load the collections at this time.</p>
-                <p className="text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200 break-all font-mono max-w-md mx-auto">
+                <p className="text-[#8C8A86] text-sm font-light tracking-wide mb-3">Unable to load the collections at this time.</p>
+                <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded border border-red-200 break-all font-mono max-w-md mx-auto mb-5">
                   {catalogError}
                 </p>
+                <button
+                  type="button"
+                  onClick={handleRetryCatalog}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#84492C] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] font-medium rounded hover:bg-[#6D3B23] transition-colors shadow-sm cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  <span>ลองโหลดใหม่อีกครั้ง (Retry)</span>
+                </button>
               </div>
             ) : filteredCollections.length === 0 ? (
               <div className="text-center py-24">
