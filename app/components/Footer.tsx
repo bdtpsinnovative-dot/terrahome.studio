@@ -69,7 +69,7 @@ export default function Footer() {
         </div>
 
         {/* Main Footer Content overlaid on top */}
-        <div className="relative z-10 pt-6 pb-1 px-6 md:px-12 xl:px-16 w-full">
+        <div className="relative z-10 pt-6 pb-16 sm:pb-20 px-6 md:px-12 xl:px-16 w-full">
           <div className="max-w-[1380px] mx-auto">
 
             {/* Main Layout: Flex for better fluid wrapping on smaller screens */}
@@ -88,11 +88,11 @@ export default function Footer() {
 
               {/* การ์ด คอนเท็น*/}
               <div className="w-full lg:flex-1 flex justify-start relative z-20">
-                <div className="relative w-full max-w-[720px]">
+                <div className="relative w-full max-w-[560px]">
 
                   {/* Contact Content */}
-                  <div className="relative z-10 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-start gap-8 lg:gap-12">
-                    <div className="flex items-start gap-3.5">
+                  <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between sm:justify-start gap-8 lg:gap-12">
+                    <div className="flex items-start gap-3.5 max-w-[340px]">
                       <div className="w-8 h-8 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center text-[#7A695C] shrink-0 mt-0.5 shadow-inner border border-white/60">
                         <MapPin />
                       </div>
@@ -108,7 +108,7 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 pt-1">
+                    <div className="flex flex-col gap-2 pt-1 shrink-0">
                       <a
                         href={LINE_PROFILE_URL}
                         target="_blank"
